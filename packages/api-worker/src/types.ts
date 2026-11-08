@@ -10,4 +10,8 @@ export interface Env {
   GITHUB_BRANCH?: string;
   LOCAL_CATALOG?: CatalogEntry[];
   LOCAL_TTML_MAP?: Record<string, string>;
+  SPOTIFY_CLIENT_ID?: string;
+  SPOTIFY_CLIENT_SECRET?: string;
+  DISCORD_CLIENT_ID?: string;
+  DISCORD_CLIENT_SECRET?: string;
 }

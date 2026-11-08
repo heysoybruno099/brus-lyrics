@@ -20,6 +20,7 @@ class BrusYtmExtension {
   private rootEl: HTMLElement | null = null;
   private lyricsMountEl: HTMLElement | null = null;
   private statusBadgeEl: HTMLElement | null = null;
+  private studioBtnEl: HTMLAnchorElement | null = null;
   private songTitleEl: HTMLElement | null = null;
   private songArtistEl: HTMLElement | null = null;
   private sidePanelEl: HTMLElement | null = null;
@@ -234,6 +235,18 @@ class BrusYtmExtension {
     if (this.songTitleEl) this.songTitleEl.textContent = cleaned.title;
     if (this.songArtistEl) this.songArtistEl.textContent = cleaned.artist;
 
+    if (this.studioBtnEl) {
+      const params = new URLSearchParams({
+        trackId: videoId,
+        title: cleaned.title,
+        artist: cleaned.artist,
+        platform: 'ytm',
+        mode: 'studio',
+        ...(durationMs ? { duration: String(durationMs) } : {}),
+      });
+      this.studioBtnEl.href = `https://brus-lyrics.pages.dev/sync?${params.toString()}`;
+    }
+
     this.fetchAndRenderLyrics(videoId, cleaned.title, cleaned.artist, durationMs);
   }
 
@@ -294,12 +307,29 @@ class BrusYtmExtension {
     brandingCol.appendChild(this.songTitleEl);
     brandingCol.appendChild(this.songArtistEl);
 
+    const actionsCol = document.createElement('div');
+    actionsCol.style.display = 'flex';
+    actionsCol.style.alignItems = 'center';
+    actionsCol.style.gap = '8px';
+
+    this.studioBtnEl = document.createElement('a');
+    this.studioBtnEl.className = 'brus-ytm-pill';
+    this.studioBtnEl.style.textDecoration = 'none';
+    this.studioBtnEl.style.cursor = 'pointer';
+    this.studioBtnEl.textContent = 'Open in Sync Studio';
+    this.studioBtnEl.target = '_blank';
+    this.studioBtnEl.rel = 'noreferrer';
+    this.studioBtnEl.href = 'https://brus-lyrics.pages.dev/sync';
+
     this.statusBadgeEl = document.createElement('span');
     this.statusBadgeEl.className = 'brus-ytm-pill';
     this.statusBadgeEl.textContent = 'Standby';
 
+    actionsCol.appendChild(this.studioBtnEl);
+    actionsCol.appendChild(this.statusBadgeEl);
+
     header.appendChild(brandingCol);
-    header.appendChild(this.statusBadgeEl);
+    header.appendChild(actionsCol);
 
     this.lyricsMountEl = document.createElement('div');
     this.lyricsMountEl.className = 'brus-ytm-mount';

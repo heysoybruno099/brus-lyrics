@@ -224,3 +224,137 @@ export async function queueSubmission(
       .run();
   }
 }
+
+export interface UserRecord {
+  id: string;
+  username: string;
+  discriminator?: string;
+  avatar?: string | null;
+  email?: string | null;
+  role: string;
+  is_verified: number;
+  created_at: string;
+  updated_at: string;
+}
+
+const memoryUsers = new Map<string, UserRecord>([
+  [
+    '1568826229006540882',
+    {
+      id: '1568826229006540882',
+      username: 'Bru',
+      discriminator: '0',
+      avatar: null,
+      email: 'bruno@bruslyrics.com',
+      role: 'verified_creator',
+      is_verified: 1,
+      created_at: '2026-11-08T00:00:00.000Z',
+      updated_at: '2026-11-08T00:00:00.000Z',
+    },
+  ],
+]);
+
+export async function upsertUser(
+  env: Env,
+  user: {
+    id: string;
+    username: string;
+    discriminator?: string;
+    avatar?: string | null;
+    email?: string | null;
+    role?: string;
+    is_verified?: number;
+  }
+): Promise<UserRecord> {
+  const now = new Date().toISOString();
+  const isCreator =
+    user.id === '1568826229006540882' ||
+    user.username.toLowerCase() === 'bru' ||
+    user.role === 'verified_creator';
+
+  const record: UserRecord = {
+    id: user.id.trim(),
+    username: user.username.trim(),
+    discriminator: user.discriminator || '0',
+    avatar: user.avatar || null,
+    email: user.email || null,
+    role: isCreator ? 'verified_creator' : (user.role || 'contributor'),
+    is_verified: isCreator ? 1 : (user.is_verified ?? 1),
+    created_at: now,
+    updated_at: now,
+  };
+
+  if (env.DB) {
+    try {
+      const query = `
+        INSERT INTO users (id, username, discriminator, avatar, email, role, is_verified, created_at, updated_at)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)
+        ON CONFLICT(id) DO UPDATE SET
+          username = excluded.username,
+          discriminator = excluded.discriminator,
+          avatar = excluded.avatar,
+          email = excluded.email,
+          role = excluded.role,
+          is_verified = excluded.is_verified,
+          updated_at = excluded.updated_at
+      `;
+      await env.DB.prepare(query)
+        .bind(
+          record.id,
+          record.username,
+          record.discriminator,
+          record.avatar,
+          record.email,
+          record.role,
+          record.is_verified,
+          record.updated_at
+        )
+        .run();
+    } catch {
+      // Fallback to memory
+    }
+  }
+
+  memoryUsers.set(record.id, record);
+  return record;
+}
+
+export async function getUserByUsername(env: Env, username: string): Promise<UserRecord | null> {
+  const normUser = username.trim().toLowerCase().replace(/^@/, '');
+  if (env.DB) {
+    try {
+      const query = 'SELECT * FROM users WHERE LOWER(username) = ?1 LIMIT 1';
+      const row = await env.DB.prepare(query).bind(normUser).first<UserRecord>();
+      if (row) return row;
+    } catch {
+      // Fallback
+    }
+  }
+
+  for (const user of memoryUsers.values()) {
+    if (user.username.toLowerCase() === normUser) {
+      return user;
+    }
+  }
+
+  if (normUser === 'bru') {
+    return memoryUsers.get('1568826229006540882') || null;
+  }
+
+  return null;
+}
+
+export async function getUserById(env: Env, id: string): Promise<UserRecord | null> {
+  const cleanId = id.trim();
+  if (env.DB) {
+    try {
+      const query = 'SELECT * FROM users WHERE id = ?1 LIMIT 1';
+      const row = await env.DB.prepare(query).bind(cleanId).first<UserRecord>();
+      if (row) return row;
+    } catch {
+      // Fallback
+    }
+  }
+
+  return memoryUsers.get(cleanId) || null;
+}

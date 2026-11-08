@@ -6,7 +6,7 @@ import type { SpicetifyGlobal } from './types.js';
 
 declare const Spicetify: SpicetifyGlobal | undefined;
 
-const STUDIO_BASE_URL = 'http://localhost:5173';
+const STUDIO_BASE_URL = 'https://brus-lyrics.pages.dev';
 
 interface ResolvedTrack {
   rawTrackId: string;
@@ -515,6 +515,50 @@ class BrusSpicetifyExtension {
         gap: 8px;
         text-align: center;
       }
+
+      /* Contributor Attribution Footer */
+      .brus-lyrics-attribution {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 48px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        width: 100%;
+      }
+
+      .brus-attribution-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 14px;
+        background-color: rgba(20, 20, 24, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        color: #a1a1aa;
+      }
+
+      .brus-attribution-text {
+        font-weight: 500;
+        color: #f4f4f6;
+      }
+
+      .brus-verified-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background-color: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.25);
+        color: #4ade80;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -931,9 +975,11 @@ class BrusSpicetifyExtension {
         trackId: rawTrackId,
         title,
         artist,
+        platform: 'spotify',
+        mode: 'studio',
         ...(durationMs ? { duration: String(durationMs) } : {}),
       });
-      this.studioBtnEl.href = `${STUDIO_BASE_URL}/?${params.toString()}`;
+      this.studioBtnEl.href = `${STUDIO_BASE_URL}/sync?${params.toString()}`;
     }
 
     if (this.sourceBadgeEl) {

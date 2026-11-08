@@ -272,4 +272,52 @@ describe('Cloudflare Worker API Routes', () => {
     assert.ok(body.songs.length >= 1);
     assert.equal(body.songs[0]?.title, 'Yellow');
   });
+
+  it('GET /v1/auth/config returns Discord and Spotify client IDs', async () => {
+    const res = await app.request('/v1/auth/config');
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { discordClientId: string; spotifyClientId: string };
+    assert.equal(body.discordClientId, '1568826229006540882');
+    assert.equal(body.spotifyClientId, '9b91a4fd101942cfb3fafbfad89e5d70');
+  });
+
+  it('GET /v1/spotify/token acquires or caches Spotify client credentials token', async () => {
+    const res = await app.request('/v1/spotify/token');
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { access_token: string; token_type: string };
+    assert.ok(body.access_token);
+    assert.equal(body.token_type, 'Bearer');
+  });
+
+  it('GET /v1/auth/users/Bru returns verified creator profile', async () => {
+    const res = await app.request('/v1/auth/users/Bru');
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { username: string; isVerified: boolean; role: string; id: string };
+    assert.equal(body.username, 'Bru');
+    assert.equal(body.isVerified, true);
+    assert.equal(body.role, 'verified_creator');
+  });
+
+  it('POST /v1/auth/users and GET /v1/auth/users/:username persists contributor with verification', async () => {
+    const postRes = await app.request('/v1/auth/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'TestContributor',
+        role: 'contributor',
+        isVerified: true,
+      }),
+    });
+    assert.equal(postRes.status, 201);
+    const postBody = (await postRes.json()) as { success: boolean; user: { username: string; isVerified: boolean } };
+    assert.equal(postBody.success, true);
+    assert.equal(postBody.user.username, 'TestContributor');
+    assert.equal(postBody.user.isVerified, true);
+
+    const getRes = await app.request('/v1/auth/users/TestContributor');
+    assert.equal(getRes.status, 200);
+    const getBody = (await getRes.json()) as { username: string; isVerified: boolean; role: string };
+    assert.equal(getBody.username, 'TestContributor');
+    assert.equal(getBody.isVerified, true);
+  });
 });

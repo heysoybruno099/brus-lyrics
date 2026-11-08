@@ -205,6 +205,23 @@ export class BrusLyricsRenderer {
       });
     }
 
+    // Prominently render contributor attribution at bottom of lyrics
+    const contributor = doc.metadata?.contributor || 'Community';
+    const attributionEl = document.createElement('div');
+    attributionEl.className = 'brus-lyrics-attribution';
+    attributionEl.innerHTML = `
+      <div class="brus-attribution-card">
+        <span class="brus-attribution-text">Synced by @${contributor.replace(/[&<>"']/g, '')}</span>
+        <span class="brus-verified-badge" title="Verified Creator">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+          </svg>
+          <span>VERIFIED</span>
+        </span>
+      </div>
+    `;
+    this.trackEl.appendChild(attributionEl);
+
     this.update();
   }
 

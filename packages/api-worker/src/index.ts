@@ -5,6 +5,8 @@ import type { Env } from './types.js';
 import { lyricsRoute } from './routes/lyrics.js';
 import { submitRoute } from './routes/submit.js';
 import { catalogRoute } from './routes/catalog.js';
+import { spotifyRoute } from './routes/spotify.js';
+import { authRoute } from './routes/auth.js';
 import { embeddedTTMLMap } from './lib/embedded-lyrics.js';
 
 // @ts-ignore
@@ -73,11 +75,15 @@ app.get('/health', (c) => {
 app.route('/v1', lyricsRoute);
 app.route('/v1', submitRoute);
 app.route('/v1', catalogRoute);
+app.route('/v1', spotifyRoute);
+app.route('/v1', authRoute);
 
 // Also route unversioned routes for convenience
 app.route('/', lyricsRoute);
 app.route('/', submitRoute);
 app.route('/', catalogRoute);
+app.route('/', spotifyRoute);
+app.route('/', authRoute);
 
 // 404 handler
 app.notFound((c) => {

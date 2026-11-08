@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { BrusLyricsRenderer } from '@brus-lyrics/ttml-engine';
 import type { TTMLLine, TTMLMetadata, SubmitLyricsResponse } from '@brus-lyrics/shared-types';
 import { serializeStudioToTTML, linesToTTMLDocument } from '../lib/ttml-serializer.js';
+import { getApiBaseUrl, DEFAULT_PRODUCTION_API } from '../lib/config.js';
+import type { DiscordUser } from '../lib/types.js';
 
 interface LivePreviewDeckProps {
   metadata: TTMLMetadata;
@@ -9,6 +11,8 @@ interface LivePreviewDeckProps {
   currentTimeMs: number;
   onSeek: (ms: number) => void;
   apiBaseUrl?: string;
+  user?: DiscordUser | null;
+  onRequireAuth?: () => void;
 }
 
 export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
@@ -16,7 +20,9 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
   lines,
   currentTimeMs,
   onSeek,
-  apiBaseUrl = 'http://127.0.0.1:8787',
+  apiBaseUrl = getApiBaseUrl(),
+  user = null,
+  onRequireAuth,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<BrusLyricsRenderer | null>(null);
@@ -83,10 +89,21 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
 
   // Handle Publish to Bru's Lyrics API
   const handlePublish = async () => {
+    // Strictly require Discord authentication for adding / publishing lyrics
+    if (!user) {
+      setPublishStatus({
+        type: 'error',
+        message: 'Sign in with Discord is required to add or publish lyrics to the catalog.',
+      });
+      onRequireAuth?.();
+      return;
+    }
+
     setPublishStatus({ type: 'loading', message: 'Submitting to API...' });
 
     const xml = serializeStudioToTTML(metadata, lines);
     const duration = metadata.durationMs || (lines.length > 0 ? lines[lines.length - 1]!.end : 0);
+    const effectiveContributor = user.username || metadata.contributor || 'Bru';
 
     const payload = {
       metadata: {
@@ -96,20 +113,40 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
         spotifyId: metadata.spotifyId || null,
         ytmId: metadata.ytmId || null,
         isrc: metadata.isrc || null,
-        contributor: metadata.contributor || 'community',
+        contributor: effectiveContributor,
       },
       ttmlRaw: xml,
-      contributor: metadata.contributor || 'community',
+      contributor: effectiveContributor,
     };
 
+    const targetUrl = `${apiBaseUrl.replace(/\/+$/, '')}/v1/submit`;
+
     try {
-      const response = await fetch(`${apiBaseUrl.replace(/\/+$/, '')}/v1/submit`, {
+      let response = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
+
+      // If initial target failed and wasn't already production, attempt production worker
+      if (!response.ok && !targetUrl.includes('heysoybruno09')) {
+        try {
+          const fallbackResponse = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+          if (fallbackResponse.ok) {
+            response = fallbackResponse;
+          }
+        } catch {
+          // Keep original response
+        }
+      }
 
       const data: SubmitLyricsResponse = await response.json();
 
@@ -121,10 +158,33 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
       } else {
         setPublishStatus({
           type: 'success',
-          message: `Published successfully: ${data.message} (${data.action})`,
+          message: `Published successfully as @${effectiveContributor}: ${data.message} (${data.action})`,
         });
       }
     } catch (err: any) {
+      // Try production fallback on network exception
+      if (!targetUrl.includes('heysoybruno09')) {
+        try {
+          const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+          const data: SubmitLyricsResponse = await fallbackRes.json();
+          if (fallbackRes.ok && data.success) {
+            setPublishStatus({
+              type: 'success',
+              message: `Published successfully as @${effectiveContributor}: ${data.message} (${data.action})`,
+            });
+            return;
+          }
+        } catch {
+          // Fall through
+        }
+      }
+
       setPublishStatus({
         type: 'error',
         message: err?.message || 'Network connection failed',
