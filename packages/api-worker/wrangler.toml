@@ -12,5 +12,5 @@ GITHUB_BRANCH = "main"
 [[d1_databases]]
 binding = "DB"
 database_name = "brus-lyrics-db"
-database_id = "brus-lyrics-d1-prod"
+database_id = "dfcceba8-5c54-4db1-bed3-1985de103289"
 migrations_dir = "../../database/migrations"
