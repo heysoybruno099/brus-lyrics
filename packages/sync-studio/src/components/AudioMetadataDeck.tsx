@@ -581,16 +581,6 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
               />
             </div>
           )}
-
-          <div className="form-field">
-            <label className="form-label">Contributor Name</label>
-            <input
-              className="text-input"
-              value={metadata.contributor || ''}
-              onChange={(e) => onChangeMetadata({ contributor: e.target.value })}
-              placeholder="Your username"
-            />
-          </div>
         </div>
       </div>
     </div>

@@ -19,14 +19,21 @@ import { SpotifyWebPlayer } from './lib/spotify-web-player.js';
 import { YouTubePlayer } from './lib/youtube-player.js';
 import {
   getStoredSpotifyToken,
+  getStoredSpotifyRefreshToken,
   getStoredSpotifyUser,
   buildSpotifyOAuthUrl,
   exchangeSpotifyCodeForToken,
   parseSpotifyOAuthToken,
+  refreshSpotifyToken,
   fetchSpotifyUserProfile,
   clearSpotifyAuth,
 } from './lib/spotify-auth.js';
-import { searchSongs, VERIFIED_FEATURED_TRACKS, resolveTrackPreviewUrl } from './lib/spotify-service.js';
+import {
+  searchSongs,
+  VERIFIED_FEATURED_TRACKS,
+  resolveTrackPreviewUrl,
+  resolveTrackArtwork,
+} from './lib/spotify-service.js';
 import {
   getStoredUser,
   clearUser,
@@ -363,6 +370,19 @@ export const App: React.FC = () => {
       window.history.replaceState(null, '', window.location.pathname);
     }
 
+    // Automatic Spotify Session Renewal for Returning Sessions
+    const storedRefresh = getStoredSpotifyRefreshToken();
+    const storedToken = getStoredSpotifyToken();
+    if (storedRefresh && !storedToken) {
+      refreshSpotifyToken().then(async (newToken) => {
+        if (newToken) {
+          setSpotifyToken(newToken);
+          const profile = await fetchSpotifyUserProfile(newToken);
+          if (profile) setSpotifyUser(profile);
+        }
+      });
+    }
+
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
     const modeParam = params.get('mode');
@@ -411,6 +431,7 @@ export const App: React.FC = () => {
           (title && t.title.toLowerCase().includes(title.toLowerCase()))
       );
 
+      const matchedCover = matched?.artworkUrl || null;
       const targetSong: UnifiedSongItem = matched || {
         id: trackId ? `ext_${trackId}` : `ext_${Date.now()}`,
         spotifyId: platform === 'spotify' ? trackId : null,
@@ -418,7 +439,11 @@ export const App: React.FC = () => {
         title: songTitle,
         artist: songArtist,
         album: 'Single',
-        artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+        artworkUrl: resolveTrackArtwork({
+          artworkUrl: matchedCover,
+          ytmId: platform === 'ytm' ? trackId : null,
+          spotifyId: platform === 'spotify' ? trackId : null,
+        }),
         durationMs: durNum,
         previewUrl: null,
         source: platform === 'spotify' ? 'spotify' : 'verified',
@@ -444,22 +469,36 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Open sync workstation preloaded with track metadata and audio
-  const handleOpenStudioWithTrack = useCallback((song: UnifiedSongItem) => {
-    setStudioMetadata((prev) => ({
-      ...prev,
+  // Open sync workstation preloaded with track metadata, audio, and synchronized lyrics
+  const handleOpenStudioWithTrack = useCallback(async (song: UnifiedSongItem) => {
+    const meta: TTMLMetadata = {
       title: song.title,
       artist: song.artist,
       album: song.album || undefined,
       spotifyId: song.spotifyId || undefined,
       ytmId: song.ytmId || undefined,
       durationMs: song.durationMs,
-    }));
+      platformTarget: 'both',
+    };
+
+    setStudioMetadata(meta);
     if (song.durationMs > 0) {
       setDurationMs(song.durationMs);
     }
     setActiveSong(song);
-    if (song.previewUrl && audioEngineRef.current) {
+    setCurrentTimeMs(0);
+
+    // Stop currently running playback engines
+    audioEngineRef.current?.pause();
+    youtubePlayerRef.current?.pause();
+    spotifyPlayerRef.current?.pause();
+
+    // Auto-switch audio playback engine to this track
+    if (song.ytmId && youtubePlayerRef.current) {
+      setCurrentPlaybackSource('youtube');
+      youtubePlayerRef.current.loadVideo(song.ytmId, false);
+    } else if (song.previewUrl && audioEngineRef.current) {
+      setCurrentPlaybackSource('preview');
       audioEngineRef.current.loadTrack(song.previewUrl, song.durationMs);
     } else {
       resolveTrackPreviewUrl(song.title, song.artist).then((url) => {
@@ -468,8 +507,84 @@ export const App: React.FC = () => {
         }
       });
     }
+
+    // Auto-fetch synchronized lyrics for workstation
+    try {
+      const doc = await fetchLyricsForTrack(song);
+      if (doc && doc.lines && doc.lines.length > 0) {
+        setStudioLines(doc.lines);
+        setActiveDocument(doc);
+      }
+    } catch {
+      // Retain existing lines
+    }
+
     setCurrentView('studio');
   }, []);
+
+  // Studio metadata & song change handler (triggered by TTML/LRC/JSON upload or editor edits)
+  const handleStudioMetadataChange = useCallback(
+    (meta: Partial<TTMLMetadata>, newLines?: TTMLLine[]) => {
+      setStudioMetadata((prev) => {
+        const merged: TTMLMetadata = { ...prev, ...meta };
+        const dur =
+          merged.durationMs ||
+          (newLines && newLines.length > 0
+            ? newLines[newLines.length - 1]!.end
+            : durationMs || 180000);
+        merged.durationMs = dur;
+
+        const songTitle = merged.title || activeSong?.title || 'Imported Track';
+        const songArtist = merged.artist || activeSong?.artist || 'Unknown Artist';
+        const cleanYtmId = merged.ytmId?.trim() || null;
+        const cleanSpotifyId = merged.spotifyId?.trim() || null;
+
+        const updatedSong: UnifiedSongItem = {
+          id: cleanSpotifyId || cleanYtmId || `track_${Date.now()}`,
+          title: songTitle,
+          artist: songArtist,
+          album: merged.album || activeSong?.album || 'Single',
+          artworkUrl: resolveTrackArtwork({
+            artworkUrl: activeSong?.artworkUrl,
+            ytmId: cleanYtmId,
+            spotifyId: cleanSpotifyId,
+          }),
+          durationMs: dur,
+          previewUrl: null,
+          spotifyId: cleanSpotifyId || undefined,
+          ytmId: cleanYtmId || undefined,
+          source: cleanSpotifyId ? 'spotify' : 'verified',
+          isSyllableSynced: newLines ? newLines.some((l) => l.syllables && l.syllables.length > 1) : true,
+          contributor: user?.username || merged.contributor || 'Community',
+        };
+
+        setActiveSong(updatedSong);
+        setDurationMs(dur);
+        setCurrentTimeMs(0);
+
+        // Auto-switch audio playback engine to the newly loaded song
+        if (cleanYtmId && youtubePlayerRef.current) {
+          setCurrentPlaybackSource('youtube');
+          youtubePlayerRef.current.loadVideo(cleanYtmId, false);
+        } else if (cleanSpotifyId && isSpotifyPremium && spotifyPlayerRef.current) {
+          setCurrentPlaybackSource('spotify');
+        } else if (audioEngineRef.current) {
+          resolveTrackPreviewUrl(songTitle, songArtist).then((url) => {
+            if (url && audioEngineRef.current) {
+              audioEngineRef.current.loadTrack(url, dur);
+            }
+          });
+        }
+
+        return merged;
+      });
+
+      if (newLines && newLines.length > 0) {
+        setStudioLines(newLines);
+      }
+    },
+    [activeSong, durationMs, user, isSpotifyPremium]
+  );
 
   // Play Song Card Handler: Selects best available audio source and starts playback
   const handlePlaySongCard = useCallback(async (song: UnifiedSongItem) => {
@@ -669,17 +784,7 @@ export const App: React.FC = () => {
       // Local storage quota or unavailable
     }
 
-    // 2. If not authenticated, inform the user and open Discord sign-in modal
-    if (!user) {
-      setSaveStatus({
-        type: 'info',
-        message: 'Draft saved to browser storage. Sign in with Discord to publish your synchronized lyrics to the catalog.',
-      });
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    // 3. Authenticated: submit to Cloudflare Worker API
+    // 2. Submit to Cloudflare Worker API
     setIsSaving(true);
     setSaveStatus({
       type: 'info',
@@ -689,17 +794,17 @@ export const App: React.FC = () => {
     const xml = serializeStudioToTTML(studioMetadata, studioLines);
     const duration =
       studioMetadata.durationMs ||
-      (studioLines.length > 0 ? studioLines[studioLines.length - 1]!.end : 0);
-    const effectiveContributor = user.username || studioMetadata.contributor || 'Community';
+      (studioLines.length > 0 ? studioLines[studioLines.length - 1]!.end : (activeSong?.durationMs || 180000));
+    const effectiveContributor = user?.username ? `@${user.username}` : (studioMetadata.contributor || 'Community');
 
     const payload = {
       metadata: {
-        title: studioMetadata.title || 'Untitled',
-        artist: studioMetadata.artist || 'Unknown Artist',
-        album: studioMetadata.album || null,
+        title: studioMetadata.title || activeSong?.title || 'Untitled Track',
+        artist: studioMetadata.artist || activeSong?.artist || 'Unknown Artist',
+        album: studioMetadata.album || activeSong?.album || null,
         durationMs: duration,
-        spotifyId: (studioMetadata.platformTarget === 'ytm' ? null : studioMetadata.spotifyId) || null,
-        ytmId: (studioMetadata.platformTarget === 'spotify' ? null : studioMetadata.ytmId) || null,
+        spotifyId: (studioMetadata.platformTarget === 'ytm' ? null : studioMetadata.spotifyId) || activeSong?.spotifyId || null,
+        ytmId: (studioMetadata.platformTarget === 'spotify' ? null : studioMetadata.ytmId) || activeSong?.ytmId || null,
         isrc: studioMetadata.isrc || null,
         contributor: effectiveContributor,
         platformTarget: studioMetadata.platformTarget || 'both',
@@ -800,27 +905,6 @@ export const App: React.FC = () => {
               onQuickAdd={handleOpenStudioWithTrack}
             />
 
-
-            {currentPlaybackSource === 'youtube' && (
-              <div
-                style={{
-                  maxWidth: 1200,
-                  margin: '0 auto 20px auto',
-                  padding: '10px 18px',
-                  backgroundColor: '#0c1a2e',
-                  border: '1px solid #1e3a5f',
-                  borderRadius: 8,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: 12,
-                  color: '#93c5fd',
-                }}
-              >
-                <span>Free Full-Song Playback active via YouTube Music. Zero subscription required.</span>
-                <span style={{ fontSize: 11, color: '#60a5fa' }}>Syllable Synced</span>
-              </div>
-            )}
 
             <SongCardGrid
               songs={songs}
@@ -1037,7 +1121,7 @@ export const App: React.FC = () => {
               {/* Pane 1: Audio & Metadata Deck */}
               <AudioMetadataDeck
                 metadata={studioMetadata}
-                onChangeMetadata={(meta) => setStudioMetadata((prev) => ({ ...prev, ...meta }))}
+                onChangeMetadata={handleStudioMetadataChange}
                 audioRef={studioAudioRef}
                 currentTimeMs={currentTimeMs}
                 durationMs={durationMs}
@@ -1057,7 +1141,7 @@ export const App: React.FC = () => {
                   }
                   setCurrentPlaybackSource('preview');
                   setDurationMs(totalDur);
-                  setStudioMetadata((prev) => ({ ...prev, durationMs: totalDur }));
+                  handleStudioMetadataChange({ durationMs: totalDur });
                 }}
               />
 
@@ -1068,7 +1152,7 @@ export const App: React.FC = () => {
                 currentTimeMs={currentTimeMs}
                 durationMs={durationMs}
                 onSeek={handleSeek}
-                onChangeMetadata={(meta) => setStudioMetadata((prev) => ({ ...prev, ...meta }))}
+                onChangeMetadata={handleStudioMetadataChange}
               />
 
               {/* Pane 3: Live 60FPS Render Preview & One-Click Publish */}
@@ -1102,13 +1186,24 @@ export const App: React.FC = () => {
             user={user}
             onSelectAndPlaySong={handlePlaySongCard}
             onOpenStudioWithTrack={(track) => {
-              setStudioMetadata((prev) => ({
-                ...prev,
+              handleOpenStudioWithTrack({
+                id: track.id || `track_${Date.now()}`,
                 title: track.title,
                 artist: track.artist,
-                spotifyId: track.id,
-              }));
-              setCurrentView('studio');
+                album: 'Single',
+                artworkUrl: resolveTrackArtwork({
+                  artworkUrl: null,
+                  ytmId: track.ytmId,
+                  spotifyId: track.spotifyId || track.id,
+                }),
+                durationMs: track.durationMs || 180000,
+                previewUrl: null,
+                spotifyId: track.spotifyId || track.id,
+                ytmId: track.ytmId,
+                source: 'verified',
+                isSyllableSynced: false,
+                contributor: user?.username || 'Community',
+              });
             }}
           />
         )}

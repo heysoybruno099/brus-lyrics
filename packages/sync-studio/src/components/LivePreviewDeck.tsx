@@ -89,21 +89,11 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
 
   // Handle Publish to Bru's Lyrics API
   const handlePublish = async () => {
-    // Strictly require Discord authentication for adding / publishing lyrics
-    if (!user) {
-      setPublishStatus({
-        type: 'error',
-        message: 'Sign in with Discord is required to add or publish lyrics to the catalog.',
-      });
-      onRequireAuth?.();
-      return;
-    }
-
-    setPublishStatus({ type: 'loading', message: 'Submitting to API...' });
+    setPublishStatus({ type: 'loading', message: 'Submitting lyrics to catalog...' });
 
     const xml = serializeStudioToTTML(metadata, lines);
-    const duration = metadata.durationMs || (lines.length > 0 ? lines[lines.length - 1]!.end : 0);
-    const effectiveContributor = user.username || metadata.contributor || 'Community';
+    const duration = metadata.durationMs || (lines.length > 0 ? lines[lines.length - 1]!.end : 180000);
+    const effectiveContributor = user?.username ? `@${user.username}` : (metadata.contributor || 'Community');
 
     const payload = {
       metadata: {

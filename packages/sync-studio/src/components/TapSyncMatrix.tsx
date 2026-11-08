@@ -19,7 +19,7 @@ interface TapSyncMatrixProps {
   currentTimeMs: number;
   durationMs: number;
   onSeek: (ms: number) => void;
-  onChangeMetadata?: (meta: Partial<TTMLMetadata>) => void;
+  onChangeMetadata?: (meta: Partial<TTMLMetadata>, newLines?: TTMLLine[]) => void;
 }
 
 export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
@@ -300,10 +300,23 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
 
       const parsed = parseMultiFormatLyrics(text, file.name, durationMs);
       if (parsed.lines.length > 0) {
-        onChangeLines(parsed.lines);
-        if (parsed.metadata && Object.keys(parsed.metadata).length > 0) {
-          onChangeMetadata?.(parsed.metadata);
+        const meta: Partial<TTMLMetadata> = { ...(parsed.metadata || {}) };
+        if (!meta.title && file.name) {
+          const base = file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
+          if (base.includes(' - ')) {
+            const [art, tit] = base.split(' - ');
+            if (art && !meta.artist) meta.artist = art.trim();
+            if (tit && !meta.title) meta.title = tit.trim();
+          } else if (!meta.title) {
+            meta.title = base.trim();
+          }
         }
+        if (!meta.durationMs && parsed.lines.length > 0) {
+          meta.durationMs = parsed.lines[parsed.lines.length - 1]!.end;
+        }
+
+        onChangeLines(parsed.lines);
+        onChangeMetadata?.(meta, parsed.lines);
         setSyncFidelity(parsed.mode);
         setSelectedLineIdx(0);
         setSelectedSylIdx(0);
@@ -340,10 +353,13 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
           }));
         }
 
-        onChangeLines(finalLines);
-        if (parsed.metadata && Object.keys(parsed.metadata).length > 0) {
-          onChangeMetadata?.(parsed.metadata);
+        const meta: Partial<TTMLMetadata> = { ...(parsed.metadata || {}) };
+        if (!meta.durationMs && finalLines.length > 0) {
+          meta.durationMs = finalLines[finalLines.length - 1]!.end;
         }
+
+        onChangeLines(finalLines);
+        onChangeMetadata?.(meta, finalLines);
         setSelectedLineIdx(0);
         setSelectedSylIdx(0);
         setUploadStatus(`Successfully imported ${finalLines.length} lines into matrix!`);

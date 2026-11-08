@@ -62,80 +62,6 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
 
   return (
     <footer className="player-bar-container">
-      {/* Informative Playback Banner */}
-      {currentPlaybackSource === 'preview' && (
-        <div
-          className="player-preview-banner"
-          style={{
-            backgroundColor: '#1c1917',
-            borderBottom: '1px solid #292524',
-            padding: '4px 16px',
-            fontSize: 11,
-            color: '#fbbf24',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <span>30-Second Preview Mode. Connect Spotify Premium to unlock full-length playback.</span>
-          {onConnectSpotify && (
-            <button
-              type="button"
-              onClick={onConnectSpotify}
-              style={{
-                background: '#1db954',
-                color: '#000000',
-                border: 'none',
-                borderRadius: 4,
-                padding: '2px 8px',
-                fontSize: 10,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Connect Spotify
-            </button>
-          )}
-        </div>
-      )}
-
-      {currentPlaybackSource === 'youtube' && (
-        <div
-          style={{
-            backgroundColor: '#111827',
-            borderBottom: '1px solid #1f2937',
-            padding: '4px 16px',
-            fontSize: 11,
-            color: '#60a5fa',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <span>Free Full Song Playback via YouTube Music</span>
-        </div>
-      )}
-
-      {currentPlaybackSource === 'spotify' && (
-        <div
-          style={{
-            backgroundColor: '#052e16',
-            borderBottom: '1px solid #14532d',
-            padding: '4px 16px',
-            fontSize: 11,
-            color: '#4ade80',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <span>Spotify Premium Active • Full Track Unlocked</span>
-        </div>
-      )}
-
       {/* Top Scrubber Progress Bar */}
       <div className="player-scrubber-wrap">
         <input
@@ -170,28 +96,6 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
               {song.artist}
             </span>
           </div>
-
-            {!isSpotifyPremium && onConnectSpotify && (
-              <button
-                type="button"
-                onClick={onConnectSpotify}
-                title="Connect Spotify Premium to unlock full song"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  backgroundColor: '#1c1c24',
-                  color: '#fbbf24',
-                  border: '1px solid #d97706',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Unlock Full Song
-              </button>
-            )}
         </div>
 
         {/* Center Controls */}
@@ -267,6 +171,35 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
             <option value="1.25">1.25x</option>
             <option value="1.5">1.5x</option>
           </select>
+
+          {/* Subtle Audio Source Pill */}
+          <span
+            className="player-source-pill"
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: '#d4d4d8',
+              backgroundColor: '#18181b',
+              border: '1px solid #27272a',
+              borderRadius: 6,
+              padding: '4px 10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              letterSpacing: '0.01em',
+              userSelect: 'none',
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: currentPlaybackSource === 'spotify' ? '#22c55e' : '#38bdf8',
+              }}
+            />
+            {currentPlaybackSource === 'spotify' ? 'Spotify Connected' : 'YouTube Music Connected'}
+          </span>
 
           {/* Volume Control */}
           <div className="player-volume-wrap">

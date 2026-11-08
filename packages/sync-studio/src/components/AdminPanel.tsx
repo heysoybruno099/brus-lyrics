@@ -6,7 +6,14 @@ import { formatTimestampTTML } from '@brus-lyrics/shared-types';
 interface AdminPanelProps {
   user: DiscordUser | null;
   onSelectAndPlaySong: (song: UnifiedSongItem) => void;
-  onOpenStudioWithTrack: (track: { title: string; artist: string; id?: string }) => void;
+  onOpenStudioWithTrack: (track: {
+    title: string;
+    artist: string;
+    id?: string;
+    spotifyId?: string;
+    ytmId?: string;
+    durationMs?: number;
+  }) => void;
 }
 
 interface SongRecord {
@@ -408,6 +415,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 title: s.title,
                                 artist: s.artist,
                                 id: s.spotify_id || s.ytm_id || s.id,
+                                spotifyId: s.spotify_id || undefined,
+                                ytmId: s.ytm_id || undefined,
+                                durationMs: s.duration_ms,
                               })
                             }
                             title="Edit lyrics in Studio"
@@ -507,6 +517,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 title: sub.title,
                                 artist: sub.artist,
                                 id: sub.spotify_id || sub.ytm_id || sub.id,
+                                spotifyId: sub.spotify_id || undefined,
+                                ytmId: sub.ytm_id || undefined,
+                                durationMs: sub.duration_ms,
                               })
                             }
                             title="Edit submission in Studio"

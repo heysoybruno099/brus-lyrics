@@ -784,5 +784,43 @@ describe('Search Autocomplete & Fallback Workflow', () => {
   });
 });
 
+describe('Sync Workstation & Real Artwork Resolution', () => {
+  it('resolves real YouTube Music cover art from ytmId and cleans video links', async () => {
+    const { resolveTrackArtwork } = await import('../../sync-studio/src/lib/spotify-service.js');
+
+    const art1 = resolveTrackArtwork({ ytmId: 'SuT4LVM2aMA' });
+    assert.equal(art1, 'https://i.ytimg.com/vi/SuT4LVM2aMA/hqdefault.jpg');
+
+    const art2 = resolveTrackArtwork({ ytmId: 'https://music.youtube.com/watch?v=fRIhCiUVaKs&feature=share' });
+    assert.equal(art2, 'https://i.ytimg.com/vi/fRIhCiUVaKs/hqdefault.jpg');
+
+    const art3 = resolveTrackArtwork({
+      artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+      ytmId: 'uj80VjraMQc',
+    });
+    assert.equal(art3, 'https://i.ytimg.com/vi/uj80VjraMQc/hqdefault.jpg');
+
+    const art4 = resolveTrackArtwork({
+      artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce',
+    });
+    assert.equal(art4, 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce');
+  });
+
+  it('multi-format file parser extracts metadata and computes duration from timestamps', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+
+    const lrc = `[00:05.00]First line
+[00:10.00]Second line
+[00:15.50]Third line`;
+
+    const parsed = parseMultiFormatLyrics(lrc, 'Soda Stereo - Cuando Pase El Temblor.lrc');
+    assert.equal(parsed.format, 'lrc');
+    assert.equal(parsed.lines.length, 3);
+    assert.equal(parsed.lines[0]?.begin, 5000);
+    assert.equal(parsed.lines[2]?.begin, 15500);
+  });
+});
+
+
 
 

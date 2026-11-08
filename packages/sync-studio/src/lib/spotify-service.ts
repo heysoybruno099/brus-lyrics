@@ -178,7 +178,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Forever and Ever, Amen',
     artist: 'Randy Travis',
     album: 'Always & Forever',
-    artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+    artworkUrl: 'https://i.ytimg.com/vi/SuT4LVM2aMA/hqdefault.jpg',
     durationMs: 212640,
     previewUrl: null,
     source: 'verified',
@@ -192,7 +192,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: '1865 (96º In The Shade)',
     artist: 'Third World',
     album: '96° in the Shade',
-    artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+    artworkUrl: 'https://i.ytimg.com/vi/HOb2fv_D2iY/hqdefault.jpg',
     durationMs: 267826,
     previewUrl: null,
     source: 'verified',
@@ -206,7 +206,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Rica y Apretadita',
     artist: 'El General, Anayka',
     album: 'Rica y Apretadita',
-    artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+    artworkUrl: 'https://i.ytimg.com/vi/VijlGdZxtAg/hqdefault.jpg',
     durationMs: 261866,
     previewUrl: null,
     source: 'verified',
@@ -220,7 +220,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'BbY WOW',
     artist: 'KAROL G',
     album: 'BbY WOW',
-    artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+    artworkUrl: 'https://i.ytimg.com/vi/fRIhCiUVaKs/hqdefault.jpg',
     durationMs: 225834,
     previewUrl: null,
     source: 'verified',
@@ -234,7 +234,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'El Paso del Gigante',
     artist: 'Grupo Soñador',
     album: 'El Gigante de Hierro',
-    artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+    artworkUrl: 'https://i.ytimg.com/vi/uj80VjraMQc/hqdefault.jpg',
     durationMs: 216950,
     previewUrl: null,
     source: 'verified',
@@ -248,7 +248,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Me Quedo',
     artist: 'Daddy Yankee',
     album: 'Legendaddy',
-    artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+    artworkUrl: 'https://i.ytimg.com/vi/O6b2KX0FOSo/hqdefault.jpg',
     durationMs: 72013,
     previewUrl: null,
     source: 'verified',
@@ -256,6 +256,20 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     contributor: 'Bru',
   },
 ];
+
+export function resolveTrackArtwork(item: { artworkUrl?: string | null; ytmId?: string | null; spotifyId?: string | null }): string {
+  if (item.artworkUrl && !item.artworkUrl.includes('unsplash.com')) {
+    return item.artworkUrl;
+  }
+  if (item.ytmId) {
+    const clean = item.ytmId.trim().replace(/^.*[?&]v=/, '').split('&')[0];
+    return `https://i.ytimg.com/vi/${clean}/hqdefault.jpg`;
+  }
+  if (item.spotifyId) {
+    return 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce';
+  }
+  return 'https://i.ytimg.com/vi/hqdefault.jpg';
+}
 
 let clientCredentialsToken: { token: string; expiresAt: number } | null = null;
 
@@ -322,7 +336,11 @@ export async function searchSongs(
         title: t.title,
         artist: t.artist,
         album: t.album,
-        artworkUrl: t.artworkUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+        artworkUrl: resolveTrackArtwork({
+          artworkUrl: t.artworkUrl,
+          ytmId: t.ytmId,
+          spotifyId: t.id,
+        }),
         durationMs: t.durationMs,
         previewUrl: t.previewUrl,
         source: 'spotify',
@@ -350,9 +368,10 @@ export async function searchSongs(
             title: t.name,
             artist: t.artists.map((a: any) => a.name).join(', '),
             album: t.album?.name || '',
-            artworkUrl:
-              t.album?.images?.[0]?.url ||
-              'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+            artworkUrl: resolveTrackArtwork({
+              artworkUrl: t.album?.images?.[0]?.url,
+              spotifyId: t.id,
+            }),
             durationMs: t.duration_ms,
             previewUrl: t.preview_url,
             source: 'spotify',
@@ -381,7 +400,10 @@ export async function searchSongs(
           title: l.trackName || l.name,
           artist: l.artistName,
           album: l.albumName || '',
-          artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
+          artworkUrl: resolveTrackArtwork({
+            artworkUrl: null,
+            spotifyId: null,
+          }),
           durationMs: (l.duration || 180) * 1000,
           previewUrl: null,
           source: 'lrclib',
