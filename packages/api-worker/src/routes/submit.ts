@@ -56,10 +56,14 @@ submitRoute.post('/submit', async (c) => {
     );
   }
 
+  const effectiveTarget = body.platformTarget || metadata.platformTarget || 'both';
+  const effectiveSpotifyId = effectiveTarget === 'ytm' ? null : metadata.spotifyId || null;
+  const effectiveYtmId = effectiveTarget === 'spotify' ? null : metadata.ytmId || null;
+
   // Determine file identifier
   const songIdentifier =
-    metadata.spotifyId?.trim() ||
-    metadata.ytmId?.trim() ||
+    effectiveSpotifyId?.trim() ||
+    effectiveYtmId?.trim() ||
     generateSongSlug(metadata.title, metadata.artist);
 
   const filePath = `database/ttml/${songIdentifier}.ttml`;
@@ -77,8 +81,8 @@ submitRoute.post('/submit', async (c) => {
     // 2. Queue or record in D1 if available
     await queueSubmission(c.env, {
       id: songId,
-      spotify_id: metadata.spotifyId || null,
-      ytm_id: metadata.ytmId || null,
+      spotify_id: effectiveSpotifyId,
+      ytm_id: effectiveYtmId,
       isrc: metadata.isrc || null,
       title: metadata.title.trim(),
       artist: metadata.artist.trim(),

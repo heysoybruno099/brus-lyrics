@@ -698,11 +698,13 @@ export const App: React.FC = () => {
         artist: studioMetadata.artist || 'Unknown Artist',
         album: studioMetadata.album || null,
         durationMs: duration,
-        spotifyId: studioMetadata.spotifyId || null,
-        ytmId: studioMetadata.ytmId || null,
+        spotifyId: (studioMetadata.platformTarget === 'ytm' ? null : studioMetadata.spotifyId) || null,
+        ytmId: (studioMetadata.platformTarget === 'spotify' ? null : studioMetadata.ytmId) || null,
         isrc: studioMetadata.isrc || null,
         contributor: effectiveContributor,
+        platformTarget: studioMetadata.platformTarget || 'both',
       },
+      platformTarget: studioMetadata.platformTarget || 'both',
       ttmlRaw: xml,
       contributor: effectiveContributor,
     };
@@ -1172,7 +1174,25 @@ export const App: React.FC = () => {
               rel="noopener noreferrer"
               style={{ color: '#4ade80', textDecoration: 'underline' }}
             >
-              Privacy Policy (heysoybruno09)
+              Privacy Policy
+            </a>
+            <span style={{ color: '#52525b' }}>•</span>
+            <a
+              href="https://github.com/heysoybruno099/brus-lyrics"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#a1a1aa', textDecoration: 'underline' }}
+            >
+              Extension Downloads (GitHub)
+            </a>
+            <span style={{ color: '#52525b' }}>•</span>
+            <a
+              href="https://discord.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#a1a1aa', textDecoration: 'underline' }}
+            >
+              Discord Community
             </a>
             <span style={{ color: '#52525b' }}>•</span>
             <button

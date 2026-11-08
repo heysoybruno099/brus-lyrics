@@ -226,6 +226,36 @@
       "contributor": "Bru",
       "updated_at": "2026-11-07T23:50:04.907Z",
       "is_verified": 1
+    },
+    {
+      "id": "song_5wjiZSbxaLyLpGimpwqh1H",
+      "spotify_id": "5wjiZSbxaLyLpGimpwqh1H",
+      "ytm_id": "O1zfuBgCUqY",
+      "isrc": "ARF048800040",
+      "title": "En la Ciudad de la Furia",
+      "artist": "Soda Stereo",
+      "title_norm": "en la ciudad de la furia",
+      "artist_norm": "soda stereo",
+      "duration_ms": 345533,
+      "file_path": "database/ttml/5wjiZSbxaLyLpGimpwqh1H.ttml",
+      "contributor": "Bru",
+      "updated_at": "2026-11-08T20:00:00.000Z",
+      "is_verified": 1
+    },
+    {
+      "id": "song_3uMYq07Kj5m564OQwdSCrD",
+      "spotify_id": "3uMYq07Kj5m564OQwdSCrD",
+      "ytm_id": "oxkyfZAHVI4",
+      "isrc": "ARF048500020",
+      "title": "Cuando Pase El Temblor",
+      "artist": "Soda Stereo",
+      "title_norm": "cuando pase el temblor",
+      "artist_norm": "soda stereo",
+      "duration_ms": 229160,
+      "file_path": "database/ttml/3uMYq07Kj5m564OQwdSCrD.ttml",
+      "contributor": "Bru",
+      "updated_at": "2026-11-08T20:10:00.000Z",
+      "is_verified": 1
     }
   ]
 }

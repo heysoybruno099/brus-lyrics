@@ -333,3 +333,60 @@ ON CONFLICT(id) DO UPDATE SET
   file_path=excluded.file_path,
   contributor=excluded.contributor,
   updated_at=excluded.updated_at;
+
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+VALUES (
+  'song_5wjiZSbxaLyLpGimpwqh1H',
+  '5wjiZSbxaLyLpGimpwqh1H',
+  'O1zfuBgCUqY',
+  'ARF048800040',
+  'En la Ciudad de la Furia',
+  'Soda Stereo',
+  'en la ciudad de la furia',
+  'soda stereo',
+  345533,
+  'database/ttml/5wjiZSbxaLyLpGimpwqh1H.ttml',
+  'Bru',
+  '2026-11-08T20:00:00.000Z'
+)
+ON CONFLICT(id) DO UPDATE SET
+  spotify_id=excluded.spotify_id,
+  ytm_id=excluded.ytm_id,
+  isrc=excluded.isrc,
+  title=excluded.title,
+  artist=excluded.artist,
+  title_norm=excluded.title_norm,
+  artist_norm=excluded.artist_norm,
+  duration_ms=excluded.duration_ms,
+  file_path=excluded.file_path,
+  contributor=excluded.contributor,
+  updated_at=excluded.updated_at;
+
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+VALUES (
+  'song_3uMYq07Kj5m564OQwdSCrD',
+  '3uMYq07Kj5m564OQwdSCrD',
+  'oxkyfZAHVI4',
+  'ARF048500020',
+  'Cuando Pase El Temblor',
+  'Soda Stereo',
+  'cuando pase el temblor',
+  'soda stereo',
+  229160,
+  'database/ttml/3uMYq07Kj5m564OQwdSCrD.ttml',
+  'Bru',
+  '2026-11-08T20:10:00.000Z'
+)
+ON CONFLICT(id) DO UPDATE SET
+  spotify_id=excluded.spotify_id,
+  ytm_id=excluded.ytm_id,
+  isrc=excluded.isrc,
+  title=excluded.title,
+  artist=excluded.artist,
+  title_norm=excluded.title_norm,
+  artist_norm=excluded.artist_norm,
+  duration_ms=excluded.duration_ms,
+  file_path=excluded.file_path,
+  contributor=excluded.contributor,
+  updated_at=excluded.updated_at;
+

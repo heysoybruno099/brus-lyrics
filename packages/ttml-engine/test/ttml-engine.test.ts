@@ -278,6 +278,139 @@ describe('Multi-Format Lyrics Parser (TTML, LRC, JSON)', () => {
     assert.equal(res.lines[0]?.syllables.length, 2);
   });
 
+  it('parses real-world lyrics tool JSON with lyrics.Content, millisecond timing, and zero-width spaces', async () => {
+    const { parseJsonLyrics, jsonToTTML } = await import('../src/json-parser.js');
+
+    const realWorldPayload = {
+      version: 1,
+      trackId: '5wjiZSbxaLyLpGimpwqh1H',
+      trackUri: 'spotify:track:5wjiZSbxaLyLpGimpwqh1H',
+      title: 'En la Ciudad de la Furia',
+      artist: 'Soda Stereo',
+      durationMs: 345533,
+      lyrics: {
+        Content: [
+          {
+            Type: 'Vocal',
+            Lead: {
+              StartTime: 41963,
+              EndTime: 44410,
+              Syllables: [
+                { Text: 'Me', StartTime: 41963, EndTime: 42158, IsPartOfWord: false },
+                { Text: '\u200bverás', StartTime: 42158, EndTime: 42390, IsPartOfWord: false },
+                { Text: '\u200bvolar', StartTime: 42390, EndTime: 44410, IsPartOfWord: false },
+              ],
+            },
+          },
+          {
+            Type: 'Vocal',
+            Lead: {
+              StartTime: 44572,
+              EndTime: 46571,
+              Syllables: [
+                { Text: 'Por', StartTime: 44572, EndTime: 44804, IsPartOfWord: false },
+                { Text: '\u200bla', StartTime: 44804, EndTime: 44984, IsPartOfWord: false },
+                { Text: '\u200bciudad', StartTime: 44984, EndTime: 45157, IsPartOfWord: false },
+                { Text: '\u200bde', StartTime: 45157, EndTime: 45624, IsPartOfWord: false },
+                { Text: '\u200bla', StartTime: 45624, EndTime: 45796, IsPartOfWord: false },
+                { Text: '\u200bfuria', StartTime: 45796, EndTime: 46571, IsPartOfWord: false },
+              ],
+            },
+          },
+        ],
+      },
+    };
+
+    const parsed = parseJsonLyrics(realWorldPayload);
+    assert.equal(parsed.metadata.title, 'En la Ciudad de la Furia');
+    assert.equal(parsed.metadata.artist, 'Soda Stereo');
+    assert.equal(parsed.metadata.spotifyId, '5wjiZSbxaLyLpGimpwqh1H');
+    assert.equal(parsed.metadata.durationMs, 345533);
+    assert.equal(parsed.lines.length, 2);
+
+    // Verify zero-width space is thoroughly sanitized
+    const line1 = parsed.lines[0]!;
+    assert.equal(line1.begin, 41963);
+    assert.equal(line1.end, 44410);
+    assert.equal(line1.text, 'Me verás volar');
+    assert.equal(line1.syllables.length, 3);
+    assert.equal(line1.syllables[1]!.text, 'verás ');
+    assert.ok(!line1.syllables[1]!.text.includes('\u200b'));
+    assert.equal(line1.syllables[2]!.text, 'volar ');
+    assert.ok(!line1.syllables[2]!.text.includes('\u200b'));
+
+    // Verify conversion to Apple Music TTML
+    const ttmlXml = jsonToTTML(realWorldPayload, { contributor: 'Bru' });
+    assert.ok(ttmlXml.includes('<ttm:title>En la Ciudad de la Furia</ttm:title>'));
+    assert.ok(ttmlXml.includes('<itunes:spotifyId>5wjiZSbxaLyLpGimpwqh1H</itunes:spotifyId>'));
+    assert.ok(ttmlXml.includes('<span begin="00:00:41.963" end="00:00:42.158">Me </span>'));
+    assert.ok(ttmlXml.includes('<span begin="00:00:42.158" end="00:00:42.390">verás </span>'));
+    assert.ok(!ttmlXml.includes('\u200b'));
+  });
+
+  it('parses background vocal spans from Background array and draft.lines with x-bg role', async () => {
+    const { parseJsonLyrics, jsonToTTML } = await import('../src/json-parser.js');
+
+    const temblorPayload = {
+      version: 1,
+      trackId: '3uMYq07Kj5m564OQwdSCrD',
+      title: 'Cuando Pase El Temblor',
+      artist: 'Soda Stereo',
+      durationMs: 229160,
+      lyrics: {
+        Content: [
+          {
+            Type: 'Vocal',
+            Lead: {
+              StartTime: 49616,
+              EndTime: 58019,
+              Syllables: [
+                { Text: 'A', StartTime: 49616, EndTime: 49965, IsPartOfWord: false },
+                { Text: 'veces', StartTime: 49965, EndTime: 50882, IsPartOfWord: false },
+                { Text: 'ver', StartTime: 50882, EndTime: 51171, IsPartOfWord: false },
+                { Text: 'gü', StartTime: 51171, EndTime: 51521, IsPartOfWord: true },
+                { Text: 'en', StartTime: 51521, EndTime: 51998, IsPartOfWord: true },
+                { Text: 'za', StartTime: 51998, EndTime: 58019, IsPartOfWord: false },
+              ],
+            },
+            Background: [
+              {
+                StartTime: 53509,
+                EndTime: 58019,
+                Syllables: [
+                  { Text: 'Oh-', StartTime: 53509, EndTime: 54947, IsPartOfWord: false },
+                  { Text: 'oh', StartTime: 54947, EndTime: 58019, IsPartOfWord: false },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const parsed = parseJsonLyrics(temblorPayload);
+    assert.equal(parsed.lines.length, 1);
+    const line = parsed.lines[0]!;
+    assert.ok(line.backgroundVocals);
+    assert.equal(line.backgroundVocals.length, 1);
+
+    const bg = line.backgroundVocals[0]!;
+    assert.equal(bg.role, 'x-bg');
+    assert.equal(bg.begin, 53509);
+    assert.equal(bg.end, 58019);
+    assert.equal(bg.text, 'Oh- oh');
+    assert.equal(bg.syllables.length, 2);
+    assert.equal(bg.syllables[0]!.text, 'Oh- ');
+    assert.equal(bg.syllables[1]!.text, 'oh ');
+
+    // Verify TTML XML emission has nested background span with ttm:role="x-bg"
+    const xml = jsonToTTML(temblorPayload, { contributor: 'Bru', ytmId: 'oxkyfZAHVI4' });
+    assert.ok(xml.includes('ttm:role="x-bg"'));
+    assert.ok(xml.includes('<span begin="00:00:53.509" end="00:00:58.019" ttm:role="x-bg">'));
+    assert.ok(xml.includes('<span begin="00:00:53.509" end="00:00:54.947">Oh- </span>'));
+    assert.ok(xml.includes('<span begin="00:00:54.947" end="00:00:58.019">oh </span>'));
+  });
+
   it('parses TTML XML format into synchronized matrix lines', async () => {
     const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
     const xml = `<?xml version="1.0" encoding="utf-8"?>

@@ -194,6 +194,13 @@ export function parseTTML(rawXml: string): TTMLDocument {
     extractTagValue(rawXml, 'contributor');
   if (contributor) metadata.contributor = decodeXmlEntities(contributor);
 
+  const platformTarget =
+    extractTagValue(rawXml, 'itunes:platformTarget') ||
+    extractTagValue(rawXml, 'platformTarget');
+  if (platformTarget && (platformTarget === 'both' || platformTarget === 'spotify' || platformTarget === 'ytm')) {
+    metadata.platformTarget = platformTarget as 'both' | 'spotify' | 'ytm';
+  }
+
   const lines: TTMLLine[] = [];
 
   // Match all <p ...>...</p> tags

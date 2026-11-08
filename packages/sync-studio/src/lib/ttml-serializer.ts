@@ -28,6 +28,7 @@ export function serializeStudioToTTML(
   const spotifyId = metadata.spotifyId ? `\n      <itunes:spotifyId>${escapeXml(metadata.spotifyId)}</itunes:spotifyId>` : '';
   const ytmId = metadata.ytmId ? `\n      <itunes:youtubeId>${escapeXml(metadata.ytmId)}</itunes:youtubeId>` : '';
   const isrc = metadata.isrc ? `\n      <itunes:isrc>${escapeXml(metadata.isrc)}</itunes:isrc>` : '';
+  const platformTarget = metadata.platformTarget ? `\n      <itunes:platformTarget>${escapeXml(metadata.platformTarget)}</itunes:platformTarget>` : '';
   const contributor = escapeXml(metadata.contributor || 'community');
 
   const linesXml = lines
@@ -83,7 +84,7 @@ export function serializeStudioToTTML(
   <head>
     <metadata>
       <ttm:title>${title}</ttm:title>
-      <ttm:agent>${artist}</ttm:agent>${album}${spotifyId}${ytmId}${isrc}
+      <ttm:agent>${artist}</ttm:agent>${album}${spotifyId}${ytmId}${isrc}${platformTarget}
       <itunes:duration>${durStr}</itunes:duration>
       <itunes:contributor>${contributor}</itunes:contributor>
     </metadata>

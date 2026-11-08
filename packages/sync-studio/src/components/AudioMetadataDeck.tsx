@@ -1,5 +1,7 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { cleanTrackId, formatTimestampTTML, type TTMLMetadata } from '@brus-lyrics/shared-types';
+import { VERIFIED_FEATURED_TRACKS } from '../lib/spotify-service.js';
+import { getApiBaseUrl } from '../lib/config.js';
 
 interface AudioMetadataDeckProps {
   metadata: TTMLMetadata;
@@ -13,6 +15,17 @@ interface AudioMetadataDeckProps {
   playbackRate: number;
   onChangePlaybackRate: (rate: number) => void;
   onAudioLoaded: (file: File, durationMs: number) => void;
+}
+
+interface IdSuggestion {
+  id: string;
+  title: string;
+  artist: string;
+  spotifyId?: string | null;
+  ytmId?: string | null;
+  durationMs?: number;
+  album?: string;
+  source: 'catalog' | 'spotify';
 }
 
 export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
@@ -31,6 +44,11 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
   const [waveformPeaks, setWaveformPeaks] = useState<number[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic ID Lookup State
+  const [suggestions, setSuggestions] = useState<IdSuggestion[]>([]);
+  const [isSearchingIds, setIsSearchingIds] = useState<boolean>(false);
+  const [hasDismissedSuggestions, setHasDismissedSuggestions] = useState<boolean>(false);
 
   const handleFileDrop = async (file: File) => {
     if (!file) return;
@@ -109,6 +127,109 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
     const ratio = Math.max(0, Math.min(1, clickX / rect.width));
     onSeek(Math.round(ratio * durationMs));
   };
+
+  // Automatic Dynamic ID Lookup based on Track Title and Artist Name
+  useEffect(() => {
+    const title = (metadata.title || '').trim();
+    const artist = (metadata.artist || '').trim();
+
+    if (title.length < 2 && artist.length < 2) {
+      setSuggestions([]);
+      setIsSearchingIds(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingIds(true);
+      const query = `${title} ${artist}`.trim().toLowerCase();
+      const results: IdSuggestion[] = [];
+      const seenKeys = new Set<string>();
+
+      // 1. Search verified catalog songs first (gives both spotifyId & ytmId)
+      const catalogMatches = VERIFIED_FEATURED_TRACKS.filter((t) => {
+        const tTitle = t.title.toLowerCase();
+        const tArtist = t.artist.toLowerCase();
+        return (
+          (title.length >= 2 && tTitle.includes(title.toLowerCase())) ||
+          (artist.length >= 2 && tArtist.includes(artist.toLowerCase())) ||
+          tTitle.includes(query) ||
+          tArtist.includes(query)
+        );
+      });
+
+      for (const m of catalogMatches.slice(0, 4)) {
+        const key = `${m.title}::${m.artist}`;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          results.push({
+            id: m.id,
+            title: m.title,
+            artist: m.artist,
+            spotifyId: m.spotifyId,
+            ytmId: m.ytmId,
+            durationMs: m.durationMs,
+            album: m.album,
+            source: 'catalog',
+          });
+        }
+      }
+
+      // 2. Query API Worker Spotify Search for live Spotify Track IDs
+      try {
+        const apiBase = getApiBaseUrl().replace(/\/+$/, '');
+        const res = await fetch(`${apiBase}/v1/spotify/search?q=${encodeURIComponent(query)}&limit=4`);
+        if (res.ok) {
+          const data = (await res.json()) as any;
+          for (const item of data.tracks || []) {
+            const key = `${item.title}::${item.artist}`;
+            if (!seenKeys.has(key)) {
+              seenKeys.add(key);
+              results.push({
+                id: `spot_${item.id}`,
+                title: item.title,
+                artist: item.artist,
+                spotifyId: item.id,
+                ytmId: null,
+                durationMs: item.durationMs,
+                album: item.album,
+                source: 'spotify',
+              });
+            }
+          }
+        }
+      } catch {
+        // Network fallback
+      }
+
+      setSuggestions(results.slice(0, 5));
+      setIsSearchingIds(false);
+      setHasDismissedSuggestions(false);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [metadata.title, metadata.artist]);
+
+  const handleApplySuggestion = (s: IdSuggestion) => {
+    onChangeMetadata({
+      title: s.title,
+      artist: s.artist,
+      ...(s.spotifyId ? { spotifyId: s.spotifyId } : {}),
+      ...(s.ytmId ? { ytmId: s.ytmId } : {}),
+      ...(s.durationMs ? { durationMs: s.durationMs } : {}),
+      ...(s.album ? { album: s.album } : {}),
+    });
+    setHasDismissedSuggestions(true);
+  };
+
+  const handleApplySpotifyId = (spotifyId: string) => {
+    onChangeMetadata({ spotifyId: cleanTrackId(spotifyId) });
+  };
+
+  const handleApplyYtmId = (ytmId: string) => {
+    onChangeMetadata({ ytmId: cleanTrackId(ytmId) });
+  };
+
+  const platformTarget = metadata.platformTarget || 'both';
 
   return (
     <div className="deck-pane" style={{ width: 280 }}>
@@ -229,25 +350,180 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
             />
           </div>
 
+          {/* Platform Target Selector */}
           <div className="form-field">
-            <label className="form-label">Spotify Track ID / Link</label>
-            <input
-              className="text-input"
-              value={metadata.spotifyId || ''}
-              onChange={(e) => onChangeMetadata({ spotifyId: cleanTrackId(e.target.value) })}
-              placeholder="3qhlB30KknSeipLHZaYeKc"
-            />
+            <label className="form-label">Platform Target</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['both', 'spotify', 'ytm'] as const).map((plat) => {
+                const active = platformTarget === plat;
+                const label = plat === 'both' ? 'Both' : plat === 'spotify' ? 'Spotify' : 'YouTube';
+                return (
+                  <button
+                    key={plat}
+                    type="button"
+                    className={`btn ${active ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ flex: 1, padding: '5px 4px', fontSize: 10, fontWeight: 600 }}
+                    onClick={() => onChangeMetadata({ platformTarget: plat })}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 10, color: '#71717a', marginTop: 4, lineHeight: 1.4 }}>
+              {platformTarget === 'both' && 'Synchronized for both Spotify and YouTube tracks.'}
+              {platformTarget === 'spotify' && 'Targeted for Spotify timing (audio edits differ on YouTube).'}
+              {platformTarget === 'ytm' && 'Targeted for YouTube Music timing (audio edits differ on Spotify).'}
+            </div>
           </div>
 
-          <div className="form-field">
-            <label className="form-label">YouTube Video ID / Link</label>
-            <input
-              className="text-input"
-              value={metadata.ytmId || ''}
-              onChange={(e) => onChangeMetadata({ ytmId: cleanTrackId(e.target.value) })}
-              placeholder="lZIA_sVvj5Y"
-            />
-          </div>
+          {/* Dynamic Track ID Suggestions */}
+          {suggestions.length > 0 && !hasDismissedSuggestions && (
+            <div
+              style={{
+                backgroundColor: '#121217',
+                border: '1px solid #27272f',
+                borderRadius: 6,
+                padding: '10px 10px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#e4e4e7' }}>
+                  Suggested IDs ({suggestions.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setHasDismissedSuggestions(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#71717a',
+                    fontSize: 10,
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {suggestions.map((s) => (
+                  <div
+                    key={s.id}
+                    style={{
+                      padding: '7px 8px',
+                      backgroundColor: '#18181f',
+                      border: '1px solid #27272f',
+                      borderRadius: 4,
+                      fontSize: 11,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                    }}
+                  >
+                    <div
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleApplySuggestion(s)}
+                      title="Click to populate all track metadata"
+                    >
+                      <div style={{ fontWeight: 600, color: '#f4f4f6', lineHeight: 1.2 }}>
+                        {s.title}
+                      </div>
+                      <div style={{ fontSize: 10, color: '#a1a1aa' }}>
+                        {s.artist}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
+                      {s.spotifyId && (
+                        <button
+                          type="button"
+                          onClick={() => handleApplySpotifyId(s.spotifyId!)}
+                          title="Click to populate Spotify ID"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            padding: '2px 6px',
+                            backgroundColor: '#1db95420',
+                            border: '1px solid #1db95440',
+                            borderRadius: 3,
+                            color: '#1db954',
+                            fontSize: 9,
+                            fontFamily: 'var(--font-mono)',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span>Spotify: {s.spotifyId.slice(0, 8)}...</span>
+                        </button>
+                      )}
+
+                      {s.ytmId && (
+                        <button
+                          type="button"
+                          onClick={() => handleApplyYtmId(s.ytmId!)}
+                          title="Click to populate YouTube ID"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            padding: '2px 6px',
+                            backgroundColor: '#ff000020',
+                            border: '1px solid #ff000040',
+                            borderRadius: 3,
+                            color: '#f87171',
+                            fontSize: 9,
+                            fontFamily: 'var(--font-mono)',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span>YTM: {s.ytmId}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isSearchingIds && (
+            <div style={{ fontSize: 10, color: '#71717a', fontStyle: 'italic' }}>
+              Searching Spotify and verified catalog for track IDs...
+            </div>
+          )}
+
+          {/* Spotify ID Field */}
+          {platformTarget !== 'ytm' && (
+            <div className="form-field">
+              <label className="form-label">Spotify Track ID / Link</label>
+              <input
+                className="text-input"
+                value={metadata.spotifyId || ''}
+                onChange={(e) => onChangeMetadata({ spotifyId: cleanTrackId(e.target.value) })}
+                placeholder="3qhlB30KknSeipLHZaYeKc"
+              />
+            </div>
+          )}
+
+          {/* YouTube Video ID Field */}
+          {platformTarget !== 'spotify' && (
+            <div className="form-field">
+              <label className="form-label">YouTube Video ID / Link</label>
+              <input
+                className="text-input"
+                value={metadata.ytmId || ''}
+                onChange={(e) => onChangeMetadata({ ytmId: cleanTrackId(e.target.value) })}
+                placeholder="lZIA_sVvj5Y"
+              />
+            </div>
+          )}
 
           <div className="form-field">
             <label className="form-label">Contributor Name</label>

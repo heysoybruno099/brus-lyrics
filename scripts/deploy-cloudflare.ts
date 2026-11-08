@@ -100,10 +100,23 @@ if (fs.existsSync(catalogPath)) {
           const filePath = (s.file_path || '').replace(/'/g, "''");
           const contributor = (s.contributor || 'community').replace(/'/g, "''");
           const updatedAt = (s.updated_at || new Date().toISOString()).replace(/'/g, "''");
+          const isVerified = s.is_verified ?? 1;
 
-          return `INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
-VALUES ('${id}', ${spId}, ${ytmId}, ${isrc}, '${title}', '${artist}', '${titleNorm}', '${artistNorm}', ${durMs}, '${filePath}', '${contributor}', '${updatedAt}')
-ON CONFLICT(id) DO UPDATE SET updated_at = excluded.updated_at;`;
+          return `INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at, is_verified)
+VALUES ('${id}', ${spId}, ${ytmId}, ${isrc}, '${title}', '${artist}', '${titleNorm}', '${artistNorm}', ${durMs}, '${filePath}', '${contributor}', '${updatedAt}', ${isVerified})
+ON CONFLICT(id) DO UPDATE SET
+  spotify_id=excluded.spotify_id,
+  ytm_id=excluded.ytm_id,
+  isrc=excluded.isrc,
+  title=excluded.title,
+  artist=excluded.artist,
+  title_norm=excluded.title_norm,
+  artist_norm=excluded.artist_norm,
+  duration_ms=excluded.duration_ms,
+  file_path=excluded.file_path,
+  contributor=excluded.contributor,
+  updated_at=excluded.updated_at,
+  is_verified=excluded.is_verified;`;
         })
         .join('\n');
 

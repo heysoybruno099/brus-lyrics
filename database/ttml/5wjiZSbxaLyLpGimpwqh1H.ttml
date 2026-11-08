@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-extensions"
+    xml:lang="es">
+  <head>
+    <metadata>
+      <ttm:title>En la Ciudad de la Furia</ttm:title>
+      <ttm:agent>Soda Stereo</ttm:agent>
+      <itunes:spotifyId>5wjiZSbxaLyLpGimpwqh1H</itunes:spotifyId>
+      <itunes:youtubeId>O1zfuBgCUqY</itunes:youtubeId>
+      <itunes:duration>00:05:45.533</itunes:duration>
+      <itunes:contributor>Bru</itunes:contributor>
+    </metadata>
+  </head>
+  <body dur="00:05:45.533">
+    <div>
+      <p begin="00:00:41.963" end="00:00:44.410" ttm:agent="v1">
+        <span begin="00:00:41.963" end="00:00:42.158">Me </span>
+        <span begin="00:00:42.158" end="00:00:42.390">verás </span>
+        <span begin="00:00:42.390" end="00:00:44.410">volar </span>
+      </p>
+      <p begin="00:00:44.572" end="00:00:46.571" ttm:agent="v1">
+        <span begin="00:00:44.572" end="00:00:44.804">Por </span>
+        <span begin="00:00:44.804" end="00:00:44.984">la </span>
+        <span begin="00:00:44.984" end="00:00:45.157">ciudad </span>
+        <span begin="00:00:45.157" end="00:00:45.624">de </span>
+        <span begin="00:00:45.624" end="00:00:45.796">la </span>
+        <span begin="00:00:45.796" end="00:00:46.571">furia </span>
+      </p>
+      <p begin="00:00:50.453" end="00:00:52.364" ttm:agent="v1">
+        <span begin="00:00:50.453" end="00:00:50.660">Donde </span>
+        <span begin="00:00:50.660" end="00:00:50.973">nadie </span>
+        <span begin="00:00:50.973" end="00:00:51.394">sabe </span>
+        <span begin="00:00:51.394" end="00:00:51.877">de </span>
+        <span begin="00:00:51.877" end="00:00:52.364">mí </span>
+      </p>
+      <p begin="00:00:53.841" end="00:00:56.359" ttm:agent="v1">
+        <span begin="00:00:53.841" end="00:00:54.332">Y </span>
+        <span begin="00:00:54.332" end="00:00:54.991">yo </span>
+        <span begin="00:00:54.991" end="00:00:55.443">soy </span>
+        <span begin="00:00:55.443" end="00:00:55.711">parte </span>
+        <span begin="00:00:55.711" end="00:00:55.997">de </span>
+        <span begin="00:00:55.997" end="00:00:56.359">todos </span>
+      </p>
+      <p begin="00:00:56.941" end="00:00:57.818" ttm:agent="v1">
+        <span begin="00:00:56.941" end="00:00:57.195">Nada </span>
+        <span begin="00:00:57.195" end="00:00:57.818">cambiará </span>
+      </p>
+      <p begin="00:00:59.836" end="00:01:01.491" ttm:agent="v1">
+        <span begin="00:00:59.836" end="00:01:00.025">Con </span>
+        <span begin="00:01:00.025" end="00:01:00.220">un </span>
+        <span begin="00:01:00.220" end="00:01:00.612">aviso </span>
+        <span begin="00:01:00.612" end="00:01:00.915">de </span>
+        <span begin="00:01:00.915" end="00:01:01.491">curva </span>
+      </p>
+      <p begin="00:01:05.663" end="00:01:07.698" ttm:agent="v1">
+        <span begin="00:01:05.663" end="00:01:05.860">En </span>
+        <span begin="00:01:05.860" end="00:01:06.022">sus </span>
+        <span begin="00:01:06.022" end="00:01:06.223">caras </span>
+        <span begin="00:01:06.223" end="00:01:06.708">veo </span>
+        <span begin="00:01:06.708" end="00:01:07.148">el </span>
+        <span begin="00:01:07.148" end="00:01:07.698">temor </span>
+      </p>
+      <p begin="00:01:09.139" end="00:01:10.253" ttm:agent="v1">
+        <span begin="00:01:09.139" end="00:01:09.343">Ya </span>
+        <span begin="00:01:09.343" end="00:01:09.520">no </span>
+        <span begin="00:01:09.520" end="00:01:09.927">hay </span>
+        <span begin="00:01:09.927" end="00:01:10.253">fábulas </span>
+      </p>
+      <p begin="00:01:10.985" end="00:01:13.489" ttm:agent="v1">
+        <span begin="00:01:10.985" end="00:01:11.175">En </span>
+        <span begin="00:01:11.175" end="00:01:11.396">la </span>
+        <span begin="00:01:11.396" end="00:01:11.749">ciudad </span>
+        <span begin="00:01:11.749" end="00:01:12.009">de </span>
+        <span begin="00:01:12.009" end="00:01:12.445">la </span>
+        <span begin="00:01:12.445" end="00:01:13.489">furia </span>
+      </p>
+      <p begin="00:01:27.120" end="00:01:28.615" ttm:agent="v1">
+        <span begin="00:01:27.120" end="00:01:27.428">Me </span>
+        <span begin="00:01:27.428" end="00:01:27.623">verás </span>
+        <span begin="00:01:27.623" end="00:01:28.615">caer </span>
+      </p>
+      <p begin="00:01:30.194" end="00:01:32.103" ttm:agent="v1">
+        <span begin="00:01:30.194" end="00:01:30.386">Como </span>
+        <span begin="00:01:30.386" end="00:01:30.656">un </span>
+        <span begin="00:01:30.656" end="00:01:31.144">ave </span>
+        <span begin="00:01:31.144" end="00:01:31.369">de </span>
+        <span begin="00:01:31.369" end="00:01:32.103">presa </span>
+      </p>
+      <p begin="00:01:34.866" end="00:01:36.758" ttm:agent="v1">
+        <span begin="00:01:34.866" end="00:01:35.049">Me </span>
+        <span begin="00:01:35.049" end="00:01:35.943">verás </span>
+        <span begin="00:01:35.943" end="00:01:36.758">caer </span>
+      </p>
+      <p begin="00:01:37.556" end="00:01:38.775" ttm:agent="v1">
+        <span begin="00:01:37.556" end="00:01:37.814">Sobre </span>
+        <span begin="00:01:37.814" end="00:01:37.977">terrazas </span>
+        <span begin="00:01:37.977" end="00:01:38.775">desiertas </span>
+      </p>
+      <p begin="00:01:42.388" end="00:01:43.365" ttm:agent="v1">
+        <span begin="00:01:42.388" end="00:01:42.980">Te </span>
+        <span begin="00:01:42.980" end="00:01:43.365">desnudaré </span>
+      </p>
+      <p begin="00:01:45.379" end="00:01:47.004" ttm:agent="v1">
+        <span begin="00:01:45.379" end="00:01:45.665">Por </span>
+        <span begin="00:01:45.665" end="00:01:45.990">las </span>
+        <span begin="00:01:45.990" end="00:01:46.559">calles </span>
+        <span begin="00:01:46.559" end="00:01:47.004">azules </span>
+      </p>
+      <p begin="00:01:50.328" end="00:01:50.878" ttm:agent="v1">
+        <span begin="00:01:50.328" end="00:01:50.524">Me </span>
+        <span begin="00:01:50.524" end="00:01:50.878">refugiaré </span>
+      </p>
+      <p begin="00:01:52.720" end="00:01:54.568" ttm:agent="v1">
+        <span begin="00:01:52.720" end="00:01:53.028">Antes </span>
+        <span begin="00:01:53.028" end="00:01:53.227">que </span>
+        <span begin="00:01:53.227" end="00:01:53.958">todos </span>
+        <span begin="00:01:53.958" end="00:01:54.568">despierten </span>
+      </p>
+      <p begin="00:01:59.146" end="00:02:02.351" ttm:agent="v1">
+        <span begin="00:01:59.146" end="00:01:59.512">Me </span>
+        <span begin="00:01:59.512" end="00:02:00.573">dejarás </span>
+        <span begin="00:02:00.573" end="00:02:01.402">dormir </span>
+        <span begin="00:02:01.402" end="00:02:01.748">al </span>
+        <span begin="00:02:01.748" end="00:02:02.351">amanecer </span>
+      </p>
+      <p begin="00:02:04.877" end="00:02:06.989" ttm:agent="v1">
+        <span begin="00:02:04.877" end="00:02:05.248">Entre </span>
+        <span begin="00:02:05.248" end="00:02:05.803">tus </span>
+        <span begin="00:02:05.803" end="00:02:06.989">piernas </span>
+      </p>
+      <p begin="00:02:08.490" end="00:02:10.559" ttm:agent="v1">
+        <span begin="00:02:08.490" end="00:02:08.882">Entre </span>
+        <span begin="00:02:08.882" end="00:02:09.594">tus </span>
+        <span begin="00:02:09.594" end="00:02:10.559">piernas </span>
+      </p>
+      <p begin="00:02:14.047" end="00:02:16.920" ttm:agent="v1">
+        <span begin="00:02:14.047" end="00:02:14.357">Sabrás </span>
+        <span begin="00:02:14.357" end="00:02:14.903">ocultarme </span>
+        <span begin="00:02:14.903" end="00:02:15.330">bien </span>
+        <span begin="00:02:15.330" end="00:02:16.384">y </span>
+        <span begin="00:02:16.384" end="00:02:16.920">desaparecer </span>
+      </p>
+      <p begin="00:02:20.100" end="00:02:21.717" ttm:agent="v1">
+        <span begin="00:02:20.100" end="00:02:20.364">Entre </span>
+        <span begin="00:02:20.364" end="00:02:20.871">la </span>
+        <span begin="00:02:20.871" end="00:02:21.717">niebla </span>
+      </p>
+      <p begin="00:02:23.771" end="00:02:24.914" ttm:agent="v1">
+        <span begin="00:02:23.771" end="00:02:24.116">Entre </span>
+        <span begin="00:02:24.116" end="00:02:24.409">la </span>
+        <span begin="00:02:24.409" end="00:02:24.914">niebla </span>
+      </p>
+      <p begin="00:02:27.377" end="00:02:30.161" ttm:agent="v1">
+        <span begin="00:02:27.377" end="00:02:27.580">Un </span>
+        <span begin="00:02:27.580" end="00:02:27.984">hombre </span>
+        <span begin="00:02:27.984" end="00:02:28.593">alado </span>
+        <span begin="00:02:28.593" end="00:02:29.061">extraña </span>
+        <span begin="00:02:29.061" end="00:02:29.681">la </span>
+        <span begin="00:02:29.681" end="00:02:30.161">tierra </span>
+      </p>
+      <p begin="00:02:37.498" end="00:02:39.616" ttm:agent="v1">
+        <span begin="00:02:37.498" end="00:02:38.309">Me </span>
+        <span begin="00:02:38.309" end="00:02:38.521">verás </span>
+        <span begin="00:02:38.521" end="00:02:39.616">volar </span>
+      </p>
+      <p begin="00:02:40.267" end="00:02:41.830" ttm:agent="v1">
+        <span begin="00:02:40.267" end="00:02:40.466">Por </span>
+        <span begin="00:02:40.466" end="00:02:40.685">la </span>
+        <span begin="00:02:40.685" end="00:02:40.979">ciudad </span>
+        <span begin="00:02:40.979" end="00:02:41.241">de </span>
+        <span begin="00:02:41.241" end="00:02:41.466">la </span>
+        <span begin="00:02:41.466" end="00:02:41.830">furia </span>
+      </p>
+      <p begin="00:02:46.115" end="00:02:48.254" ttm:agent="v1">
+        <span begin="00:02:46.115" end="00:02:46.364">Donde </span>
+        <span begin="00:02:46.364" end="00:02:47.169">nadie </span>
+        <span begin="00:02:47.169" end="00:02:47.574">sabe </span>
+        <span begin="00:02:47.574" end="00:02:47.897">de </span>
+        <span begin="00:02:47.897" end="00:02:48.254">mí </span>
+      </p>
+      <p begin="00:02:49.591" end="00:02:52.092" ttm:agent="v1">
+        <span begin="00:02:49.591" end="00:02:49.891">Y </span>
+        <span begin="00:02:49.891" end="00:02:50.853">yo </span>
+        <span begin="00:02:50.853" end="00:02:51.293">soy </span>
+        <span begin="00:02:51.293" end="00:02:51.502">parte </span>
+        <span begin="00:02:51.502" end="00:02:51.680">de </span>
+        <span begin="00:02:51.680" end="00:02:52.092">todos </span>
+      </p>
+      <p begin="00:02:52.761" end="00:02:54.065" ttm:agent="v1">
+        <span begin="00:02:52.761" end="00:02:52.958">Con </span>
+        <span begin="00:02:52.958" end="00:02:53.127">la </span>
+        <span begin="00:02:53.127" end="00:02:53.391">luz </span>
+        <span begin="00:02:53.391" end="00:02:53.679">del </span>
+        <span begin="00:02:53.679" end="00:02:54.065">sol </span>
+      </p>
+      <p begin="00:02:55.494" end="00:02:56.856" ttm:agent="v1">
+        <span begin="00:02:55.494" end="00:02:55.817">Se </span>
+        <span begin="00:02:55.817" end="00:02:56.008">derriten </span>
+        <span begin="00:02:56.008" end="00:02:56.626">mis </span>
+        <span begin="00:02:56.626" end="00:02:56.856">alas </span>
+      </p>
+      <p begin="00:03:01.257" end="00:03:03.384" ttm:agent="v1">
+        <span begin="00:03:01.257" end="00:03:01.766">Solo </span>
+        <span begin="00:03:01.766" end="00:03:01.944">encuentro </span>
+        <span begin="00:03:01.944" end="00:03:02.348">en </span>
+        <span begin="00:03:02.348" end="00:03:02.696">la </span>
+        <span begin="00:03:02.696" end="00:03:03.384">oscuridad </span>
+      </p>
+      <p begin="00:03:05.041" end="00:03:06.176" ttm:agent="v1">
+        <span begin="00:03:05.041" end="00:03:05.251">Lo </span>
+        <span begin="00:03:05.251" end="00:03:05.430">que </span>
+        <span begin="00:03:05.430" end="00:03:05.580">me </span>
+        <span begin="00:03:05.580" end="00:03:06.176">une </span>
+      </p>
+      <p begin="00:03:06.753" end="00:03:08.286" ttm:agent="v1">
+        <span begin="00:03:06.753" end="00:03:06.967">Con </span>
+        <span begin="00:03:06.967" end="00:03:07.116">la </span>
+        <span begin="00:03:07.116" end="00:03:07.292">ciudad </span>
+        <span begin="00:03:07.292" end="00:03:07.737">de </span>
+        <span begin="00:03:07.737" end="00:03:07.888">la </span>
+        <span begin="00:03:07.888" end="00:03:08.286">furia </span>
+      </p>
+      <p begin="00:03:22.801" end="00:03:24.026" ttm:agent="v1">
+        <span begin="00:03:22.801" end="00:03:23.263">Me </span>
+        <span begin="00:03:23.263" end="00:03:23.472">verás </span>
+        <span begin="00:03:23.472" end="00:03:24.026">caer </span>
+      </p>
+      <p begin="00:03:25.816" end="00:03:28.573" ttm:agent="v1">
+        <span begin="00:03:25.816" end="00:03:26.081">Como </span>
+        <span begin="00:03:26.081" end="00:03:26.290">una </span>
+        <span begin="00:03:26.290" end="00:03:26.703">flecha </span>
+        <span begin="00:03:26.703" end="00:03:28.573">salvaje </span>
+      </p>
+      <p begin="00:03:30.626" end="00:03:32.795" ttm:agent="v1">
+        <span begin="00:03:30.626" end="00:03:30.896">Me </span>
+        <span begin="00:03:30.896" end="00:03:31.755">verás </span>
+        <span begin="00:03:31.755" end="00:03:32.795">caer </span>
+      </p>
+      <p begin="00:03:33.514" end="00:03:36.477" ttm:agent="v1">
+        <span begin="00:03:33.514" end="00:03:34.124">Entre </span>
+        <span begin="00:03:34.124" end="00:03:34.703">vuelos </span>
+        <span begin="00:03:34.703" end="00:03:36.477">fugaces </span>
+      </p>
+      <p begin="00:03:38.155" end="00:03:40.067" ttm:agent="v1">
+        <span begin="00:03:38.155" end="00:03:38.445">Buenos </span>
+        <span begin="00:03:38.445" end="00:03:39.155">Aires </span>
+        <span begin="00:03:39.155" end="00:03:39.472">se </span>
+        <span begin="00:03:39.472" end="00:03:40.067">ve </span>
+      </p>
+      <p begin="00:03:41.630" end="00:03:42.380" ttm:agent="v1">
+        <span begin="00:03:41.630" end="00:03:42.005">Tan </span>
+        <span begin="00:03:42.005" end="00:03:42.380">susceptible </span>
+      </p>
+      <p begin="00:03:47.003" end="00:03:49.452" ttm:agent="v1">
+        <span begin="00:03:47.003" end="00:03:47.217">Es </span>
+        <span begin="00:03:47.217" end="00:03:47.433">el </span>
+        <span begin="00:03:47.433" end="00:03:47.693">destino </span>
+        <span begin="00:03:47.693" end="00:03:48.089">de </span>
+        <span begin="00:03:48.089" end="00:03:49.121">furia, </span>
+        <span begin="00:03:49.121" end="00:03:49.452">es </span>
+      </p>
+      <p begin="00:03:50.523" end="00:03:52.582" ttm:agent="v1">
+        <span begin="00:03:50.523" end="00:03:50.721">Lo </span>
+        <span begin="00:03:50.721" end="00:03:50.947">que </span>
+        <span begin="00:03:50.947" end="00:03:51.163">en </span>
+        <span begin="00:03:51.163" end="00:03:51.406">sus </span>
+        <span begin="00:03:51.406" end="00:03:51.674">caras </span>
+        <span begin="00:03:51.674" end="00:03:52.582">persiste </span>
+      </p>
+      <p begin="00:03:54.877" end="00:03:59.470" ttm:agent="v1">
+        <span begin="00:03:54.877" end="00:03:55.392">Me </span>
+        <span begin="00:03:55.392" end="00:03:56.393">dejarás </span>
+        <span begin="00:03:56.393" end="00:03:57.261">dormir </span>
+        <span begin="00:03:57.261" end="00:03:57.875">al </span>
+        <span begin="00:03:57.875" end="00:03:59.470">amanecer </span>
+      </p>
+      <p begin="00:04:00.751" end="00:04:02.629" ttm:agent="v1">
+        <span begin="00:04:00.751" end="00:04:01.328">Entre </span>
+        <span begin="00:04:01.328" end="00:04:01.723">tus </span>
+        <span begin="00:04:01.723" end="00:04:02.629">piernas </span>
+      </p>
+      <p begin="00:04:04.386" end="00:04:05.888" ttm:agent="v1">
+        <span begin="00:04:04.386" end="00:04:04.767">Entre </span>
+        <span begin="00:04:04.767" end="00:04:05.450">tus </span>
+        <span begin="00:04:05.450" end="00:04:05.888">piernas </span>
+      </p>
+      <p begin="00:04:09.826" end="00:04:13.516" ttm:agent="v1">
+        <span begin="00:04:09.826" end="00:04:10.528">Sabrás </span>
+        <span begin="00:04:10.528" end="00:04:11.148">ocultarme </span>
+        <span begin="00:04:11.148" end="00:04:12.140">bien </span>
+        <span begin="00:04:12.140" end="00:04:12.658">y </span>
+        <span begin="00:04:12.658" end="00:04:13.516">desaparecer </span>
+      </p>
+      <p begin="00:04:15.867" end="00:04:17.645" ttm:agent="v1">
+        <span begin="00:04:15.867" end="00:04:16.192">Entre </span>
+        <span begin="00:04:16.192" end="00:04:16.743">la </span>
+        <span begin="00:04:16.743" end="00:04:17.645">niebla </span>
+      </p>
+      <p begin="00:04:19.433" end="00:04:20.685" ttm:agent="v1">
+        <span begin="00:04:19.433" end="00:04:19.858">Entre </span>
+        <span begin="00:04:19.858" end="00:04:20.212">la </span>
+        <span begin="00:04:20.212" end="00:04:20.685">niebla </span>
+      </p>
+      <p begin="00:04:23.267" end="00:05:18.929" ttm:agent="v1">
+        <span begin="00:04:23.267" end="00:04:23.543">Un </span>
+        <span begin="00:04:23.543" end="00:04:23.956">hombre </span>
+        <span begin="00:04:23.956" end="00:04:24.486">alado </span>
+        <span begin="00:04:24.486" end="00:04:25.453">prefiere </span>
+        <span begin="00:04:25.453" end="00:04:26.839">la </span>
+        <span begin="00:04:26.839" end="00:05:18.929">noche </span>
+      </p>
+      <p begin="00:05:24.260" end="00:05:25.729" ttm:agent="v1">
+        <span begin="00:05:24.260" end="00:05:24.616">Me </span>
+        <span begin="00:05:24.616" end="00:05:25.311">verás </span>
+        <span begin="00:05:25.311" end="00:05:25.729">volver </span>
+      </p>
+      <p begin="00:05:32.238" end="00:05:37.201" ttm:agent="v1">
+        <span begin="00:05:32.238" end="00:05:32.467">Me </span>
+        <span begin="00:05:32.467" end="00:05:33.043">verás </span>
+        <span begin="00:05:33.043" end="00:05:37.201">volver </span>
+      </p>
+      <p begin="00:05:39.057" end="00:05:40.456" ttm:agent="v1">
+        <span begin="00:05:39.057" end="00:05:39.224">A </span>
+        <span begin="00:05:39.224" end="00:05:39.418">la </span>
+        <span begin="00:05:39.418" end="00:05:39.539">ciudad </span>
+        <span begin="00:05:39.539" end="00:05:39.804">de </span>
+        <span begin="00:05:39.804" end="00:05:40.013">la </span>
+        <span begin="00:05:40.013" end="00:05:40.456">furia </span>
+      </p>
+    </div>
+  </body>
+</tt>

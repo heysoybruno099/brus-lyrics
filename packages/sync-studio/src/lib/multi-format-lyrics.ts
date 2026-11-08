@@ -166,119 +166,19 @@ export function parseLrcLyrics(content: string, totalDurationMs?: number): { lin
   };
 }
 
+import { parseJsonLyrics as parseEngineJsonLyrics } from '@brus-lyrics/ttml-engine';
+
 /**
- * Parses JSON lyrics format
+ * Parses JSON lyrics format using ttml-engine
  */
 export function parseJsonLyrics(content: string, totalDurationMs?: number): {
   metadata: Partial<TTMLMetadata>;
   lines: TTMLLine[];
   mode: SyncMode;
 } {
-  const data = JSON.parse(content);
-  const metadata: Partial<TTMLMetadata> = {};
-
-  if (data.metadata) {
-    if (data.metadata.title) metadata.title = data.metadata.title;
-    if (data.metadata.artist) metadata.artist = data.metadata.artist;
-    if (data.metadata.album) metadata.album = data.metadata.album;
-    if (data.metadata.durationMs) metadata.durationMs = Number(data.metadata.durationMs);
-  } else {
-    if (data.title) metadata.title = data.title;
-    if (data.artist) metadata.artist = data.artist;
-    if (data.album) metadata.album = data.album;
-    if (data.durationMs) metadata.durationMs = Number(data.durationMs);
-  }
-
-  let rawLines: any[] = [];
-  if (Array.isArray(data)) {
-    rawLines = data;
-  } else if (Array.isArray(data.lines)) {
-    rawLines = data.lines;
-  } else if (data.lyrics && Array.isArray(data.lyrics.lines)) {
-    rawLines = data.lyrics.lines;
-  }
-
-  let hasSyllables = false;
-  const lines: TTMLLine[] = [];
-
-  const toMs = (val: any): number => {
-    if (typeof val === 'number') {
-      return val < 1000 ? Math.round(val * 1000) : Math.round(val);
-    }
-    if (typeof val === 'string') {
-      const parsed = parseFloat(val);
-      if (!isNaN(parsed)) {
-        return parsed < 1000 && val.includes('.') ? Math.round(parsed * 1000) : Math.round(parsed);
-      }
-      return parseTimestampTTML(val);
-    }
-    return 0;
-  };
-
-  for (let i = 0; i < rawLines.length; i++) {
-    const item = rawLines[i];
-    if (!item) continue;
-
-    const beginMs = toMs(item.begin ?? item.startTimeMs ?? item.time ?? item.start ?? 0);
-    const nextItem = rawLines[i + 1];
-    const nextBegin = nextItem ? toMs(nextItem.begin ?? nextItem.startTimeMs ?? nextItem.time ?? nextItem.start ?? 0) : 0;
-    const endMs = toMs(item.end ?? item.endTimeMs ?? (nextBegin > beginMs ? nextBegin : beginMs + 3500));
-
-    const lineText = item.text ?? item.words ?? item.content ?? '';
-    const syllables: TTMLSyllable[] = [];
-
-    const wordItems = item.words || item.syllables || item.tokens;
-    if (Array.isArray(wordItems) && wordItems.length > 0) {
-      hasSyllables = true;
-      for (const w of wordItems) {
-        const wBegin = toMs(w.begin ?? w.start ?? w.startTimeMs ?? beginMs);
-        const wEnd = toMs(w.end ?? w.endTimeMs ?? (wBegin + 300));
-        const wText = w.text ?? w.word ?? w.syllable ?? '';
-        syllables.push({
-          begin: wBegin,
-          end: Math.max(wBegin + 50, wEnd),
-          text: wText,
-        });
-      }
-    } else {
-      const words = String(lineText).trim().split(/\s+/).filter(Boolean);
-      if (words.length > 0) {
-        const dur = Math.max(100, Math.floor((endMs - beginMs) / words.length));
-        for (let w = 0; w < words.length; w++) {
-          const wb = beginMs + w * dur;
-          const we = w === words.length - 1 ? endMs : wb + dur;
-          syllables.push({
-            begin: wb,
-            end: we,
-            text: w < words.length - 1 ? `${words[w]} ` : words[w]!,
-          });
-        }
-      } else {
-        syllables.push({
-          begin: beginMs,
-          end: endMs,
-          text: String(lineText),
-        });
-      }
-    }
-
-    const agent: VocalAgent = item.agent === 'v2' ? 'v2' : 'v1';
-    lines.push({
-      id: item.id || `line_${i + 1}`,
-      begin: beginMs,
-      end: endMs,
-      agent,
-      text: String(lineText),
-      syllables,
-    });
-  }
-
-  return {
-    metadata,
-    lines,
-    mode: hasSyllables ? 'syllable' : 'line',
-  };
+  return parseEngineJsonLyrics(content, totalDurationMs);
 }
+
 
 /**
  * Parses Apple Music / W3C TTML XML string

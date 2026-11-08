@@ -10,6 +10,7 @@ export interface CatalogEntry {
   duration_ms: number;
   file_path: string;
   contributor: string;
+  platform_target?: 'both' | 'spotify' | 'ytm' | string;
   is_verified?: number | boolean;
   updated_at: string;
 }
@@ -39,12 +40,14 @@ export interface LyricsMetadata {
   artist: string;
   durationMs: number;
   contributor?: string;
+  platformTarget?: 'both' | 'spotify' | 'ytm';
 }
 
 export interface SubmitLyricsPayload {
   metadata: LyricsMetadata;
   ttmlRaw: string;
   contributor: string;
+  platformTarget?: 'both' | 'spotify' | 'ytm';
 }
 
 export interface SubmitLyricsResponse {
@@ -93,6 +96,7 @@ export interface TTMLMetadata {
   ytmId?: string;
   isrc?: string;
   contributor?: string;
+  platformTarget?: 'both' | 'spotify' | 'ytm';
 }
 
 export interface TTMLDocument {
