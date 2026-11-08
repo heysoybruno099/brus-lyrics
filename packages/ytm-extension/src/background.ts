@@ -1,7 +1,7 @@
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.sync.get(['apiUrl', 'enableBlur', 'enableAdLibs'], (items) => {
     const defaults: Record<string, any> = {};
-    if (!items['apiUrl']) defaults['apiUrl'] = 'http://127.0.0.1:8787';
+    if (!items['apiUrl']) defaults['apiUrl'] = 'https://brus-lyrics-api.heysoybruno09.workers.dev';
     if (items['enableBlur'] === undefined) defaults['enableBlur'] = true;
     if (items['enableAdLibs'] === undefined) defaults['enableAdLibs'] = true;
 

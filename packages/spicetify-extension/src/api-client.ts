@@ -9,7 +9,8 @@ export interface LyricsFetchResult {
   error?: string;
 }
 
-export const DEFAULT_API_BASE = 'http://127.0.0.1:8787';
+export const DEFAULT_API_BASE = 'https://brus-lyrics-api.heysoybruno09.workers.dev';
+export const LOCAL_API_BASE = 'http://127.0.0.1:8787';
 
 function formatMsTimestamp(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -117,7 +118,7 @@ export async function fetchLyrics(
   const cleanTitle = (params.title || '').trim();
   const cleanArtist = (params.artist || '').trim();
 
-  // 1. Try Bru's Lyrics API Worker
+  // 1. Try Bru's Lyrics API Worker (Cloudflare Live + Local Fallback)
   const query = new URLSearchParams();
   if (params.trackId) query.set('trackId', params.trackId);
   if (cleanTitle) query.set('title', cleanTitle);
@@ -125,29 +126,36 @@ export async function fetchLyrics(
   if (params.durationMs) query.set('duration', String(params.durationMs));
   query.set('platform', 'spotify');
 
-  const url = `${apiBase.replace(/\/+$/, '')}/v1/lyrics?${query.toString()}`;
+  const candidateUrls = [
+    `${apiBase.replace(/\/+$/, '')}/v1/lyrics?${query.toString()}`,
+  ];
+  if (apiBase !== LOCAL_API_BASE) {
+    candidateUrls.push(`${LOCAL_API_BASE}/v1/lyrics?${query.toString()}`);
+  }
 
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/xml, text/xml, */*',
-      },
-      signal: AbortSignal.timeout(3500),
-    });
+  for (const url of candidateUrls) {
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/xml, text/xml, */*',
+        },
+        signal: AbortSignal.timeout(2000),
+      });
 
-    if (response.ok) {
-      const sourceHeader = response.headers.get('X-Lyrics-Source') as LyricsSource | null;
-      if (sourceHeader === 'brus-lyrics-verified') {
-        const ttml = await response.text();
-        return {
-          ttml,
-          source: 'brus-lyrics-verified',
-        };
+      if (response.ok) {
+        const sourceHeader = response.headers.get('X-Lyrics-Source') as LyricsSource | null;
+        if (sourceHeader === 'brus-lyrics-verified') {
+          const ttml = await response.text();
+          return {
+            ttml,
+            source: 'brus-lyrics-verified',
+          };
+        }
       }
+    } catch {
+      // Continue to next candidate URL
     }
-  } catch {
-    // Worker offline / unreachable, continue waterfall
   }
 
   // 2. Try Spotify Native Color Lyrics (Powered by Spotify / Musixmatch backend)

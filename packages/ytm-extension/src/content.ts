@@ -9,7 +9,7 @@ interface ExtensionConfig {
 
 class BrusYtmExtension {
   private config: ExtensionConfig = {
-    apiUrl: 'http://127.0.0.1:8787',
+    apiUrl: 'https://brus-lyrics-api.heysoybruno09.workers.dev',
     enableBlur: true,
     enableAdLibs: true,
   };
@@ -352,28 +352,36 @@ class BrusYtmExtension {
       this.statusBadgeEl.removeAttribute('data-source');
     }
 
-    // Stage 1: Attempt Bru's Lyrics API Worker
+    // Stage 1: Attempt Bru's Lyrics API Worker (Production Cloudflare + Local Fallback)
     let fetchedTTML: string | null = null;
     let source: string = 'brus-lyrics-verified';
 
-    try {
-      const query = new URLSearchParams({
-        trackId: videoId,
-        title,
-        artist,
-        platform: 'ytm',
-      });
-      if (durationMs) query.set('duration', String(durationMs));
+    const query = new URLSearchParams({
+      trackId: videoId,
+      title,
+      artist,
+      platform: 'ytm',
+    });
+    if (durationMs) query.set('duration', String(durationMs));
 
-      const endpoint = `${this.config.apiUrl.replace(/\/+$/, '')}/v1/lyrics?${query.toString()}`;
-      const response = await fetch(endpoint, { signal: AbortSignal.timeout(3500) });
+    const candidateEndpoints = [
+      `${this.config.apiUrl.replace(/\/+$/, '')}/v1/lyrics?${query.toString()}`,
+    ];
+    if (!this.config.apiUrl.includes('127.0.0.1')) {
+      candidateEndpoints.push(`http://127.0.0.1:8787/v1/lyrics?${query.toString()}`);
+    }
 
-      if (response.ok) {
-        source = response.headers.get('X-Lyrics-Source') || 'brus-lyrics-verified';
-        fetchedTTML = await response.text();
+    for (const endpoint of candidateEndpoints) {
+      try {
+        const response = await fetch(endpoint, { signal: AbortSignal.timeout(2000) });
+        if (response.ok) {
+          source = response.headers.get('X-Lyrics-Source') || 'brus-lyrics-verified';
+          fetchedTTML = await response.text();
+          if (fetchedTTML) break;
+        }
+      } catch {
+        // Continue to next endpoint
       }
-    } catch {
-      // Worker API unreachable / offline, proceed directly to Client-Side LRCLIB Fallback
     }
 
     // Stage 2: Direct Client-Side LRCLIB Fallback (Ensures zero "CONNECTION ERROR" locks)

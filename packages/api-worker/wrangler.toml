@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ENVIRONMENT = "production"
-GITHUB_OWNER = "brus-lyrics"
+GITHUB_OWNER = "heysoybruno099"
 GITHUB_REPO = "brus-lyrics"
 GITHUB_BRANCH = "main"
 

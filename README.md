@@ -151,6 +151,11 @@ Deploy database migrations, seed verified songs, and publish the worker:
 npm run deploy:api
 ```
 
+### Live Production Base URL
+```text
+https://brus-lyrics-api.heysoybruno09.workers.dev
+```
+
 ### API Endpoints
 - `GET /v1/lyrics?trackId={id}&title={title}&artist={artist}&duration={ms}&platform=spotify`: Resolves verified TTML with source headers.
 - `GET /v1/catalog?page=1&limit=50&q={query}`: Paginated verified catalog search.

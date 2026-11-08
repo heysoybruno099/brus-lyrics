@@ -7,14 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load current values
   chrome.storage.sync.get(['apiUrl', 'enableBlur', 'enableAdLibs'], (items) => {
-    if (apiUrlInput) apiUrlInput.value = items['apiUrl'] || 'http://127.0.0.1:8787';
+    if (apiUrlInput) apiUrlInput.value = items['apiUrl'] || 'https://brus-lyrics-api.heysoybruno09.workers.dev';
     if (enableBlurInput) enableBlurInput.checked = items['enableBlur'] !== false;
     if (enableAdLibsInput) enableAdLibsInput.checked = items['enableAdLibs'] !== false;
   });
 
   // Save values
   saveBtn?.addEventListener('click', () => {
-    const apiUrl = apiUrlInput?.value.trim() || 'http://127.0.0.1:8787';
+    const apiUrl = apiUrlInput?.value.trim() || 'https://brus-lyrics-api.heysoybruno09.workers.dev';
     const enableBlur = enableBlurInput ? enableBlurInput.checked : true;
     const enableAdLibs = enableAdLibsInput ? enableAdLibsInput.checked : true;
 
