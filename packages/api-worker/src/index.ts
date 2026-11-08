@@ -57,7 +57,7 @@ app.use('*', async (c, next) => {
 // Health and metadata endpoint
 app.get('/', (c) => {
   return c.json({
-    service: "Bru's Lyrics API",
+    service: 'Lyrics API',
     version: '1.0.0',
     status: 'online',
     endpoints: {

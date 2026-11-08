@@ -14,6 +14,16 @@ import { TapSyncMatrix } from './components/TapSyncMatrix.js';
 import { LivePreviewDeck } from './components/LivePreviewDeck.js';
 
 import { AudioPlayerEngine } from './lib/audio-player-engine.js';
+import { SpotifyWebPlayer } from './lib/spotify-web-player.js';
+import { YouTubePlayer } from './lib/youtube-player.js';
+import {
+  getStoredSpotifyToken,
+  getStoredSpotifyUser,
+  buildSpotifyOAuthUrl,
+  parseSpotifyOAuthToken,
+  fetchSpotifyUserProfile,
+  clearSpotifyAuth,
+} from './lib/spotify-auth.js';
 import { searchSongs, VERIFIED_FEATURED_TRACKS, resolveTrackPreviewUrl } from './lib/spotify-service.js';
 import {
   getStoredUser,
@@ -22,7 +32,7 @@ import {
   fetchDiscordUserProfile,
 } from './lib/discord-auth.js';
 import { fetchLyricsForTrack } from './lib/lyrics-service.js';
-import type { AppViewMode, DiscordUser, UnifiedSongItem } from './lib/types.js';
+import type { AppViewMode, DiscordUser, SpotifyUserProfile, UnifiedSongItem } from './lib/types.js';
 
 export const App: React.FC = () => {
   // Navigation & View
@@ -30,11 +40,19 @@ export const App: React.FC = () => {
   const [user, setUser] = useState<DiscordUser | null>(() => getStoredUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
+  // Spotify Authentication State
+  const [spotifyToken, setSpotifyToken] = useState<string | null>(() => getStoredSpotifyToken());
+  const [spotifyUser, setSpotifyUser] = useState<SpotifyUserProfile | null>(() => getStoredSpotifyUser());
+  const isSpotifyPremium = Boolean(spotifyUser?.isPremium);
+
+  // Playback Source: 'spotify' | 'youtube' | 'preview'
+  const [currentPlaybackSource, setCurrentPlaybackSource] = useState<'spotify' | 'youtube' | 'preview'>('youtube');
+
   // Songs & Search State
   const [songs, setSongs] = useState<UnifiedSongItem[]>(VERIFIED_FEATURED_TRACKS);
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
-  // Playback & Lyrics State - initialize with first featured song so playback is immediately available
+  // Playback & Lyrics State - initialize with first featured song
   const [activeSong, setActiveSong] = useState<UnifiedSongItem | null>(() => VERIFIED_FEATURED_TRACKS[0] || null);
   const [activeDocument, setActiveDocument] = useState<TTMLDocument | null>(null);
   const [isLoadingLyrics, setIsLoadingLyrics] = useState<boolean>(false);
@@ -47,7 +65,7 @@ export const App: React.FC = () => {
   const [volume, setVolume] = useState<number>(0.8);
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
 
-  // Studio Workstation state (for contributors)
+  // Studio Workstation state
   const [studioMetadata, setStudioMetadata] = useState<TTMLMetadata>({
     title: 'Ella Baila Sola',
     artist: 'Eslabon Armado, Peso Pluma',
@@ -87,59 +105,143 @@ export const App: React.FC = () => {
     },
   ]);
 
-  // Audio Engine Instance
+  // Player Engine References
   const audioEngineRef = useRef<AudioPlayerEngine | null>(null);
   const studioAudioRef = useRef<HTMLAudioElement | null>(null);
+  const spotifyPlayerRef = useRef<SpotifyWebPlayer | null>(null);
+  const youtubePlayerRef = useRef<YouTubePlayer | null>(null);
 
+  // Initialize HTML5 / Synthetic Audio Engine
   useEffect(() => {
     const engine = new AudioPlayerEngine();
     audioEngineRef.current = engine;
 
     const unsubscribe = engine.subscribe({
       onTimeUpdate: (cur, dur) => {
-        setCurrentTimeMs(cur);
-        setDurationMs(dur);
+        if (currentPlaybackSource === 'preview') {
+          setCurrentTimeMs(cur);
+          if (dur > 0) setDurationMs(dur);
+        }
       },
       onPlayStateChange: (playing) => {
-        setIsPlaying(playing);
+        if (currentPlaybackSource === 'preview') {
+          setIsPlaying(playing);
+        }
       },
       onEnded: () => {
-        setIsPlaying(false);
+        if (currentPlaybackSource === 'preview') {
+          setIsPlaying(false);
+        }
       },
     });
-
-    // Preload initial featured song into audio engine
-    if (VERIFIED_FEATURED_TRACKS[0]?.previewUrl) {
-      engine.loadTrack(VERIFIED_FEATURED_TRACKS[0].previewUrl, VERIFIED_FEATURED_TRACKS[0].durationMs);
-    }
 
     return () => {
       unsubscribe();
       engine.stop();
     };
-  }, []);
+  }, [currentPlaybackSource]);
 
-  // Handle OAuth Redirect, /callback URL, & URL Search Parameters
+  // Initialize YouTube IFrame Player (Free Full Track)
+  useEffect(() => {
+    const yt = new YouTubePlayer({
+      onTimeUpdate: (cur, dur) => {
+        if (currentPlaybackSource === 'youtube') {
+          setCurrentTimeMs(cur);
+          if (dur > 0) setDurationMs(dur);
+        }
+      },
+      onPlayStateChange: (playing) => {
+        if (currentPlaybackSource === 'youtube') {
+          setIsPlaying(playing);
+        }
+      },
+      onEnded: () => {
+        if (currentPlaybackSource === 'youtube') {
+          setIsPlaying(false);
+        }
+      },
+    });
+
+    youtubePlayerRef.current = yt;
+    yt.initialize('yt-player-mount');
+
+    return () => {
+      yt.destroy();
+    };
+  }, [currentPlaybackSource]);
+
+  // Initialize Spotify Web Playback SDK if token is present
+  useEffect(() => {
+    if (!spotifyToken) return;
+
+    const sp = new SpotifyWebPlayer({
+      onTimeUpdate: (cur, dur) => {
+        if (currentPlaybackSource === 'spotify') {
+          setCurrentTimeMs(cur);
+          if (dur > 0) setDurationMs(dur);
+        }
+      },
+      onPlayStateChange: (playing) => {
+        if (currentPlaybackSource === 'spotify') {
+          setIsPlaying(playing);
+        }
+      },
+      onError: (msg) => {
+        // If Spotify error occurs (e.g. non-premium), fallback to YouTube or preview
+        if (currentPlaybackSource === 'spotify' && activeSong?.ytmId) {
+          setCurrentPlaybackSource('youtube');
+          youtubePlayerRef.current?.loadVideo(activeSong.ytmId, true);
+        }
+      },
+    });
+
+    spotifyPlayerRef.current = sp;
+    sp.initialize(spotifyToken);
+
+    return () => {
+      sp.disconnect();
+    };
+  }, [spotifyToken, currentPlaybackSource, activeSong]);
+
+  // Handle OAuth Redirects (Spotify & Discord) and URL Parameters
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 1. Handle OAuth token from hash or URL
-    const redirectToken = parseOAuthRedirectToken();
-    if (redirectToken) {
-      fetchDiscordUserProfile(redirectToken).then((u) => {
-        if (u) {
-          setUser(u);
-          setCurrentView('studio');
-        }
-      });
+    const hash = window.location.hash;
+
+    // 1. Spotify OAuth redirect check
+    if (hash.includes('state=spotify_auth')) {
+      const spAuth = parseSpotifyOAuthToken();
+      if (spAuth) {
+        setSpotifyToken(spAuth.accessToken);
+        fetchSpotifyUserProfile(spAuth.accessToken).then((profile) => {
+          if (profile) {
+            setSpotifyUser(profile);
+          }
+        });
+      }
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    // 2. Discord OAuth redirect check
+    else if (hash.includes('access_token')) {
+      const redirectToken = parseOAuthRedirectToken();
+      if (redirectToken) {
+        fetchDiscordUserProfile(redirectToken).then((u) => {
+          if (u) {
+            setUser(u);
+            setCurrentView('studio');
+          }
+        });
+      }
+      window.history.replaceState(null, '', window.location.pathname);
     }
 
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
     const modeParam = params.get('mode');
 
-    // Clean callback URL cleanly so the user doesn't get stuck on /callback
-    if (path.includes('/callback') || window.location.hash.includes('access_token')) {
+    // Clean callback URL cleanly so user does not 404 or get stuck on /callback
+    if (path.includes('/callback')) {
       window.history.replaceState(null, '', '/');
     }
 
@@ -154,7 +256,7 @@ export const App: React.FC = () => {
       setCurrentView('studio');
     }
 
-    // Handle track queries from extensions or external links
+    // External track query support
     const trackId = params.get('trackId');
     const title = params.get('title');
     const artist = params.get('artist');
@@ -198,29 +300,7 @@ export const App: React.FC = () => {
       };
 
       setActiveSong(targetSong);
-
-      if (path.includes('/sync') || modeParam === 'studio') {
-        setIsLyricsPopupOpen(false);
-        if (audioEngineRef.current) {
-          audioEngineRef.current.loadTrack(targetSong.previewUrl, targetSong.durationMs);
-          audioEngineRef.current.play().catch(() => {});
-        }
-        setIsLoadingLyrics(true);
-        fetchLyricsForTrack(targetSong)
-          .then((doc) => {
-            if (doc) {
-              setActiveDocument(doc);
-              if (doc.lines && doc.lines.length > 0) {
-                setStudioLines(doc.lines);
-              }
-            }
-          })
-          .finally(() => {
-            setIsLoadingLyrics(false);
-          });
-      } else {
-        handlePlaySongCard(targetSong);
-      }
+      handlePlaySongCard(targetSong);
     }
   }, []);
 
@@ -237,11 +317,11 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Play Song Card Handler: Loads song, resolves audio preview, and plays with popup
+  // Play Song Card Handler: Selects best available audio source and starts playback
   const handlePlaySongCard = useCallback(async (song: UnifiedSongItem) => {
     let playableSong = song;
 
-    // Resolve audio preview stream if missing
+    // Resolve audio preview stream if needed
     if (!playableSong.previewUrl) {
       const resolved = await resolveTrackPreviewUrl(playableSong.title, playableSong.artist);
       if (resolved) {
@@ -252,14 +332,30 @@ export const App: React.FC = () => {
     setActiveSong(playableSong);
     setIsLyricsPopupOpen(true);
     setIsLoadingLyrics(true);
+    setDurationMs(playableSong.durationMs || 180000);
 
-    // Load track and start audio playback
-    if (audioEngineRef.current) {
+    // Stop currently running playback engines
+    audioEngineRef.current?.pause();
+    youtubePlayerRef.current?.pause();
+    spotifyPlayerRef.current?.pause();
+
+    // Source Selection Priority:
+    // 1. Spotify Web Playback SDK (if user connected with Spotify Premium)
+    // 2. YouTube Music (Free Full Song Playback for any track with ytmId)
+    // 3. Audio Preview (30-second iTunes / synthetic fallback)
+    if (spotifyToken && isSpotifyPremium && playableSong.spotifyId && spotifyPlayerRef.current) {
+      setCurrentPlaybackSource('spotify');
+      await spotifyPlayerRef.current.playTrack(playableSong.spotifyId, 0);
+    } else if (playableSong.ytmId && youtubePlayerRef.current) {
+      setCurrentPlaybackSource('youtube');
+      youtubePlayerRef.current.loadVideo(playableSong.ytmId, true);
+    } else if (audioEngineRef.current) {
+      setCurrentPlaybackSource('preview');
       audioEngineRef.current.loadTrack(playableSong.previewUrl, playableSong.durationMs);
       await audioEngineRef.current.play().catch(() => {});
     }
 
-    // Update studio metadata as well
+    // Update studio metadata
     setStudioMetadata((prev) => ({
       ...prev,
       title: playableSong.title,
@@ -282,37 +378,43 @@ export const App: React.FC = () => {
     } finally {
       setIsLoadingLyrics(false);
     }
-  }, []);
+  }, [spotifyToken, isSpotifyPremium]);
 
-  // Audio control callbacks
+  // Audio control callbacks routed to active playback source
   const handleTogglePlay = () => {
-    if (!audioEngineRef.current) return;
-    if (isPlaying) {
-      audioEngineRef.current.pause();
-    } else {
-      audioEngineRef.current.play();
+    if (currentPlaybackSource === 'spotify' && spotifyPlayerRef.current) {
+      if (isPlaying) spotifyPlayerRef.current.pause();
+      else spotifyPlayerRef.current.resume();
+    } else if (currentPlaybackSource === 'youtube' && youtubePlayerRef.current) {
+      if (isPlaying) youtubePlayerRef.current.pause();
+      else youtubePlayerRef.current.play();
+    } else if (audioEngineRef.current) {
+      if (isPlaying) audioEngineRef.current.pause();
+      else audioEngineRef.current.play();
     }
   };
 
   const handleSeek = (targetMs: number) => {
     setCurrentTimeMs(targetMs);
-    if (audioEngineRef.current) {
+    if (currentPlaybackSource === 'spotify' && spotifyPlayerRef.current) {
+      spotifyPlayerRef.current.seek(targetMs);
+    } else if (currentPlaybackSource === 'youtube' && youtubePlayerRef.current) {
+      youtubePlayerRef.current.seek(targetMs);
+    } else if (audioEngineRef.current) {
       audioEngineRef.current.seek(targetMs);
     }
   };
 
   const handleChangeVolume = (vol: number) => {
     setVolume(vol);
-    if (audioEngineRef.current) {
-      audioEngineRef.current.setVolume(vol);
-    }
+    audioEngineRef.current?.setVolume(vol);
+    spotifyPlayerRef.current?.setVolume(vol);
+    youtubePlayerRef.current?.setVolume(vol);
   };
 
   const handleChangePlaybackRate = (rate: number) => {
     setPlaybackRate(rate);
-    if (audioEngineRef.current) {
-      audioEngineRef.current.setPlaybackRate(rate);
-    }
+    audioEngineRef.current?.setPlaybackRate(rate);
   };
 
   // Auth callbacks
@@ -329,8 +431,41 @@ export const App: React.FC = () => {
     setCurrentView('studio');
   };
 
+  const handleConnectSpotify = () => {
+    window.location.href = buildSpotifyOAuthUrl();
+  };
+
+  const handleDisconnectSpotify = () => {
+    clearSpotifyAuth();
+    setSpotifyToken(null);
+    setSpotifyUser(null);
+    if (currentPlaybackSource === 'spotify') {
+      if (activeSong?.ytmId && youtubePlayerRef.current) {
+        setCurrentPlaybackSource('youtube');
+        youtubePlayerRef.current.loadVideo(activeSong.ytmId, true);
+      } else {
+        setCurrentPlaybackSource('preview');
+        audioEngineRef.current?.play();
+      }
+    }
+  };
+
   return (
     <div className="app-shell">
+      {/* Hidden YouTube IFrame Player mount */}
+      <div
+        id="yt-player-mount"
+        style={{
+          position: 'fixed',
+          bottom: -100,
+          right: -100,
+          width: 1,
+          height: 1,
+          opacity: 0.01,
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* Top Sticky Minimalist Header */}
       <Navbar
         currentView={currentView}
@@ -355,6 +490,64 @@ export const App: React.FC = () => {
               isSearching={isSearching}
               totalTracksCount={songs.length}
             />
+
+            {/* Informative Banner for 30s preview vs Full playback */}
+            {currentPlaybackSource === 'preview' && !isSpotifyPremium && (
+              <div
+                style={{
+                  maxWidth: 1200,
+                  margin: '0 auto 20px auto',
+                  padding: '12px 20px',
+                  backgroundColor: '#18181b',
+                  border: '1px solid #27272a',
+                  borderRadius: 8,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: 13,
+                  color: '#fbbf24',
+                }}
+              >
+                <span>30-Second Preview Mode. Connect Spotify Premium to unlock full-length playback.</span>
+                <button
+                  type="button"
+                  onClick={handleConnectSpotify}
+                  style={{
+                    backgroundColor: '#1db954',
+                    color: '#000000',
+                    border: 'none',
+                    padding: '6px 14px',
+                    borderRadius: 6,
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Connect Spotify
+                </button>
+              </div>
+            )}
+
+            {currentPlaybackSource === 'youtube' && (
+              <div
+                style={{
+                  maxWidth: 1200,
+                  margin: '0 auto 20px auto',
+                  padding: '10px 18px',
+                  backgroundColor: '#0c1a2e',
+                  border: '1px solid #1e3a5f',
+                  borderRadius: 8,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: 12,
+                  color: '#93c5fd',
+                }}
+              >
+                <span>Free Full-Song Playback active via YouTube Music. Zero subscription required.</span>
+                <span style={{ fontSize: 11, color: '#60a5fa' }}>Syllable Synced</span>
+              </div>
+            )}
 
             <SongCardGrid
               songs={songs}
@@ -429,6 +622,7 @@ export const App: React.FC = () => {
                   if (audioEngineRef.current) {
                     audioEngineRef.current.loadAudioFile(file);
                   }
+                  setCurrentPlaybackSource('preview');
                   setDurationMs(totalDur);
                   setStudioMetadata((prev) => ({ ...prev, durationMs: totalDur }));
                 }}
@@ -464,6 +658,9 @@ export const App: React.FC = () => {
             onSignOut={handleSignOut}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
             onViewTerms={() => setCurrentView('legal')}
+            spotifyUser={spotifyUser}
+            onConnectSpotify={handleConnectSpotify}
+            onDisconnectSpotify={handleDisconnectSpotify}
           />
         )}
 
@@ -521,7 +718,7 @@ export const App: React.FC = () => {
         </div>
       </footer>
 
-      {/* In-Browser Music Player Bar: "Have your own music player" */}
+      {/* In-Browser Music Player Bar */}
       <MusicPlayerBar
         song={activeSong}
         currentTimeMs={currentTimeMs}
@@ -535,9 +732,13 @@ export const App: React.FC = () => {
         onChangePlaybackRate={handleChangePlaybackRate}
         onToggleLyricsPopup={() => setIsLyricsPopupOpen((prev) => !prev)}
         isLyricsPopupOpen={isLyricsPopupOpen}
+        currentPlaybackSource={currentPlaybackSource}
+        isSpotifyConnected={Boolean(spotifyToken)}
+        isSpotifyPremium={isSpotifyPremium}
+        onConnectSpotify={handleConnectSpotify}
       />
 
-      {/* Pop-up Lyrics Overlay: "make sure the lyrics pop up" */}
+      {/* Pop-up Lyrics Overlay */}
       <LyricsPopupModal
         isOpen={isLyricsPopupOpen}
         onClose={() => setIsLyricsPopupOpen(false)}
@@ -549,6 +750,9 @@ export const App: React.FC = () => {
         onTogglePlay={handleTogglePlay}
         onSeek={handleSeek}
         isLoadingLyrics={isLoadingLyrics}
+        currentPlaybackSource={currentPlaybackSource}
+        isSpotifyPremium={isSpotifyPremium}
+        onConnectSpotify={handleConnectSpotify}
       />
 
       {/* Discord Authentication Modal with Terms Acceptance Pop-up */}

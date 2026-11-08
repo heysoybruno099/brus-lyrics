@@ -107,10 +107,74 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
                   </p>
                 </div>
 
+                <div className="card-external-links" style={{ display: 'flex', gap: 6, margin: '6px 0', flexWrap: 'wrap' }}>
+                  {song.spotifyId && (
+                    <a
+                      href={`https://open.spotify.com/track/${song.spotifyId.replace(/^spotify:track:/i, '').replace(/^spotify_/i, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="card-ext-link"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Open in Spotify"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 10,
+                        padding: '3px 7px',
+                        borderRadius: 4,
+                        backgroundColor: '#1db95420',
+                        color: '#1db954',
+                        border: '1px solid #1db95440',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.495 17.306c-.216.353-.674.466-1.027.25-2.812-1.718-6.35-2.107-10.518-1.155-.403.093-.805-.158-.898-.561-.093-.404.158-.805.561-.898 4.562-1.042 8.475-.597 11.632 1.337.353.216.466.674.25 1.027zm1.467-3.262c-.272.441-.849.58-1.29.308-3.219-1.978-8.125-2.55-11.932-1.393-.497.151-1.024-.134-1.175-.631-.151-.497.134-1.024.631-1.175 4.354-1.321 9.771-.681 13.458 1.584.441.272.58.849.308 1.307zm.126-3.41c-3.86-2.292-10.222-2.503-13.886-1.391-.592.179-1.22-.162-1.399-.754-.179-.592.162-1.22.754-1.399 4.225-1.282 11.246-1.036 15.688 1.6c.531.315.704 1.004.389 1.535-.315.531-1.004.704-1.546.409z" />
+                      </svg>
+                      <span>Spotify</span>
+                    </a>
+                  )}
+
+                  {song.ytmId && (
+                    <a
+                      href={`https://music.youtube.com/watch?v=${song.ytmId.replace(/^ytm_/i, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="card-ext-link"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Open in YouTube Music (Free Full Track)"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 10,
+                        padding: '3px 7px',
+                        borderRadius: 4,
+                        backgroundColor: '#ff000020',
+                        color: '#f87171',
+                        border: '1px solid #ff000040',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                      </svg>
+                      <span>YouTube Music</span>
+                    </a>
+                  )}
+                </div>
+
                 <div className="card-footer-row">
                   <span className="card-duration">{formatDuration(song.durationMs)}</span>
                   {song.isSyllableSynced ? (
                     <span className="card-badge-syllable">TTML SYLLABLE</span>
+                  ) : song.ytmId ? (
+                    <span className="card-badge-standard" style={{ color: '#4ade80', borderColor: '#22c55e' }}>
+                      FREE FULL (YTM)
+                    </span>
                   ) : (
                     <span className="card-badge-standard">{song.source.toUpperCase()}</span>
                   )}

@@ -130,7 +130,7 @@ describe('Cloudflare Worker API Routes', () => {
     const res = await app.request('/');
     assert.equal(res.status, 200);
     const body = (await res.json()) as { service: string; status: string };
-    assert.equal(body.service, "Bru's Lyrics API");
+    assert.equal(body.service, 'Lyrics API');
     assert.equal(body.status, 'online');
   });
 

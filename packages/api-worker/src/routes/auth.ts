@@ -84,6 +84,7 @@ authRoute.get('/auth/discord/user', async (c) => {
 
     const isCreator =
       u.id === '1568826229006540882' ||
+      u.username?.toLowerCase() === 'heysoybruno09' ||
       u.username?.toLowerCase() === 'bru';
 
     const savedUser = await upsertUser(c.env, {

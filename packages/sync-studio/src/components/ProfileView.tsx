@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { DiscordUser } from '../lib/types.js';
+import type { DiscordUser, SpotifyUserProfile } from '../lib/types.js';
 import { saveUser } from '../lib/discord-auth.js';
 import { getApiBaseUrl } from '../lib/config.js';
 
@@ -9,6 +9,9 @@ interface ProfileViewProps {
   onSignOut: () => void;
   onOpenAuthModal: () => void;
   onViewTerms: () => void;
+  spotifyUser?: SpotifyUserProfile | null;
+  onConnectSpotify?: () => void;
+  onDisconnectSpotify?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -17,6 +20,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onSignOut,
   onOpenAuthModal,
   onViewTerms,
+  spotifyUser,
+  onConnectSpotify,
+  onDisconnectSpotify,
 }) => {
   const [newUsername, setNewUsername] = useState<string>(user?.username || '');
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -200,6 +206,116 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {isSaving ? 'Saving...' : 'Save Display Username'}
           </button>
         </form>
+      </div>
+
+      {/* Spotify & Audio Streaming Integration */}
+      <div
+        style={{
+          backgroundColor: '#141418',
+          border: '1px solid #26262e',
+          borderRadius: 8,
+          padding: 24,
+          marginBottom: 24,
+        }}
+      >
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#f4f4f6', margin: '0 0 8px 0' }}>
+          Music Streaming Services
+        </h2>
+        <p style={{ fontSize: 12, color: '#a1a1aa', margin: '0 0 18px 0' }}>
+          Connect Spotify Premium to stream full-length tracks or use free full-song playback via YouTube Music.
+        </p>
+
+        {/* Spotify Account Status */}
+        <div
+          style={{
+            padding: 16,
+            borderRadius: 6,
+            backgroundColor: '#18181f',
+            border: '1px solid #272732',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 600, color: '#f4f4f6', fontSize: 14 }}>Spotify</span>
+              {spotifyUser ? (
+                <span
+                  style={{
+                    fontSize: 10,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    backgroundColor: spotifyUser.isPremium ? '#14532d' : '#3f2c00',
+                    color: spotifyUser.isPremium ? '#4ade80' : '#fbbf24',
+                    fontWeight: 700,
+                  }}
+                >
+                  {spotifyUser.isPremium ? 'PREMIUM (FULL PLAYBACK)' : 'FREE (PREVIEWS ONLY)'}
+                </span>
+              ) : (
+                <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, backgroundColor: '#27272a', color: '#a1a1aa' }}>
+                  NOT CONNECTED
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: 12, color: '#71717a', margin: '4px 0 0 0' }}>
+              {spotifyUser
+                ? `Connected as @${spotifyUser.displayName} (${spotifyUser.product.toUpperCase()})`
+                : 'Connect your Spotify account to enable full-length streaming in the player.'}
+            </p>
+          </div>
+
+          <div>
+            {spotifyUser ? (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onDisconnectSpotify}
+                style={{ padding: '6px 12px', fontSize: 12, borderColor: '#ef4444', color: '#f87171' }}
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onConnectSpotify}
+                style={{
+                  backgroundColor: '#1db954',
+                  color: '#000000',
+                  border: 'none',
+                  padding: '8px 14px',
+                  borderRadius: 6,
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                }}
+              >
+                Connect Spotify
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* YouTube Music Notice */}
+        <div
+          style={{
+            padding: 14,
+            borderRadius: 6,
+            backgroundColor: '#18181f',
+            border: '1px solid #272732',
+            fontSize: 12,
+            color: '#a1a1aa',
+          }}
+        >
+          <div style={{ fontWeight: 600, color: '#60a5fa', marginBottom: 2 }}>
+            Free Full-Song Playback (YouTube Music)
+          </div>
+          <div>
+            Catalog songs with YouTube Music links automatically play the entire song for free with zero sign-in required.
+          </div>
+        </div>
       </div>
 
       {/* Account Info and Policies */}

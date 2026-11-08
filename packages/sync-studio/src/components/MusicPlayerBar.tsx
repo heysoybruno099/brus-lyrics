@@ -14,6 +14,10 @@ interface MusicPlayerBarProps {
   onChangePlaybackRate: (rate: number) => void;
   onToggleLyricsPopup: () => void;
   isLyricsPopupOpen: boolean;
+  currentPlaybackSource?: 'spotify' | 'youtube' | 'preview';
+  isSpotifyConnected?: boolean;
+  isSpotifyPremium?: boolean;
+  onConnectSpotify?: () => void;
 }
 
 function formatTime(ms: number): string {
@@ -37,10 +41,16 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
   onChangePlaybackRate,
   onToggleLyricsPopup,
   isLyricsPopupOpen,
+  currentPlaybackSource = 'preview',
+  isSpotifyConnected = false,
+  isSpotifyPremium = false,
+  onConnectSpotify,
 }) => {
   if (!song) return null;
 
   const progress = durationMs > 0 ? Math.min(1, Math.max(0, currentTimeMs / durationMs)) : 0;
+  const cleanSpotifyId = song.spotifyId ? song.spotifyId.replace(/^spotify:track:/i, '').replace(/^spotify_/i, '') : null;
+  const cleanYtmId = song.ytmId ? song.ytmId.replace(/^ytm_/i, '') : null;
 
   const handleScrubberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
@@ -53,6 +63,100 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
 
   return (
     <footer className="player-bar-container">
+      {/* Informative Playback Banner */}
+      {currentPlaybackSource === 'preview' && (
+        <div
+          className="player-preview-banner"
+          style={{
+            backgroundColor: '#1c1917',
+            borderBottom: '1px solid #292524',
+            padding: '4px 16px',
+            fontSize: 11,
+            color: '#fbbf24',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <span>30-Second Preview Mode. Connect Spotify Premium to unlock full-length playback.</span>
+          {onConnectSpotify && (
+            <button
+              type="button"
+              onClick={onConnectSpotify}
+              style={{
+                background: '#1db954',
+                color: '#000000',
+                border: 'none',
+                borderRadius: 4,
+                padding: '2px 8px',
+                fontSize: 10,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Connect Spotify
+            </button>
+          )}
+        </div>
+      )}
+
+      {currentPlaybackSource === 'youtube' && (
+        <div
+          style={{
+            backgroundColor: '#111827',
+            borderBottom: '1px solid #1f2937',
+            padding: '4px 16px',
+            fontSize: 11,
+            color: '#60a5fa',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <span>Free Full Song Playback via YouTube Music</span>
+          {cleanYtmId && (
+            <a
+              href={`https://music.youtube.com/watch?v=${cleanYtmId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#93c5fd', textDecoration: 'underline', fontWeight: 600 }}
+            >
+              Open in YouTube Music
+            </a>
+          )}
+        </div>
+      )}
+
+      {currentPlaybackSource === 'spotify' && (
+        <div
+          style={{
+            backgroundColor: '#052e16',
+            borderBottom: '1px solid #14532d',
+            padding: '4px 16px',
+            fontSize: 11,
+            color: '#4ade80',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <span>Spotify Premium Active • Full Track Unlocked</span>
+          {cleanSpotifyId && (
+            <a
+              href={`https://open.spotify.com/track/${cleanSpotifyId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#86efac', textDecoration: 'underline', fontWeight: 600 }}
+            >
+              Open in Spotify
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Top Scrubber Progress Bar */}
       <div className="player-scrubber-wrap">
         <input
@@ -87,9 +191,76 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
               {song.artist}
             </span>
           </div>
-          <span className="player-source-tag">
-            {song.source === 'verified' ? 'VERIFIED' : song.source.toUpperCase()}
-          </span>
+
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+            {cleanSpotifyId && (
+              <a
+                href={`https://open.spotify.com/track/${cleanSpotifyId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open in Spotify"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  backgroundColor: '#1db95420',
+                  color: '#1db954',
+                  border: '1px solid #1db95440',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Open in Spotify
+              </a>
+            )}
+
+            {cleanYtmId && (
+              <a
+                href={`https://music.youtube.com/watch?v=${cleanYtmId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open in YouTube Music"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  backgroundColor: '#ff000020',
+                  color: '#f87171',
+                  border: '1px solid #ff000040',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Open in YouTube Music
+              </a>
+            )}
+
+            {!isSpotifyPremium && onConnectSpotify && (
+              <button
+                type="button"
+                onClick={onConnectSpotify}
+                title="Connect Spotify Premium to unlock full song"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  backgroundColor: '#1c1c24',
+                  color: '#fbbf24',
+                  border: '1px solid #d97706',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Unlock Full Song
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Center Controls */}
@@ -216,3 +387,5 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
     </footer>
   );
 };
+
+export default MusicPlayerBar;

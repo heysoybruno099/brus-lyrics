@@ -376,6 +376,20 @@ export interface UserRecord {
 
 const memoryUsers = new Map<string, UserRecord>([
   [
+    'heysoybruno09',
+    {
+      id: 'heysoybruno09',
+      username: 'heysoybruno09',
+      discriminator: '0000',
+      avatar: null,
+      email: 'heysoybruno09@bruslyrics.com',
+      role: 'admin',
+      is_verified: 1,
+      created_at: '2026-11-08T00:00:00.000Z',
+      updated_at: '2026-11-08T00:00:00.000Z',
+    },
+  ],
+  [
     '1568826229006540882',
     {
       id: '1568826229006540882',
@@ -406,8 +420,10 @@ export async function upsertUser(
   const now = new Date().toISOString();
   const isCreator =
     user.id === '1568826229006540882' ||
+    user.username.toLowerCase() === 'heysoybruno09' ||
     user.username.toLowerCase() === 'bru' ||
-    user.role === 'verified_creator';
+    user.role === 'verified_creator' ||
+    user.role === 'admin';
 
   const record: UserRecord = {
     id: user.id.trim(),

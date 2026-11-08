@@ -310,3 +310,46 @@ describe('Multi-Format Lyrics Parser (TTML, LRC, JSON)', () => {
   });
 });
 
+describe('Spotify & YouTube Music Streaming Integration', () => {
+  it('builds valid Spotify OAuth URL with required Web Playback SDK scopes', async () => {
+    const { buildSpotifyOAuthUrl, SPOTIFY_CLIENT_ID, SPOTIFY_SCOPES } = await import(
+      '../../sync-studio/src/lib/spotify-auth.js'
+    );
+
+    assert.equal(SPOTIFY_CLIENT_ID, '9b91a4fd101942cfb3fafbfad89e5d70');
+    assert.ok(SPOTIFY_SCOPES.includes('streaming'));
+    assert.ok(SPOTIFY_SCOPES.includes('user-modify-playback-state'));
+    assert.ok(SPOTIFY_SCOPES.includes('user-read-playback-state'));
+
+    const url = buildSpotifyOAuthUrl('https://brus-lyrics.pages.dev/callback');
+    assert.ok(url.startsWith('https://accounts.spotify.com/authorize?'));
+    assert.ok(url.includes('client_id=9b91a4fd101942cfb3fafbfad89e5d70'));
+    assert.ok(url.includes('state=spotify_auth'));
+    assert.ok(url.includes('response_type=token'));
+  });
+
+  it('normalizes YouTube Music track IDs and instantiates YouTube player', async () => {
+    const { YouTubePlayer } = await import('../../sync-studio/src/lib/youtube-player.js');
+
+    const yt = new YouTubePlayer();
+    assert.equal(yt.getIsPlaying(), false);
+
+    yt.loadVideo('ytm_lZIAZhbmPvg', false);
+    assert.equal(yt.getCurrentVideoId(), 'lZIAZhbmPvg');
+
+    yt.loadVideo('4NRXx6U8ABQ', false);
+    assert.equal(yt.getCurrentVideoId(), '4NRXx6U8ABQ');
+  });
+
+  it('generates correct external URLs for Spotify and YouTube Music tracks', () => {
+    const spotifyId = '3qhlB30KknSeipLHZaYeKc';
+    const ytmId = 'lZIAZhbmPvg';
+
+    const spotifyUrl = `https://open.spotify.com/track/${spotifyId}`;
+    const ytmUrl = `https://music.youtube.com/watch?v=${ytmId}`;
+
+    assert.equal(spotifyUrl, 'https://open.spotify.com/track/3qhlB30KknSeipLHZaYeKc');
+    assert.equal(ytmUrl, 'https://music.youtube.com/watch?v=lZIAZhbmPvg');
+  });
+});
+

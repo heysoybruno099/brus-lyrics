@@ -83,7 +83,6 @@ export const DiscordAuthModal: React.FC<DiscordAuthModalProps> = ({
           </div>
 
           <p style={{ fontSize: 14, color: '#f4f4f6', lineHeight: 1.5, margin: '8px 0 14px 0' }}>
-            <span>Read the </span>
             <a
               href="/terms"
               onClick={handleTermsClick}
@@ -94,9 +93,8 @@ export const DiscordAuthModal: React.FC<DiscordAuthModalProps> = ({
                 cursor: 'pointer',
               }}
             >
-              Terms and Conditions of this
+              Read the Terms and Conditions of this
             </a>
-            <span> before signing in.</span>
           </p>
 
           <p className="auth-notice-text" style={{ fontSize: 12, color: '#9e9ea8', lineHeight: 1.5 }}>

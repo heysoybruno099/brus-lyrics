@@ -26,3 +26,25 @@ export interface DiscordUser {
 }
 
 export type AppViewMode = 'discover' | 'studio' | 'legal' | 'profile' | 'admin';
+
+export interface SpotifyUserProfile {
+  id: string;
+  displayName: string;
+  email?: string;
+  product: string; // 'premium' | 'free' | 'open'
+  isPremium: boolean;
+  images?: { url: string }[];
+}
+
+declare global {
+  interface Window {
+    onSpotifyWebPlaybackSDKReady?: () => void;
+    Spotify?: {
+      Player: new (options: {
+        name: string;
+        getOAuthToken: (cb: (token: string) => void) => void;
+        volume?: number;
+      }) => any;
+    };
+  }
+}
