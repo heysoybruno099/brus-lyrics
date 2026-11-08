@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { UnifiedSongItem } from '../lib/types.js';
 import { LogoIcon } from './LogoIcon.js';
 
@@ -21,6 +21,19 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
 }) => {
   const [searchValue, setSearchValue] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (formRef.current && !formRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleDocumentClick);
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentClick);
+    };
+  }, []);
 
   const topMatch = useMemo(() => {
     const q = searchValue.trim().toLowerCase();
@@ -82,7 +95,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
         </p>
 
         {/* Search Bar with Dynamic Autocomplete */}
-        <form className="hero-search-form" onSubmit={handleSubmit} style={{ position: 'relative' }}>
+        <form ref={formRef} className="hero-search-form" onSubmit={handleSubmit} style={{ position: 'relative' }}>
           <div className="search-input-wrapper">
             <svg
               className="search-icon"

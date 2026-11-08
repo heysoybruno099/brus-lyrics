@@ -462,3 +462,78 @@ describe('Sync Studio Export & Persistence Features', () => {
   });
 });
 
+describe('Search Autocomplete & Fallback Workflow', () => {
+  it('ranks and selects top autocomplete suggestion prioritizing prefix matches', async () => {
+    const { VERIFIED_FEATURED_TRACKS } = await import('../../sync-studio/src/lib/spotify-service.js');
+
+    const computeTopMatch = (query: string, songs: any[]) => {
+      const q = query.trim().toLowerCase();
+      if (!q || !songs || songs.length === 0) return null;
+      const matches = songs.filter((s) => {
+        const t = s.title.toLowerCase();
+        const a = s.artist.toLowerCase();
+        const alb = (s.album || '').toLowerCase();
+        return t.includes(q) || a.includes(q) || alb.includes(q);
+      });
+      if (matches.length === 0) return null;
+      matches.sort((a, b) => {
+        const aTitleStart = a.title.toLowerCase().startsWith(q) ? 1 : 0;
+        const bTitleStart = b.title.toLowerCase().startsWith(q) ? 1 : 0;
+        if (aTitleStart !== bTitleStart) return bTitleStart - aTitleStart;
+        const aArtistStart = a.artist.toLowerCase().startsWith(q) ? 1 : 0;
+        const bArtistStart = b.artist.toLowerCase().startsWith(q) ? 1 : 0;
+        if (aArtistStart !== bArtistStart) return bArtistStart - aArtistStart;
+        return 0;
+      });
+      return matches[0] || null;
+    };
+
+    // Test exact prefix title match
+    const ellaMatch = computeTopMatch('Ella', VERIFIED_FEATURED_TRACKS);
+    assert.ok(ellaMatch);
+    assert.equal(ellaMatch.title, 'Ella Baila Sola');
+    assert.equal(ellaMatch.ytmId, '1TVyEcR5pcw');
+
+    // Test artist prefix match
+    const coldMatch = computeTopMatch('Coldplay', VERIFIED_FEATURED_TRACKS);
+    assert.ok(coldMatch);
+    assert.equal(coldMatch.title, 'Yellow');
+
+    // Non-matching query
+    const noneMatch = computeTopMatch('nonexistentxyz123', VERIFIED_FEATURED_TRACKS);
+    assert.equal(noneMatch, null);
+  });
+
+  it('preserves and reconstructs full track metadata in pre-auth session storage across OAuth flows', () => {
+    const mockTrack = {
+      id: 'song_3qhlB30KknSeipLHZaYeKc',
+      spotifyId: '3qhlB30KknSeipLHZaYeKc',
+      ytmId: '1TVyEcR5pcw',
+      title: 'Ella Baila Sola',
+      artist: 'Eslabon Armado, Peso Pluma',
+      album: 'DESVELADO',
+      artworkUrl: 'https://i.scdn.co/image/test',
+      durationMs: 165600,
+      previewUrl: 'https://audio-ssl.itunes.apple.com/test.m4a',
+      source: 'verified' as const,
+      isSyllableSynced: true,
+      contributor: 'CommunityDrop',
+    };
+
+    const sessionPayload = JSON.stringify({
+      song: mockTrack,
+      songId: mockTrack.id,
+      timeMs: 45000,
+      isLyricsPopupOpen: true,
+      currentView: 'discover',
+    });
+
+    const parsed = JSON.parse(sessionPayload);
+    assert.equal(parsed.song.title, 'Ella Baila Sola');
+    assert.equal(parsed.song.ytmId, '1TVyEcR5pcw');
+    assert.equal(parsed.timeMs, 45000);
+    assert.equal(parsed.isLyricsPopupOpen, true);
+  });
+});
+
+

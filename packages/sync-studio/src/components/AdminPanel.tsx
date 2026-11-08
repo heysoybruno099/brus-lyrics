@@ -123,9 +123,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setSubmissions((prev) =>
       prev.map((sub) => (sub.id === songId || sub.spotify_id === songId ? { ...sub, status: 'verified' } : sub))
     );
-    setCatalog((prev) =>
-      prev.map((cat) => (cat.id === songId || cat.spotify_id === songId ? { ...cat, is_verified: 1, contributor: 'Verified Catalog' } : cat))
-    );
+    setCatalog((prev) => {
+      const exists = prev.some((cat) => cat.id === songId || cat.spotify_id === songId);
+      if (exists) {
+        return prev.map((cat) =>
+          cat.id === songId || cat.spotify_id === songId
+            ? { ...cat, is_verified: 1, contributor: 'Verified Catalog' }
+            : cat
+        );
+      }
+      const matchedSub = submissions.find((sub) => sub.id === songId || sub.spotify_id === songId);
+      if (matchedSub) {
+        return [
+          {
+            id: matchedSub.id,
+            spotify_id: matchedSub.spotify_id || null,
+            ytm_id: matchedSub.ytm_id || null,
+            isrc: matchedSub.isrc || null,
+            title: matchedSub.title,
+            artist: matchedSub.artist,
+            duration_ms: matchedSub.duration_ms,
+            contributor: 'Verified Catalog',
+            is_verified: 1,
+            updated_at: new Date().toISOString(),
+          },
+          ...prev,
+        ];
+      }
+      return prev;
+    });
 
     try {
       const res = await fetch(`${apiBase}/v1/admin/verify`, {

@@ -292,18 +292,26 @@ export const App: React.FC = () => {
           if (data.isLyricsPopupOpen) {
             setIsLyricsPopupOpen(true);
           }
-          if (data.songId) {
-            const found = VERIFIED_FEATURED_TRACKS.find(
-              (s) => s.id === data.songId || s.spotifyId === data.songId
-            );
-            if (found) {
-              setActiveSong(found);
-              fetchLyricsForTrack(found)
-                .then((doc) => {
-                  if (doc) setActiveDocument(doc);
-                })
-                .catch(() => {});
+          if (typeof data.timeMs === 'number' && data.timeMs > 0) {
+            setCurrentTimeMs(data.timeMs);
+          }
+          const songToRestore: UnifiedSongItem | null =
+            data.song ||
+            (data.songId
+              ? VERIFIED_FEATURED_TRACKS.find(
+                  (s) => s.id === data.songId || s.spotifyId === data.songId
+                ) || null
+              : null);
+          if (songToRestore) {
+            setActiveSong(songToRestore);
+            if (songToRestore.durationMs > 0) {
+              setDurationMs(songToRestore.durationMs);
             }
+            fetchLyricsForTrack(songToRestore)
+              .then((doc) => {
+                if (doc) setActiveDocument(doc);
+              })
+              .catch(() => {});
           }
         }
       } catch (err) {
@@ -436,7 +444,7 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Open sync workstation preloaded with track metadata
+  // Open sync workstation preloaded with track metadata and audio
   const handleOpenStudioWithTrack = useCallback((song: UnifiedSongItem) => {
     setStudioMetadata((prev) => ({
       ...prev,
@@ -447,7 +455,19 @@ export const App: React.FC = () => {
       ytmId: song.ytmId || undefined,
       durationMs: song.durationMs,
     }));
+    if (song.durationMs > 0) {
+      setDurationMs(song.durationMs);
+    }
     setActiveSong(song);
+    if (song.previewUrl && audioEngineRef.current) {
+      audioEngineRef.current.loadTrack(song.previewUrl, song.durationMs);
+    } else {
+      resolveTrackPreviewUrl(song.title, song.artist).then((url) => {
+        if (url && audioEngineRef.current) {
+          audioEngineRef.current.loadTrack(url, song.durationMs);
+        }
+      });
+    }
     setCurrentView('studio');
   }, []);
 
@@ -581,6 +601,7 @@ export const App: React.FC = () => {
         sessionStorage.setItem(
           'brus_spotify_pre_auth',
           JSON.stringify({
+            song: activeSong || null,
             songId: activeSong?.id || null,
             timeMs: currentTimeMs,
             isLyricsPopupOpen,

@@ -67,18 +67,19 @@ export async function generateCodeChallenge(codeVerifier: string): Promise<strin
   const encoder = new TextEncoder();
   const data = encoder.encode(codeVerifier);
 
-  if (typeof crypto !== 'undefined' && crypto.subtle && crypto.subtle.digest) {
-    const digest = await crypto.subtle.digest('SHA-256', data);
+  const subtleCrypto =
+    typeof crypto !== 'undefined' && crypto.subtle
+      ? crypto.subtle
+      : typeof globalThis !== 'undefined' && (globalThis as any).crypto?.subtle
+      ? (globalThis as any).crypto.subtle
+      : null;
+
+  if (subtleCrypto && subtleCrypto.digest) {
+    const digest = await subtleCrypto.digest('SHA-256', data);
     return base64UrlEncode(digest);
   }
 
-  // Node.js fallback if crypto.subtle is absent
-  try {
-    const nodeCrypto = await import('node:crypto');
-    return nodeCrypto.createHash('sha256').update(codeVerifier).digest('base64url');
-  } catch {
-    throw new Error('Web Cryptography API (crypto.subtle) is required for SHA-256 code challenge generation');
-  }
+  throw new Error('Web Cryptography API (crypto.subtle) is required for SHA-256 code challenge generation');
 }
 
 /**

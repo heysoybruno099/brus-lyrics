@@ -306,7 +306,8 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
         .run();
 
       // If song is not in songs table yet and is being verified, check submissions and promote
-      if (verified && updatedSongs && (updatedSongs as any).meta && (updatedSongs as any).meta.changes === 0) {
+      const changes = (updatedSongs as any)?.meta?.changes ?? (updatedSongs as any)?.changes ?? 0;
+      if (verified && changes === 0) {
         const sub = await env.DB.prepare('SELECT * FROM submissions WHERE id = ?1 OR spotify_id = ?1 LIMIT 1').bind(cleanId).first<SubmissionRecord>();
         if (sub) {
           const titleNorm = normalizeString(sub.title);
@@ -346,6 +347,25 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
     if (item) {
       item.contributor = verified ? 'Verified Catalog' : 'community';
       item.is_verified = verifiedInt;
+    } else if (verified) {
+      const sub = memorySubmissions.get(cleanId) || Array.from(memorySubmissions.values()).find(s => s.id === cleanId || s.spotify_id === cleanId);
+      if (sub) {
+        env.LOCAL_CATALOG.unshift({
+          id: sub.id,
+          spotify_id: sub.spotify_id || null,
+          ytm_id: sub.ytm_id || null,
+          isrc: sub.isrc || null,
+          title: sub.title,
+          artist: sub.artist,
+          title_norm: normalizeString(sub.title),
+          artist_norm: normalizeString(sub.artist),
+          duration_ms: sub.duration_ms,
+          file_path: `database/ttml/${sub.spotify_id || sub.ytm_id || sub.id.replace(/^song_/, '')}.ttml`,
+          contributor: 'Verified Catalog',
+          is_verified: 1,
+          updated_at: new Date().toISOString(),
+        });
+      }
     }
   }
 
