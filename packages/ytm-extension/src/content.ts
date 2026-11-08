@@ -397,13 +397,10 @@ class BrusYtmExtension {
     const candidateEndpoints = [
       `${this.config.apiUrl.replace(/\/+$/, '')}/v1/lyrics?${query.toString()}`,
     ];
-    if (!this.config.apiUrl.includes('127.0.0.1')) {
-      candidateEndpoints.push(`http://127.0.0.1:8787/v1/lyrics?${query.toString()}`);
-    }
 
     for (const endpoint of candidateEndpoints) {
       try {
-        const response = await fetch(endpoint, { signal: AbortSignal.timeout(2000) });
+        const response = await fetch(endpoint, { signal: AbortSignal.timeout(4000) });
         if (response.ok) {
           source = response.headers.get('X-Lyrics-Source') || 'brus-lyrics-verified';
           fetchedTTML = await response.text();

@@ -50,7 +50,7 @@ lyricsRoute.get('/lyrics', async (c) => {
     const titleNorm = normalizeString(title);
     const artistNorm = normalizeString(artist);
 
-    const song = await findSongByNormalized(c.env, titleNorm, artistNorm, durationMs);
+    const song = await findSongByNormalized(c.env, titleNorm, artistNorm, durationMs, platform);
     if (song) {
       const ttml = await fetchTTML(c.env, song.file_path);
       if (ttml) {

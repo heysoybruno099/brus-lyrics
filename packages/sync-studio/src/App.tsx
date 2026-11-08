@@ -800,42 +800,6 @@ export const App: React.FC = () => {
               onQuickAdd={handleOpenStudioWithTrack}
             />
 
-            {/* Informative Banner for 30s preview vs Full playback */}
-            {currentPlaybackSource === 'preview' && !isSpotifyPremium && (
-              <div
-                style={{
-                  maxWidth: 1200,
-                  margin: '0 auto 20px auto',
-                  padding: '12px 20px',
-                  backgroundColor: '#18181b',
-                  border: '1px solid #27272a',
-                  borderRadius: 8,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: 13,
-                  color: '#fbbf24',
-                }}
-              >
-                <span>30-Second Preview Mode. Connect Spotify Premium to unlock full-length playback.</span>
-                <button
-                  type="button"
-                  onClick={handleConnectSpotify}
-                  style={{
-                    backgroundColor: '#1db954',
-                    color: '#000000',
-                    border: 'none',
-                    padding: '6px 14px',
-                    borderRadius: 6,
-                    fontWeight: 700,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Connect Spotify
-                </button>
-              </div>
-            )}
 
             {currentPlaybackSource === 'youtube' && (
               <div

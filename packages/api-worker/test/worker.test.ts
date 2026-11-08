@@ -442,4 +442,59 @@ describe('Cloudflare Worker API Routes', () => {
     assert.ok(Array.isArray(body.catalog));
     assert.ok(Array.isArray(body.submissions));
   });
+
+  it('GET /v1/youtube/search: searches YouTube and returns video suggestions', async () => {
+    const res = await app.request('/v1/youtube/search?q=Coldplay+Yellow');
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { results: Array<{ videoId: string; title: string }> };
+    assert.ok(Array.isArray(body.results));
+    if (body.results.length > 0) {
+      assert.ok(body.results[0]?.videoId);
+      assert.equal(body.results[0]?.videoId.length, 11);
+    }
+  });
+
+  it('Platform targeting: filters out desynced lyrics based on platform query parameter', async () => {
+    // 1. Submit a track targeted ONLY for YouTube Music (platformTarget = 'ytm')
+    const ttmlYtmOnly = `<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xml:lang="en">
+  <head>
+    <metadata>
+      <ttm:title>YTM Only Song</ttm:title>
+      <ttm:agent type="person" xml:id="v1">Desynced Artist</ttm:agent>
+      <itunes:platformTarget>ytm</itunes:platformTarget>
+    </metadata>
+  </head>
+  <body><div><p begin="00:00:01.000" end="00:00:04.000" ttm:agent="v1"><span begin="00:00:01.000" end="00:00:04.000">YT edit</span></p></div></body>
+</tt>`;
+
+    const submitRes = await app.request('/v1/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        metadata: {
+          spotifyId: 'spotify_desync_test_id',
+          ytmId: 'ytm_desync_vid',
+          title: 'YTM Only Song',
+          artist: 'Desynced Artist',
+          durationMs: 200000,
+          platformTarget: 'ytm',
+        },
+        ttmlRaw: ttmlYtmOnly,
+        platformTarget: 'ytm',
+        contributor: 'heysoybruno09',
+      }),
+    });
+    assert.equal(submitRes.status, 201);
+
+    // Query with platform=spotify -> should NOT return the YTM-only lyrics
+    const resSpotify = await app.request('/v1/lyrics?trackId=spotify_desync_test_id&platform=spotify');
+    assert.notEqual(resSpotify.headers.get('X-Lyrics-Source'), 'brus-lyrics-verified');
+
+    // Query with platform=ytm -> SHOULD return the YTM lyrics
+    const resYtm = await app.request('/v1/lyrics?trackId=ytm_desync_vid&platform=ytm');
+    assert.equal(resYtm.status, 200);
+    assert.equal(resYtm.headers.get('X-Lyrics-Source'), 'brus-lyrics-verified');
+  });
 });
+

@@ -10,7 +10,6 @@ export interface LyricsFetchResult {
 }
 
 export const DEFAULT_API_BASE = 'https://brus-lyrics-api.heysoybruno09.workers.dev';
-export const LOCAL_API_BASE = 'http://127.0.0.1:8787';
 
 function formatMsTimestamp(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -129,9 +128,6 @@ export async function fetchLyrics(
   const candidateUrls = [
     `${apiBase.replace(/\/+$/, '')}/v1/lyrics?${query.toString()}`,
   ];
-  if (apiBase !== LOCAL_API_BASE) {
-    candidateUrls.push(`${LOCAL_API_BASE}/v1/lyrics?${query.toString()}`);
-  }
 
   for (const url of candidateUrls) {
     try {
@@ -140,7 +136,7 @@ export async function fetchLyrics(
         headers: {
           Accept: 'application/xml, text/xml, */*',
         },
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(4000),
       });
 
       if (response.ok) {

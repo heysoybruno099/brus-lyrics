@@ -166,7 +166,7 @@ export function parseLrcLyrics(content: string, totalDurationMs?: number): { lin
   };
 }
 
-import { parseJsonLyrics as parseEngineJsonLyrics } from '@brus-lyrics/ttml-engine';
+import { parseJsonLyrics as parseEngineJsonLyrics, parseTTML } from '@brus-lyrics/ttml-engine';
 
 /**
  * Parses JSON lyrics format using ttml-engine
@@ -179,7 +179,6 @@ export function parseJsonLyrics(content: string, totalDurationMs?: number): {
   return parseEngineJsonLyrics(content, totalDurationMs);
 }
 
-
 /**
  * Parses Apple Music / W3C TTML XML string
  */
@@ -188,100 +187,14 @@ export function parseTtmlXml(content: string): {
   lines: TTMLLine[];
   mode: SyncMode;
 } {
-  const metadata: Partial<TTMLMetadata> = {};
-  const lines: TTMLLine[] = [];
-  let hasSyllables = false;
-
-  // Extract Metadata using regex (works in browser and node)
-  const titleMatch = content.match(/<ttm:title>([^<]+)<\/ttm:title>/);
-  if (titleMatch && titleMatch[1]) metadata.title = titleMatch[1].trim();
-
-  const artistMatch = content.match(/<ttm:agent[^>]*>([^<]+)<\/ttm:agent>/);
-  if (artistMatch && artistMatch[1]) metadata.artist = artistMatch[1].trim();
-
-  const albumMatch = content.match(/<itunes:album>([^<]+)<\/itunes:album>/);
-  if (albumMatch && albumMatch[1]) metadata.album = albumMatch[1].trim();
-
-  const durMatch = content.match(/<itunes:duration>([^<]+)<\/itunes:duration>/);
-  if (durMatch && durMatch[1]) metadata.durationMs = parseTimestampTTML(durMatch[1]);
-
-  const pRegex = /<p\s+([^>]*?)>([\s\S]*?)<\/p>/gi;
-  let pMatch: RegExpExecArray | null;
-  let lineIdx = 1;
-
-  while ((pMatch = pRegex.exec(content)) !== null) {
-    const attrs = pMatch[1] || '';
-    const body = pMatch[2] || '';
-
-    const beginMatch = attrs.match(/begin=["']([^"']+)["']/);
-    const endMatch = attrs.match(/end=["']([^"']+)["']/);
-    const agentMatch = attrs.match(/ttm:agent=["']([^"']+)["']/);
-
-    const beginMs = beginMatch && beginMatch[1] ? parseTimestampTTML(beginMatch[1]) : 0;
-    const endMs = endMatch && endMatch[1] ? parseTimestampTTML(endMatch[1]) : beginMs + 3500;
-    const agent: VocalAgent = agentMatch && agentMatch[1] === 'v2' ? 'v2' : 'v1';
-
-    const spanRegex = /<span\s+([^>]*?)>([\s\S]*?)<\/span>/gi;
-    const syllables: TTMLSyllable[] = [];
-    let spanMatch: RegExpExecArray | null;
-
-    while ((spanMatch = spanRegex.exec(body)) !== null) {
-      const sAttrs = spanMatch[1] || '';
-      const sText = (spanMatch[2] || '').replace(/<[^>]+>/g, '');
-
-      const sBeginMatch = sAttrs.match(/begin=["']([^"']+)["']/);
-      const sEndMatch = sAttrs.match(/end=["']([^"']+)["']/);
-
-      if (sBeginMatch && sBeginMatch[1]) {
-        hasSyllables = true;
-        const sBeginMs = parseTimestampTTML(sBeginMatch[1]);
-        const sEndMs = sEndMatch && sEndMatch[1] ? parseTimestampTTML(sEndMatch[1]) : sBeginMs + 250;
-        syllables.push({
-          begin: sBeginMs,
-          end: sEndMs,
-          text: sText,
-        });
-      }
-    }
-
-    const cleanText = body.replace(/<[^>]+>/g, '').trim();
-
-    if (syllables.length === 0) {
-      // Line mode without inner spans
-      const words = cleanText.split(/\s+/).filter(Boolean);
-      if (words.length > 0) {
-        const dur = Math.max(100, Math.floor((endMs - beginMs) / words.length));
-        for (let w = 0; w < words.length; w++) {
-          const wb = beginMs + w * dur;
-          const we = w === words.length - 1 ? endMs : wb + dur;
-          syllables.push({
-            begin: wb,
-            end: we,
-            text: w < words.length - 1 ? `${words[w]} ` : words[w]!,
-          });
-        }
-      } else {
-        syllables.push({
-          begin: beginMs,
-          end: endMs,
-          text: cleanText,
-        });
-      }
-    }
-
-    lines.push({
-      id: `line_${lineIdx++}`,
-      begin: beginMs,
-      end: endMs,
-      agent,
-      text: cleanText,
-      syllables,
-    });
-  }
+  const doc = parseTTML(content);
+  const hasSyllables = doc.lines.some(
+    (l) => (l.syllables && l.syllables.length > 0) || (l.backgroundVocals && l.backgroundVocals.length > 0)
+  );
 
   return {
-    metadata,
-    lines,
+    metadata: doc.metadata,
+    lines: doc.lines,
     mode: hasSyllables ? 'syllable' : 'line',
   };
 }

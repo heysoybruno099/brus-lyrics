@@ -225,7 +225,12 @@ export function parseJsonLyrics(
           const tok = tokens[t];
           const nextTok = tokens[t + 1];
           const tokBegin = toMs(tok.start);
-          const tokEnd = nextTok ? toMs(nextTok.start) : endMs;
+          const tokEnd =
+            tok.end !== undefined && tok.end !== null
+              ? toMs(tok.end)
+              : nextTok
+              ? toMs(nextTok.start)
+              : endMs;
           let tokText = sanitizeText(tok.text);
 
           if (t < tokens.length - 1) {
@@ -256,7 +261,12 @@ export function parseJsonLyrics(
             const tok = bgTokens[t];
             const nextTok = bgTokens[t + 1];
             const tokBegin = toMs(tok.start ?? tok.StartTime ?? bgBegin);
-            const tokEnd = nextTok ? toMs(nextTok.start ?? nextTok.StartTime) : bgEnd;
+            const tokEnd =
+              (tok.end !== undefined && tok.end !== null) || (tok.EndTime !== undefined && tok.EndTime !== null)
+                ? toMs(tok.end ?? tok.EndTime)
+                : nextTok
+                ? toMs(nextTok.start ?? nextTok.StartTime)
+                : bgEnd;
             let tokText = sanitizeText(tok.text ?? tok.Text);
             if (t < bgTokens.length - 1) tokText = tokText.trimEnd() + ' ';
             bgSyllables.push({
@@ -447,13 +457,16 @@ export function jsonToTTML(
         for (const bg of line.backgroundVocals) {
           const bgBegin = formatTimestampTTML(bg.begin);
           const bgEnd = formatTimestampTTML(bg.end);
-          const bgSpans = bg.syllables
-            .map((s) => {
-              const sbStr = formatTimestampTTML(s.begin);
-              const seStr = formatTimestampTTML(s.end);
-              return `          <span begin="${sbStr}" end="${seStr}">${escapeXml(s.text)}</span>`;
-            })
-            .join('\n');
+          const bgSpans =
+            bg.syllables && bg.syllables.length > 0
+              ? bg.syllables
+                  .map((s) => {
+                    const sbStr = formatTimestampTTML(s.begin);
+                    const seStr = formatTimestampTTML(s.end);
+                    return `          <span begin="${sbStr}" end="${seStr}">${escapeXml(s.text)}</span>`;
+                  })
+                  .join('\n')
+              : `          <span>${escapeXml(bg.text)}</span>`;
           bgXml += `\n        <span begin="${bgBegin}" end="${bgEnd}" ttm:role="x-bg">\n${bgSpans}\n        </span>`;
         }
       }

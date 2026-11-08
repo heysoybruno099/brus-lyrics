@@ -89,6 +89,7 @@ submitRoute.post('/submit', async (c) => {
       duration_ms: durationMs,
       contributor: contributorName,
       ttml_raw: ttmlRaw,
+      platform_target: effectiveTarget,
     });
 
     const response: SubmitLyricsResponse = {

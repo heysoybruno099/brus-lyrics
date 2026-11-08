@@ -8,6 +8,7 @@ import { catalogRoute } from './routes/catalog.js';
 import { spotifyRoute } from './routes/spotify.js';
 import { authRoute } from './routes/auth.js';
 import { adminRoute } from './routes/admin.js';
+import { youtubeRoute } from './routes/youtube.js';
 import { embeddedTTMLMap } from './lib/embedded-lyrics.js';
 
 // @ts-ignore
@@ -47,9 +48,7 @@ app.use('*', async (c, next) => {
     c.env.LOCAL_CATALOG = embeddedCatalogSongs;
   }
   if (!c.env.LOCAL_TTML_MAP) {
-    c.env.LOCAL_TTML_MAP = { ...embeddedTTMLMap };
-  } else {
-    c.env.LOCAL_TTML_MAP = { ...embeddedTTMLMap, ...c.env.LOCAL_TTML_MAP };
+    c.env.LOCAL_TTML_MAP = embeddedTTMLMap;
   }
   await next();
 });
@@ -79,6 +78,7 @@ app.route('/v1', catalogRoute);
 app.route('/v1', spotifyRoute);
 app.route('/v1', authRoute);
 app.route('/v1', adminRoute);
+app.route('/v1', youtubeRoute);
 
 // Also route unversioned routes for convenience
 app.route('/', lyricsRoute);
@@ -87,6 +87,7 @@ app.route('/', catalogRoute);
 app.route('/', spotifyRoute);
 app.route('/', authRoute);
 app.route('/', adminRoute);
+app.route('/', youtubeRoute);
 
 // 404 handler
 app.notFound((c) => {

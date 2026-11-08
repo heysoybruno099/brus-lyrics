@@ -145,7 +145,7 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
       const results: IdSuggestion[] = [];
       const seenKeys = new Set<string>();
 
-      // 1. Search verified catalog songs first (gives both spotifyId & ytmId)
+      // 1. Search verified catalog songs (both local featured and remote catalog)
       const catalogMatches = VERIFIED_FEATURED_TRACKS.filter((t) => {
         const tTitle = t.title.toLowerCase();
         const tArtist = t.artist.toLowerCase();
@@ -158,7 +158,7 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
       });
 
       for (const m of catalogMatches.slice(0, 4)) {
-        const key = `${m.title}::${m.artist}`;
+        const key = `${m.title.toLowerCase()}::${m.artist.toLowerCase()}`;
         if (!seenKeys.has(key)) {
           seenKeys.add(key);
           results.push({
@@ -174,14 +174,40 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
         }
       }
 
+      const apiBase = getApiBaseUrl().replace(/\/+$/, '');
+
+      // Also query verified remote catalog via API
+      try {
+        const catRes = await fetch(`${apiBase}/v1/catalog?q=${encodeURIComponent(query)}&limit=5`);
+        if (catRes.ok) {
+          const catData = (await catRes.json()) as any;
+          for (const s of catData.songs || []) {
+            const key = `${s.title.toLowerCase()}::${s.artist.toLowerCase()}`;
+            if (!seenKeys.has(key)) {
+              seenKeys.add(key);
+              results.push({
+                id: s.id,
+                title: s.title,
+                artist: s.artist,
+                spotifyId: s.spotify_id,
+                ytmId: s.ytm_id,
+                durationMs: s.duration_ms,
+                source: 'catalog',
+              });
+            }
+          }
+        }
+      } catch {
+        // Fallback
+      }
+
       // 2. Query API Worker Spotify Search for live Spotify Track IDs
       try {
-        const apiBase = getApiBaseUrl().replace(/\/+$/, '');
         const res = await fetch(`${apiBase}/v1/spotify/search?q=${encodeURIComponent(query)}&limit=4`);
         if (res.ok) {
           const data = (await res.json()) as any;
           for (const item of data.tracks || []) {
-            const key = `${item.title}::${item.artist}`;
+            const key = `${item.title.toLowerCase()}::${item.artist.toLowerCase()}`;
             if (!seenKeys.has(key)) {
               seenKeys.add(key);
               results.push({
@@ -201,7 +227,27 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
         // Network fallback
       }
 
-      setSuggestions(results.slice(0, 5));
+      // 3. For any track missing ytmId, look up YouTube video ID
+      await Promise.all(
+        results.slice(0, 4).map(async (item) => {
+          if (!item.ytmId) {
+            try {
+              const ytQuery = `${item.title} ${item.artist}`.trim();
+              const ytRes = await fetch(`${apiBase}/v1/youtube/search?q=${encodeURIComponent(ytQuery)}`);
+              if (ytRes.ok) {
+                const ytData = (await ytRes.json()) as any;
+                if (ytData.results && ytData.results.length > 0 && ytData.results[0].id) {
+                  item.ytmId = ytData.results[0].id;
+                }
+              }
+            } catch {
+              // Ignore failure
+            }
+          }
+        })
+      );
+
+      setSuggestions(results.slice(0, 6));
       setIsSearchingIds(false);
       setHasDismissedSuggestions(false);
     }, 350);
@@ -209,15 +255,28 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
     return () => clearTimeout(timer);
   }, [metadata.title, metadata.artist]);
 
+  const platformTarget = metadata.platformTarget || 'both';
+
   const handleApplySuggestion = (s: IdSuggestion) => {
-    onChangeMetadata({
+    const newMeta: Partial<TTMLMetadata> = {
       title: s.title,
       artist: s.artist,
-      ...(s.spotifyId ? { spotifyId: s.spotifyId } : {}),
-      ...(s.ytmId ? { ytmId: s.ytmId } : {}),
       ...(s.durationMs ? { durationMs: s.durationMs } : {}),
       ...(s.album ? { album: s.album } : {}),
-    });
+    };
+
+    if (platformTarget === 'spotify') {
+      if (s.spotifyId) newMeta.spotifyId = s.spotifyId;
+      newMeta.ytmId = undefined;
+    } else if (platformTarget === 'ytm') {
+      if (s.ytmId) newMeta.ytmId = s.ytmId;
+      newMeta.spotifyId = undefined;
+    } else {
+      if (s.spotifyId) newMeta.spotifyId = s.spotifyId;
+      if (s.ytmId) newMeta.ytmId = s.ytmId;
+    }
+
+    onChangeMetadata(newMeta);
     setHasDismissedSuggestions(true);
   };
 
@@ -228,8 +287,6 @@ export const AudioMetadataDeck: React.FC<AudioMetadataDeckProps> = ({
   const handleApplyYtmId = (ytmId: string) => {
     onChangeMetadata({ ytmId: cleanTrackId(ytmId) });
   };
-
-  const platformTarget = metadata.platformTarget || 'both';
 
   return (
     <div className="deck-pane" style={{ width: 280 }}>

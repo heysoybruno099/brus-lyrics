@@ -667,6 +667,122 @@ describe('Search Autocomplete & Fallback Workflow', () => {
     assert.equal(parsed.timeMs, 45000);
     assert.equal(parsed.isLyricsPopupOpen, true);
   });
+
+  it('Structure 2 draft.lines: parses explicit token end times and background vocals', async () => {
+    const { parseJsonLyrics } = await import('../src/json-parser.js');
+
+    const draftJson = JSON.stringify({
+      version: 1,
+      draft: {
+        lines: [
+          {
+            text: 'Lead line text',
+            start: 5000,
+            end: 8000,
+            tokens: [
+              { text: 'Lead ', start: 5000, end: 6000 },
+              { text: 'line ', start: 6000, end: 7000 },
+              { text: 'text', start: 7000, end: 8000 },
+            ],
+            backgrounds: [
+              {
+                text: 'Backing vocal',
+                start: 6500,
+                end: 9000,
+                tokens: [
+                  { text: 'Backing ', start: 6500, end: 7800 },
+                  { text: 'vocal', start: 7800, end: 9000 },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const parsed = parseJsonLyrics(draftJson);
+    assert.equal(parsed.lines.length, 1);
+    const line = parsed.lines[0]!;
+    assert.equal(line.syllables.length, 3);
+    assert.equal(line.syllables[0]?.end, 6000);
+    assert.equal(line.syllables[1]?.end, 7000);
+    assert.equal(line.syllables[2]?.end, 8000);
+
+    assert.ok(line.backgroundVocals);
+    assert.equal(line.backgroundVocals.length, 1);
+    const bg = line.backgroundVocals[0]!;
+    assert.equal(bg.begin, 6500);
+    assert.equal(bg.end, 9000);
+    assert.equal(bg.syllables.length, 2);
+    assert.equal(bg.syllables[0]?.end, 7800);
+    assert.equal(bg.syllables[1]?.end, 9000);
+  });
+
+  it('parseTTML expands line bounds when background vocals begin before or end after lead syllables', async () => {
+    const { parseTTML } = await import('../src/parser.js');
+
+    const ttmlWithBg = `<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-internal">
+  <head>
+    <metadata>
+      <ttm:title>Bg Test</ttm:title>
+      <itunes:platformTarget>both</itunes:platformTarget>
+    </metadata>
+  </head>
+  <body>
+    <div>
+      <p begin="00:00:05.000" end="00:00:08.000" ttm:agent="v1">
+        <span begin="00:00:05.000" end="00:00:07.000">Main voice</span>
+        <span begin="00:00:06.000" end="00:00:09.500" ttm:role="x-bg">
+          <span begin="00:00:06.000" end="00:00:09.500">Echo harmony</span>
+        </span>
+      </p>
+    </div>
+  </body>
+</tt>`;
+
+    const doc = parseTTML(ttmlWithBg);
+    assert.equal(doc.metadata.platformTarget, 'both');
+    assert.equal(doc.lines.length, 1);
+    const l = doc.lines[0]!;
+    // Line bounds should expand to cover the background vocal up to 9500ms
+    assert.equal(l.begin, 5000);
+    assert.equal(l.end, 9500);
+    assert.equal(l.backgroundVocals?.length, 1);
+    assert.equal(l.backgroundVocals[0]?.role, 'x-bg');
+    assert.equal(l.backgroundVocals[0]?.syllables[0]?.role, 'x-bg');
+  });
+
+  it('parseTtmlXml in sync-studio retains background vocals and sets syllable mode', async () => {
+    const { parseTtmlXml } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+
+    const ttml = `<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-internal">
+  <head>
+    <metadata>
+      <ttm:title>Soda Stereo Test</ttm:title>
+      <itunes:platformTarget>spotify</itunes:platformTarget>
+    </metadata>
+  </head>
+  <body>
+    <div>
+      <p begin="00:00:02.000" end="00:00:05.000">
+        <span begin="00:00:02.000" end="00:00:04.000">Lead text</span>
+        <span begin="00:00:03.000" end="00:00:05.500" ttm:role="x-bg">
+          <span begin="00:00:03.000" end="00:00:05.500">Backing</span>
+        </span>
+      </p>
+    </div>
+  </body>
+</tt>`;
+
+    const res = parseTtmlXml(ttml);
+    assert.equal(res.mode, 'syllable');
+    assert.equal(res.metadata.platformTarget, 'spotify');
+    assert.equal(res.lines[0]?.backgroundVocals?.length, 1);
+    assert.equal(res.lines[0]?.backgroundVocals[0]?.syllables[0]?.text.trim(), 'Backing');
+  });
 });
+
 
 

@@ -235,7 +235,9 @@ export function parseTTML(rawXml: string): TTMLDocument {
         const childSpans = parseTopLevelSpans(span.innerContent);
         if (childSpans.length > 0) {
           for (const child of childSpans) {
-            bgSyllables.push(parseSyllableSpan(child.attrs, child.innerContent, child.trailing));
+            const parsedSyl = parseSyllableSpan(child.attrs, child.innerContent, child.trailing);
+            if (!parsedSyl.role) parsedSyl.role = 'x-bg';
+            bgSyllables.push(parsedSyl);
           }
         } else {
           bgSyllables.push({
@@ -274,12 +276,17 @@ export function parseTTML(rawXml: string): TTMLDocument {
     const fullLineText = syllables.map((s) => s.text).join('').trim() ||
       decodeXmlEntities(pContent.replace(/<[^>]+>/g, '').trim());
 
-    const calculatedBegin = syllables.length > 0
+    let calculatedBegin = syllables.length > 0
       ? Math.min(lineBegin, syllables[0]!.begin)
       : lineBegin;
-    const calculatedEnd = syllables.length > 0
+    let calculatedEnd = syllables.length > 0
       ? Math.max(lineEnd, syllables[syllables.length - 1]!.end)
       : lineEnd;
+
+    for (const bg of backgroundVocals) {
+      if (bg.begin < calculatedBegin) calculatedBegin = bg.begin;
+      if (bg.end > calculatedEnd) calculatedEnd = bg.end;
+    }
 
     lines.push({
       id: `line_${lines.length + 1}`,

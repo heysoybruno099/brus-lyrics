@@ -145,8 +145,8 @@ export async function buildSpotifyOAuthUrl(
   const redirect =
     redirectUri ||
     (typeof window !== 'undefined'
-      ? `${window.location.origin}/callback`
-      : 'https://brus-lyrics.pages.dev/callback');
+      ? `${window.location.origin}/auth/callback`
+      : 'https://brus-lyrics.pages.dev/auth/callback');
 
   const verifier = existingVerifier || generateCodeVerifier();
   saveSpotifyCodeVerifier(verifier);
@@ -184,8 +184,8 @@ export async function exchangeSpotifyCodeForToken(
   const redirect =
     redirectUri ||
     (typeof window !== 'undefined'
-      ? `${window.location.origin}/callback`
-      : 'https://brus-lyrics.pages.dev/callback');
+      ? `${window.location.origin}/auth/callback`
+      : 'https://brus-lyrics.pages.dev/auth/callback');
 
   // Attempt 1: Worker API route POST /v1/spotify/exchange
   try {

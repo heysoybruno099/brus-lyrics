@@ -14,9 +14,9 @@ export async function findSongByTrackId(
     try {
       let query: string;
       if (normPlatform === 'spotify') {
-        query = 'SELECT * FROM songs WHERE spotify_id = ?1 OR spotify_id = ?2 LIMIT 1';
+        query = 'SELECT * FROM songs WHERE (spotify_id = ?1 OR spotify_id = ?2) AND (platform_target IS NULL OR platform_target != "ytm") LIMIT 1';
       } else if (normPlatform === 'ytm' || normPlatform === 'youtube') {
-        query = 'SELECT * FROM songs WHERE ytm_id = ?1 OR ytm_id = ?2 LIMIT 1';
+        query = 'SELECT * FROM songs WHERE (ytm_id = ?1 OR ytm_id = ?2) AND (platform_target IS NULL OR platform_target != "spotify") LIMIT 1';
       } else {
         query = 'SELECT * FROM songs WHERE spotify_id = ?1 OR spotify_id = ?2 OR ytm_id = ?1 OR ytm_id = ?2 OR id = ?1 OR id = ?2 LIMIT 1';
       }
@@ -31,9 +31,11 @@ export async function findSongByTrackId(
   const catalog = env.LOCAL_CATALOG || [];
   const match = catalog.find((song) => {
     if (normPlatform === 'spotify') {
+      if (song.platform_target === 'ytm') return false;
       return song.spotify_id === cleanId || song.spotify_id === trackId;
     }
     if (normPlatform === 'ytm' || normPlatform === 'youtube') {
+      if (song.platform_target === 'spotify') return false;
       return song.ytm_id === cleanId || song.ytm_id === trackId;
     }
     return (
@@ -53,8 +55,17 @@ export async function findSongByNormalized(
   env: Env,
   titleNorm: string,
   artistNorm: string,
-  durationMs?: number
+  durationMs?: number,
+  platform?: string
 ): Promise<CatalogEntry | null> {
+  const normPlatform = platform ? platform.toLowerCase().trim() : '';
+  const platformClause =
+    normPlatform === 'spotify'
+      ? ' AND (platform_target IS NULL OR platform_target != "ytm")'
+      : normPlatform === 'ytm' || normPlatform === 'youtube'
+      ? ' AND (platform_target IS NULL OR platform_target != "spotify")'
+      : '';
+
   if (env.DB) {
     try {
       if (durationMs && durationMs > 0) {
@@ -62,7 +73,7 @@ export async function findSongByNormalized(
           SELECT * FROM songs
           WHERE title_norm = ?1
             AND (artist_norm = ?2 OR artist_norm LIKE '%' || ?2 || '%' OR ?2 LIKE '%' || artist_norm || '%')
-            AND ABS(duration_ms - ?3) <= 2500
+            AND ABS(duration_ms - ?3) <= 2500${platformClause}
           ORDER BY ABS(duration_ms - ?3) ASC
           LIMIT 1
         `;
@@ -75,6 +86,7 @@ export async function findSongByNormalized(
           SELECT * FROM songs
           WHERE title_norm = ?1
             AND (artist_norm = ?2 OR artist_norm LIKE '%' || ?2 || '%' OR ?2 LIKE '%' || artist_norm || '%')
+            ${platformClause}
           LIMIT 1
         `;
         const row = await env.DB.prepare(query)
@@ -89,6 +101,9 @@ export async function findSongByNormalized(
 
   const catalog = env.LOCAL_CATALOG || [];
   const matches = catalog.filter((song) => {
+    if (normPlatform === 'spotify' && song.platform_target === 'ytm') return false;
+    if ((normPlatform === 'ytm' || normPlatform === 'youtube') && song.platform_target === 'spotify') return false;
+
     if (song.title_norm !== titleNorm) return false;
     // Check exact artist_norm match or substring match
     const artistMatches =
@@ -200,6 +215,7 @@ export interface SubmissionRecord {
   contributor: string;
   ttml_raw: string;
   status: string;
+  platform_target?: string | null;
   created_at: string;
 }
 
@@ -217,6 +233,7 @@ export async function queueSubmission(
     duration_ms: number;
     contributor: string;
     ttml_raw: string;
+    platform_target?: string | null;
   }
 ): Promise<void> {
   const record: SubmissionRecord = {
@@ -249,6 +266,34 @@ export async function queueSubmission(
     } catch {
       // Fallback to memorySubmissions
     }
+  }
+
+  // Populate local catalog and ttml map for in-memory and local runtimes
+  if (env.LOCAL_CATALOG) {
+    const filePath = `database/ttml/${submission.spotify_id || submission.ytm_id || submission.id}.ttml`;
+    env.LOCAL_CATALOG.push({
+      id: submission.id,
+      spotify_id: submission.spotify_id || null,
+      ytm_id: submission.ytm_id || null,
+      isrc: submission.isrc || null,
+      title: submission.title,
+      artist: submission.artist,
+      title_norm: normalizeString(submission.title),
+      artist_norm: normalizeString(submission.artist),
+      duration_ms: submission.duration_ms,
+      file_path: filePath,
+      contributor: submission.contributor,
+      updated_at: record.created_at,
+      is_verified: 0,
+      platform_target: (submission.platform_target as any) || null,
+    });
+  }
+
+  if (env.LOCAL_TTML_MAP) {
+    const filePath = `database/ttml/${submission.spotify_id || submission.ytm_id || submission.id}.ttml`;
+    env.LOCAL_TTML_MAP[filePath] = submission.ttml_raw;
+    const baseName = `${submission.spotify_id || submission.ytm_id || submission.id}.ttml`;
+    env.LOCAL_TTML_MAP[baseName] = submission.ttml_raw;
   }
 }
 

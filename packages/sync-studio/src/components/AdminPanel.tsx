@@ -341,7 +341,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         {formatTimestampTTML(s.duration_ms)}
                       </td>
                       <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, color: '#71717a' }}>
-                        {s.spotify_id || s.ytm_id || s.id}
+                        {s.spotify_id ? (
+                          <a
+                            href={`https://open.spotify.com/track/${s.spotify_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#1db954', textDecoration: 'none', marginRight: 6 }}
+                            title="Open Spotify Track in new tab"
+                          >
+                            SP: {s.spotify_id.slice(0, 10)}...
+                          </a>
+                        ) : null}
+                        {s.ytm_id ? (
+                          <a
+                            href={`https://music.youtube.com/watch?v=${s.ytm_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#f87171', textDecoration: 'none' }}
+                            title="Open YouTube Music in new tab"
+                          >
+                            YT: {s.ytm_id}
+                          </a>
+                        ) : null}
+                        {!s.spotify_id && !s.ytm_id ? s.id : null}
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, backgroundColor: '#27272a', color: '#e4e4e7' }}>
@@ -354,7 +376,44 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         )}
                       </td>
                       <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: 8 }}>
+                        <div style={{ display: 'inline-flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ padding: '4px 8px', fontSize: 11 }}
+                            onClick={() =>
+                              onSelectAndPlaySong({
+                                id: s.id || s.spotify_id || '',
+                                spotifyId: s.spotify_id || undefined,
+                                ytmId: s.ytm_id || undefined,
+                                title: s.title,
+                                artist: s.artist,
+                                album: '',
+                                artworkUrl: '',
+                                durationMs: s.duration_ms,
+                                source: 'verified',
+                                isSyllableSynced: true,
+                              })
+                            }
+                            title="Play lyrics"
+                          >
+                            Play
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ padding: '4px 8px', fontSize: 11 }}
+                            onClick={() =>
+                              onOpenStudioWithTrack({
+                                title: s.title,
+                                artist: s.artist,
+                                id: s.spotify_id || s.ytm_id || s.id,
+                              })
+                            }
+                            title="Edit lyrics in Studio"
+                          >
+                            Edit
+                          </button>
                           <button
                             type="button"
                             className="btn btn-secondary"
@@ -438,7 +497,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </span>
                       </td>
                       <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: 8 }}>
+                        <div style={{ display: 'inline-flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ padding: '4px 8px', fontSize: 11 }}
+                            onClick={() =>
+                              onOpenStudioWithTrack({
+                                title: sub.title,
+                                artist: sub.artist,
+                                id: sub.spotify_id || sub.ytm_id || sub.id,
+                              })
+                            }
+                            title="Edit submission in Studio"
+                          >
+                            Edit
+                          </button>
                           <button
                             type="button"
                             className="btn btn-secondary"

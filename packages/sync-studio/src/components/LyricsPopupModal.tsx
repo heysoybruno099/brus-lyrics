@@ -195,41 +195,6 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
           </div>
         </div>
 
-        {/* Informative Banner in Lyric Modal */}
-        {currentPlaybackSource === 'preview' && (
-          <div
-            style={{
-              backgroundColor: '#1c1917',
-              borderBottom: '1px solid #292524',
-              padding: '6px 16px',
-              fontSize: 11,
-              color: '#fbbf24',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>30-Second Preview Mode. Connect Spotify Premium to unlock full-length playback.</span>
-            {onConnectSpotify && (
-              <button
-                type="button"
-                onClick={onConnectSpotify}
-                style={{
-                  background: '#1db954',
-                  color: '#000000',
-                  border: 'none',
-                  borderRadius: 4,
-                  padding: '2px 8px',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Connect Spotify
-              </button>
-            )}
-          </div>
-        )}
 
         {currentPlaybackSource === 'youtube' && (
           <div
@@ -373,33 +338,37 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
                               style={{ display: 'inline-flex', gap: 2, marginRight: 8 }}
                             >
                               <span style={{ color: '#a1a1aa' }}>(</span>
-                              {bgLine.syllables.map((syl, sylIdx) => {
-                                const isSylActive = currentTimeMs >= syl.begin && currentTimeMs <= syl.end;
-                                const isSylPassed = currentTimeMs > syl.end;
-                                const sylProgress = isSylPassed
-                                  ? 1
-                                  : isSylActive && syl.end > syl.begin
-                                  ? Math.min(1, Math.max(0, (currentTimeMs - syl.begin) / (syl.end - syl.begin)))
-                                  : 0;
+                              {bgLine.syllables && bgLine.syllables.length > 0 ? (
+                                bgLine.syllables.map((syl, sylIdx) => {
+                                  const isSylActive = currentTimeMs >= syl.begin && currentTimeMs <= syl.end;
+                                  const isSylPassed = currentTimeMs > syl.end;
+                                  const sylProgress = isSylPassed
+                                    ? 1
+                                    : isSylActive && syl.end > syl.begin
+                                    ? Math.min(1, Math.max(0, (currentTimeMs - syl.begin) / (syl.end - syl.begin)))
+                                    : 0;
 
-                                return (
-                                  <span
-                                    key={`bg_syl_${lineIndex}_${bgIdx}_${sylIdx}`}
-                                    className={`popup-syllable popup-bg-syllable ${isSylActive ? 'syl-active' : ''} ${
-                                      isSylPassed ? 'syl-passed' : ''
-                                    }`}
-                                    style={{
-                                      '--syl-progress': sylProgress,
-                                    } as React.CSSProperties}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onSeek(syl.begin);
-                                    }}
-                                  >
-                                    <span className="popup-syllable-fill">{syl.text}</span>
-                                  </span>
-                                );
-                              })}
+                                  return (
+                                    <span
+                                      key={`bg_syl_${lineIndex}_${bgIdx}_${sylIdx}`}
+                                      className={`popup-syllable popup-bg-syllable ${isSylActive ? 'syl-active' : ''} ${
+                                        isSylPassed ? 'syl-passed' : ''
+                                      }`}
+                                      style={{
+                                        '--syl-progress': sylProgress,
+                                      } as React.CSSProperties}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onSeek(syl.begin);
+                                      }}
+                                    >
+                                      <span className="popup-syllable-fill">{syl.text}</span>
+                                    </span>
+                                  );
+                                })
+                              ) : (
+                                <span className="popup-fallback-text">{bgLine.text}</span>
+                              )}
                               <span style={{ color: '#a1a1aa' }}>)</span>
                             </span>
                           ))}
