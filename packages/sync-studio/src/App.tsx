@@ -1151,7 +1151,7 @@ export const App: React.FC = () => {
             </a>
             <span style={{ color: '#52525b' }}>•</span>
             <a
-              href="https://discord.com"
+              href="https://discord.gg/aCxGMH8KrN"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: '#a1a1aa', textDecoration: 'underline' }}
