@@ -1,0 +1,19 @@
+{
+  "name": "@brus-lyrics/spicetify-extension",
+  "version": "1.0.0",
+  "description": "Spicetify desktop client extension for Bru's Lyrics",
+  "type": "module",
+  "main": "dist/brus-lyrics.js",
+  "scripts": {
+    "build": "node build.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@brus-lyrics/shared-types": "*",
+    "@brus-lyrics/ttml-engine": "*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.5"
+  }
+}

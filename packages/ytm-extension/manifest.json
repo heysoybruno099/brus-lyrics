@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Bru's Lyrics for YouTube Music",
+  "version": "1.0.0",
+  "description": "High-precision synchronized TTML syllable lyrics for YouTube Music",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://music.youtube.com/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Bru's Lyrics Configuration"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://music.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}

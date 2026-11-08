@@ -1,0 +1,113 @@
+#brus-lyrics-root {
+  display: none;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background-color: #0a0a0c;
+  color: #f4f4f6;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  z-index: 10;
+}
+
+#brus-lyrics-root.is-visible {
+  display: flex !important;
+}
+
+.brus-ytm-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background-color: #0a0a0c;
+  color: #f4f4f6;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.brus-ytm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: rgba(10, 10, 12, 0.9);
+  border-bottom: 1px solid #26262e;
+  z-index: 10;
+  backdrop-filter: blur(12px);
+  user-select: none;
+}
+
+.brus-ytm-branding {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #f4f4f6;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.brus-ytm-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  border: 1px solid #26262e;
+  background: #141418;
+  color: #9e9ea8;
+  text-transform: uppercase;
+}
+
+.brus-ytm-pill[data-source="brus-lyrics-verified"] {
+  border-color: #3e3e4a;
+  background: #1b1b22;
+  color: #f4f4f6;
+}
+
+.brus-ytm-pill[data-source="lrclib-fallback"] {
+  border-color: #33333d;
+  background: #16161b;
+  color: #98c379;
+}
+
+.brus-ytm-pill[data-source="not-found"] {
+  border-color: #2e2626;
+  background: #181414;
+  color: #887e7e;
+}
+
+.brus-ytm-mount {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: calc(100% - 50px);
+}
+
+.brus-ytm-container.blur-disabled .brus-lyrics-ambient {
+  display: none !important;
+}
+
+.brus-ytm-container.adlibs-disabled .brus-bg-vocals {
+  display: none !important;
+}
+
+/* Ensure paper tab for lyrics is visibly enabled and styled cleanly */
+tp-yt-paper-tab[data-brus-enabled="true"] {
+  opacity: 1 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+tp-yt-paper-tab[data-brus-enabled="true"] .tab-content {
+  opacity: 1 !important;
+  color: var(--ytmusic-text-primary, #ffffff) !important;
+}
+
+/* Hide native YouTube duplicate static lyrics shelf when Bru's Lyrics is mounted */
+ytmusic-tab-renderer[page-type="MUSIC_PAGE_TYPE_TRACK_LYRICS"] ytmusic-description-shelf-renderer,
+ytmusic-tab-renderer[page-type="MUSIC_PAGE_TYPE_TRACK_LYRICS"] .non-expandable.ytmusic-description-shelf-renderer {
+  display: none !important;
+}

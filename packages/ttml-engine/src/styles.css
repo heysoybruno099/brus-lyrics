@@ -1,0 +1,210 @@
+:root {
+  --bg-surface: #0a0a0c;
+  --bg-surface-elevated: #141418;
+  --border-subtle: #26262e;
+  --border-active: #3e3e4a;
+  --text-primary: #f4f4f6;
+  --text-secondary: #9e9ea8;
+  --text-muted: #4e4e58;
+  --accent-active: #ffffff;
+  --accent-subtle: #1f1f26;
+  --theme-ambient-1: rgba(30, 30, 36, 0.4);
+  --theme-ambient-2: rgba(18, 18, 22, 0.8);
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, monospace;
+}
+
+.brus-lyrics-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  font-family: var(--font-ui);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.brus-lyrics-ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 30%, var(--theme-ambient-1) 0%, transparent 70%),
+              radial-gradient(circle at 80% 70%, var(--theme-ambient-2) 0%, transparent 70%);
+  filter: blur(60px);
+  opacity: 0.6;
+  z-index: 1;
+  transition: background 0.8s ease;
+}
+
+.brus-lyrics-viewport {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.brus-lyrics-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 120px 32px 300px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brus-line {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  max-width: 85%;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  word-spacing: 0.08em;
+  cursor: pointer;
+  transform-origin: left center;
+  transition: opacity 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+  will-change: transform, opacity, filter;
+}
+
+/* Agent V1: Left alignment */
+.brus-line[data-agent="v1"] {
+  align-self: flex-start;
+  text-align: left;
+}
+
+/* Agent V2: Right alignment */
+.brus-line[data-agent="v2"] {
+  align-self: flex-end;
+  text-align: right;
+  transform-origin: right center;
+}
+
+/* State: Inactive / Distance-based blurring */
+.brus-line.is-inactive {
+  opacity: 0.28;
+  filter: blur(1px);
+}
+
+.brus-line.is-distant {
+  opacity: 0.15;
+  filter: blur(2.5px);
+}
+
+/* State: Active line */
+.brus-line.is-active {
+  opacity: 1;
+  filter: blur(0px);
+  transform: scale(1.02);
+}
+
+.brus-line.is-past {
+  opacity: 0.45;
+  filter: blur(0.5px);
+}
+
+/* Words / Syllable Spans */
+.brus-line-content {
+  display: inline;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.brus-word {
+  position: relative;
+  display: inline-block;
+  white-space: pre-wrap;
+  transition: transform 0.15s ease-out;
+  cursor: pointer;
+}
+
+/* Default word gradient with --word-progress */
+.brus-word-fill {
+  background: linear-gradient(
+    to right,
+    var(--accent-active) 0%,
+    var(--accent-active) calc(var(--word-progress, 0) * 100%),
+    var(--text-muted) calc(var(--word-progress, 0) * 100%),
+    var(--text-muted) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  white-space: pre-wrap;
+  will-change: transform;
+}
+
+/* Finished active word */
+.brus-word.is-sung .brus-word-fill {
+  --word-progress: 1;
+}
+
+/* In-progress syllable lift */
+.brus-word.is-singing {
+  transform: translate3d(0, -2px, 0);
+}
+
+.brus-word.is-singing .brus-word-fill {
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
+}
+
+/* Unsung future word */
+.brus-word.is-unsung .brus-word-fill {
+  --word-progress: 0;
+}
+
+/* Background vocals / ad-libs */
+.brus-bg-vocals {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.brus-bg-line {
+  font-size: 19px;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  opacity: 0.75;
+  color: var(--text-secondary);
+}
+
+.brus-bg-line .brus-word-fill {
+  background: linear-gradient(
+    to right,
+    var(--text-secondary) 0%,
+    var(--text-secondary) calc(var(--word-progress, 0) * 100%),
+    var(--text-muted) calc(var(--word-progress, 0) * 100%),
+    var(--text-muted) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Empty state */
+.brus-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}

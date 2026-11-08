@@ -1,0 +1,26 @@
+{
+  "name": "@brus-lyrics/ttml-engine",
+  "version": "1.0.0",
+  "description": "Zero-dependency TTML parser, validator, and 60FPS DOM lyrics renderer",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./src/styles.css"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "test": "npx tsx --test test/ttml-engine.test.ts"
+  },
+  "dependencies": {
+    "@brus-lyrics/shared-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

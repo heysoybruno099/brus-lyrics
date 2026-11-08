@@ -1,0 +1,59 @@
+name: Validate Lyrics and Ingest Catalog
+
+on:
+  push:
+    paths:
+      - 'database/**'
+      - '.github/workflows/validate-lyrics.yml'
+  pull_request:
+    paths:
+      - 'database/**'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-ingest:
+    name: Validate TTML and Ingest Inbox
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: |
+          npm run --workspace=@brus-lyrics/shared-types build
+          npm run --workspace=@brus-lyrics/ttml-engine build
+
+      - name: Validate all TTML files
+        run: npx tsx scripts/validate-all-ttml.ts
+
+      - name: Ingest any incoming TTML from database/inbox
+        run: npx tsx scripts/ingest-inbox.ts
+
+      - name: Check for catalog modifications
+        id: git-check
+        run: |
+          git status --porcelain database/catalog.json database/ttml/
+          echo "modified=$(git status --porcelain database/catalog.json database/ttml/ | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Commit and push updated catalog
+        if: steps.git-check.outputs.modified > 0 && github.event_name == 'push'
+        run: |
+          git config user.name "brus-lyrics-bot[bot]"
+          git config user.email "bot@brus-lyrics.internal"
+          git add database/catalog.json database/ttml/ database/migrations/
+          git commit -m "chore(catalog): automated inbox ingestion and catalog sync [skip ci]"
+          git push

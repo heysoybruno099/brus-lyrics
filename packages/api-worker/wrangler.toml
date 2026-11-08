@@ -1,0 +1,16 @@
+name = "brus-lyrics-api"
+main = "src/index.ts"
+compatibility_date = "2024-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+GITHUB_OWNER = "brus-lyrics"
+GITHUB_REPO = "brus-lyrics"
+GITHUB_BRANCH = "main"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "brus-lyrics-db"
+database_id = "brus-lyrics-d1-prod"
+migrations_dir = "../../database/migrations"

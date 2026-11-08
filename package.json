@@ -1,0 +1,28 @@
+{
+  "name": "brus-lyrics-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production monorepo for Brus Lyrics sync engine, API worker, database, extensions, and studio",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run --workspaces --if-present build",
+    "typecheck": "tsc --build",
+    "test": "npx tsx --test packages/api-worker/test/worker.test.ts scripts/test-ingest.ts packages/ttml-engine/test/ttml-engine.test.ts",
+    "test:worker": "npx tsx --test packages/api-worker/test/worker.test.ts",
+    "test:engine": "npx tsx --test packages/ttml-engine/test/ttml-engine.test.ts",
+    "test:ingest": "npx tsx --test scripts/test-ingest.ts",
+    "validate:lyrics": "npx tsx scripts/validate-all-ttml.ts",
+    "install:spicetify": "npx tsx scripts/install-spicetify.ts",
+    "deploy:api": "npx tsx scripts/deploy-cloudflare.ts",
+    "ingest": "npx tsx scripts/ingest-inbox.ts",
+    "format:check": "npx prettier --check \"packages/**/*.{ts,tsx,css,json}\" \"database/**/*.{sql,json}\""
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

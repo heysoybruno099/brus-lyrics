@@ -1,0 +1,24 @@
+{
+  "name": "@brus-lyrics/api-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker backend for Bru's Lyrics",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "tsc --noEmit",
+    "test": "npx tsx --test test/worker.test.ts"
+  },
+  "dependencies": {
+    "@brus-lyrics/shared-types": "*",
+    "hono": "^4.4.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240529.0",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5",
+    "wrangler": "^3.57.1"
+  },
+  "private": true
+}

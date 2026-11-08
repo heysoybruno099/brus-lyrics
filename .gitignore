@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+build/
+.next/
+out/
+
+# Cloudflare Wrangler & D1 local state
+.wrangler/
+.mf/
+
+# Temporary / OS files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.env
+.env.local
+.env.*.local
+
+# IDE configuration
+.idea/
+.vscode/
+*.swp
+*.swo

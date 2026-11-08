@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bru's Lyrics Settings</title>
+  <style>
+    :root {
+      --bg-surface: #0a0a0c;
+      --bg-panel: #141418;
+      --border-subtle: #26262e;
+      --border-active: #3e3e4a;
+      --text-primary: #f4f4f6;
+      --text-secondary: #9e9ea8;
+      --accent-active: #ffffff;
+      --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 320px;
+      background-color: var(--bg-surface);
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      padding: 16px;
+      user-select: none;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 6px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-secondary);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="text"] {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 8px 10px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--border-active);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .toggle-label {
+      font-size: 12px;
+      color: var(--text-primary);
+    }
+
+    input[type="checkbox"] {
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--border-active);
+    }
+
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      flex: 1;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 8px 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    button:hover {
+      background: #1f1f26;
+      border-color: var(--border-active);
+    }
+
+    .status-msg {
+      margin-top: 10px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+      text-align: center;
+      min-height: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="title">Bru's Lyrics</span>
+    <span class="badge">YTM Extension</span>
+  </div>
+
+  <div class="form-group">
+    <label for="apiUrl">API Worker URL</label>
+    <input type="text" id="apiUrl" placeholder="http://127.0.0.1:8787" />
+  </div>
+
+  <div class="toggle-row">
+    <span class="toggle-label">Background Ambient Blur</span>
+    <input type="checkbox" id="enableBlur" checked />
+  </div>
+
+  <div class="toggle-row">
+    <span class="toggle-label">Display Ad-Lib / Vocal Spans</span>
+    <input type="checkbox" id="enableAdLibs" checked />
+  </div>
+
+  <div class="actions">
+    <button id="saveBtn">Save Preferences</button>
+  </div>
+
+  <div class="status-msg" id="statusMsg"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

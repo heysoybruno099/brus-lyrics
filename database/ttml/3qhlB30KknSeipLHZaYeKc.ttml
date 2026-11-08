@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-extensions"
+    xml:lang="es">
+  <head>
+    <metadata>
+      <ttm:title>Ella Baila Sola</ttm:title>
+      <ttm:agent type="person" xml:id="v1">Eslabon Armado, Peso Pluma</ttm:agent>
+      <itunes:spotifyId>3qhlB30KknSeipLHZaYeKc</itunes:spotifyId>
+      <itunes:youtubeId>lZIAZhbmPvg</itunes:youtubeId>
+      <itunes:isrc>US27Q2300067</itunes:isrc>
+      <itunes:duration>165600</itunes:duration>
+      <itunes:contributor>CommunityDrop</itunes:contributor>
+    </metadata>
+  </head>
+  <body>
+    <div>
+      <p begin="00:00:15.100" end="00:00:19.200" ttm:agent="v1">
+        <span begin="00:00:15.100" end="00:00:16.200">Compa </span>
+        <span begin="00:00:16.210" end="00:00:17.300">que </span>
+        <span begin="00:00:17.310" end="00:00:18.000">le </span>
+        <span begin="00:00:18.010" end="00:00:19.200">parece </span>
+      </p>
+      <p begin="00:00:19.250" end="00:00:22.900" ttm:agent="v1">
+        <span begin="00:00:19.250" end="00:00:20.100">esa </span>
+        <span begin="00:00:20.110" end="00:00:21.300">morra</span>
+      </p>
+    </div>
+  </body>
+</tt>

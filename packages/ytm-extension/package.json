@@ -1,0 +1,20 @@
+{
+  "name": "@brus-lyrics/ytm-extension",
+  "version": "1.0.0",
+  "description": "YouTube Music Manifest V3 extension for Bru's Lyrics",
+  "type": "module",
+  "main": "dist/content.js",
+  "scripts": {
+    "build": "node build.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@brus-lyrics/shared-types": "*",
+    "@brus-lyrics/ttml-engine": "*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.5"
+  }
+}
