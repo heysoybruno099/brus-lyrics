@@ -2,11 +2,21 @@ import { cleanTrackId } from '@brus-lyrics/shared-types';
 import { BrusLyricsRenderer, parseTTML } from '@brus-lyrics/ttml-engine';
 import { extractAlbumColors } from './color-extractor.js';
 import { fetchLyrics, DEFAULT_API_BASE } from './api-client.js';
-import type { SpicetifyGlobal, SpicetifyTrackData } from './types.js';
+import type { SpicetifyGlobal } from './types.js';
 
 declare const Spicetify: SpicetifyGlobal | undefined;
 
 const STUDIO_BASE_URL = 'http://localhost:5173';
+
+interface ResolvedTrack {
+  rawTrackId: string;
+  uri: string;
+  title: string;
+  artist: string;
+  album: string;
+  durationMs?: number;
+  imageUrl?: string;
+}
 
 class BrusSpicetifyExtension {
   private apiBase: string = DEFAULT_API_BASE;
@@ -46,8 +56,9 @@ class BrusSpicetifyExtension {
     });
 
     // Initial check for currently playing track
-    if (window.Spicetify?.Player?.data?.item) {
-      this.onTrackChange(window.Spicetify.Player.data.item);
+    const initialTrack = this.resolveCurrentTrack();
+    if (initialTrack) {
+      this.onTrackChange(initialTrack);
     }
   }
 
@@ -218,6 +229,12 @@ class BrusSpicetifyExtension {
         border-color: #2e5a3c;
         background: #11261a;
         color: #4ade80;
+      }
+
+      .brus-pill-badge[data-source="spotify-musixmatch"] {
+        border-color: #2e5a3c;
+        background: #11261a;
+        color: #1ed760;
       }
 
       .brus-pill-badge[data-source="lrclib-fallback"] {
@@ -759,6 +776,13 @@ class BrusSpicetifyExtension {
       this.rootElement.classList.add('is-open');
       this.rootElement.style.display = 'flex';
       this.updatePlaybarButtonState();
+
+      // Refresh track on open
+      const track = this.resolveCurrentTrack();
+      if (track) {
+        this.onTrackChange(track);
+      }
+
       this.renderer?.update();
     } else {
       this.rootElement.classList.remove('is-open');
@@ -779,6 +803,75 @@ class BrusSpicetifyExtension {
     this.renderer?.update();
   }
 
+  private resolveCurrentTrack(inputCandidate?: any): ResolvedTrack | null {
+    const player = window.Spicetify?.Player;
+
+    const candidate =
+      inputCandidate?.item ||
+      inputCandidate ||
+      player?.data?.item ||
+      (player?.data as any) ||
+      (window as any).Spicetify?.Platform?.PlayerAPI?._state?.item;
+
+    const meta = candidate?.metadata || (player?.data as any)?.metadata || {};
+    const uri = candidate?.uri || (player?.data as any)?.uri || '';
+    const rawTrackId = cleanTrackId(uri);
+
+    // 1. Resolve Title
+    let title = (meta.title || candidate?.name || candidate?.title || '').trim();
+    if (!title || title.toLowerCase() === 'unknown title') {
+      const domTitle = document.querySelector(
+        '.main-trackInfo-name a, .main-trackInfo-name, [data-testid="nowplaying-track-link"], [data-testid="context-item-info-title"]'
+      );
+      if (domTitle?.textContent?.trim()) {
+        title = domTitle.textContent.trim();
+      }
+    }
+
+    // 2. Resolve Artist
+    let artist = (meta.artist_name || '').trim();
+    if (!artist && Array.isArray(candidate?.artists) && candidate.artists.length > 0) {
+      artist = candidate.artists.map((a: any) => a.name).join(', ').trim();
+    }
+    if (!artist) {
+      const artistKeys = Object.keys(meta).filter((k) => k.startsWith('artist_name')).sort();
+      if (artistKeys.length > 0) {
+        artist = artistKeys.map((k) => meta[k]).join(', ').trim();
+      }
+    }
+    if (!artist || artist.toLowerCase() === 'unknown artist') {
+      const domArtist = document.querySelector(
+        '.main-trackInfo-artists a, .main-trackInfo-artists, [data-testid="nowplaying-artist"], [data-testid="context-item-info-artist"]'
+      );
+      if (domArtist?.textContent?.trim()) {
+        artist = domArtist.textContent.trim();
+      }
+    }
+
+    // 3. Resolve Album, Duration, Image
+    const album = meta.album_title || candidate?.album?.name || '';
+    const durationMs =
+      (meta.duration ? parseInt(meta.duration, 10) : undefined) ||
+      candidate?.duration ||
+      (player?.data as any)?.duration;
+    const imageUrl =
+      meta.image_xlarge_url ||
+      meta.image_url ||
+      candidate?.album?.images?.[0]?.url;
+
+    if (!title && !uri) return null;
+
+    return {
+      rawTrackId,
+      uri,
+      title: title || 'Unknown Title',
+      artist: artist || 'Unknown Artist',
+      album,
+      durationMs,
+      imageUrl,
+    };
+  }
+
   private attachPlayerHooks(): void {
     if (!window.Spicetify?.Player) {
       setTimeout(() => this.attachPlayerHooks(), 1000);
@@ -786,11 +879,21 @@ class BrusSpicetifyExtension {
     }
 
     window.Spicetify.Player.addEventListener('songchange', (event: any) => {
-      const track = event?.data || window.Spicetify?.Player?.data?.item;
+      const track = this.resolveCurrentTrack(event?.data);
       if (track) {
         this.onTrackChange(track);
       }
     });
+
+    // Check track every 1.5s when lyrics view is open
+    setInterval(() => {
+      if (this.isOpen) {
+        const track = this.resolveCurrentTrack();
+        if (track && track.uri !== this.currentTrackUri) {
+          this.onTrackChange(track);
+        }
+      }
+    }, 1500);
   }
 
   private updateBackdrop(imageUrl?: string, colors?: { ambient1: string; ambient2: string }): void {
@@ -814,18 +917,11 @@ class BrusSpicetifyExtension {
     }
   }
 
-  private async onTrackChange(track: SpicetifyTrackData): Promise<void> {
+  private async onTrackChange(track: ResolvedTrack): Promise<void> {
     if (!track || track.uri === this.currentTrackUri) return;
     this.currentTrackUri = track.uri;
 
-    const rawTrackId = cleanTrackId(track.uri);
-    const title = track.metadata?.title || track.name || 'Unknown Title';
-    const artist =
-      track.metadata?.artist_name ||
-      (track.artists && track.artists[0]?.name) ||
-      'Unknown Artist';
-    const durationMs = track.duration || (track.metadata?.duration ? parseInt(track.metadata.duration, 10) : undefined);
-    const albumCoverUrl = track.metadata?.image_xlarge_url || track.metadata?.image_url || track.album?.images?.[0]?.url;
+    const { rawTrackId, title, artist, durationMs, imageUrl } = track;
 
     if (this.titleEl) this.titleEl.textContent = title;
     if (this.artistEl) this.artistEl.textContent = artist;
@@ -846,14 +942,14 @@ class BrusSpicetifyExtension {
     }
 
     // Extract dominant album ambient colors and apply blur backdrop
-    const colors = await extractAlbumColors(albumCoverUrl);
-    this.updateBackdrop(albumCoverUrl, colors);
+    const colors = await extractAlbumColors(imageUrl);
+    this.updateBackdrop(imageUrl, colors);
 
     if (this.renderer) {
       this.renderer.setThemeAmbient(colors.ambient1, colors.ambient2);
     }
 
-    // Query lyrics (Bru's Lyrics API -> Direct LRCLIB fallback)
+    // Query lyrics (Waterfall: Bru's Lyrics -> Spotify / Musixmatch Native -> LRCLIB)
     const res = await fetchLyrics(this.apiBase, {
       trackId: rawTrackId,
       title,
@@ -865,6 +961,11 @@ class BrusSpicetifyExtension {
       if (this.sourceBadgeEl) {
         this.sourceBadgeEl.textContent = "Bru's Lyrics Verified";
         this.sourceBadgeEl.setAttribute('data-source', 'brus-lyrics-verified');
+      }
+    } else if (res.source === 'spotify-musixmatch') {
+      if (this.sourceBadgeEl) {
+        this.sourceBadgeEl.textContent = 'Spotify / Musixmatch';
+        this.sourceBadgeEl.setAttribute('data-source', 'spotify-musixmatch');
       }
     } else if (res.source === 'lrclib-fallback') {
       if (this.sourceBadgeEl) {
