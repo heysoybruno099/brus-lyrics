@@ -7,6 +7,7 @@ import { submitRoute } from './routes/submit.js';
 import { catalogRoute } from './routes/catalog.js';
 import { spotifyRoute } from './routes/spotify.js';
 import { authRoute } from './routes/auth.js';
+import { adminRoute } from './routes/admin.js';
 import { embeddedTTMLMap } from './lib/embedded-lyrics.js';
 
 // @ts-ignore
@@ -24,8 +25,8 @@ app.use(
   '*',
   cors({
     origin: '*',
-    allowMethods: ['GET', 'POST', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
+    allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Admin-User'],
     exposeHeaders: [
       'X-Lyrics-Source',
       'X-Song-Id',
@@ -77,6 +78,7 @@ app.route('/v1', submitRoute);
 app.route('/v1', catalogRoute);
 app.route('/v1', spotifyRoute);
 app.route('/v1', authRoute);
+app.route('/v1', adminRoute);
 
 // Also route unversioned routes for convenience
 app.route('/', lyricsRoute);
@@ -84,6 +86,7 @@ app.route('/', submitRoute);
 app.route('/', catalogRoute);
 app.route('/', spotifyRoute);
 app.route('/', authRoute);
+app.route('/', adminRoute);
 
 // 404 handler
 app.notFound((c) => {

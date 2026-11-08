@@ -43,7 +43,7 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
   if (!isOpen || !song) return null;
 
   const lines = document?.lines || [];
-  const contributor = document?.metadata?.contributor || song.contributor || 'Bru';
+  const contributor = document?.metadata?.contributor || song.contributor || 'Community';
 
   return (
     <div className="lyrics-popup-overlay" role="dialog" aria-modal="true">

@@ -25,4 +25,4 @@ export interface DiscordUser {
   role: 'creator' | 'verified_creator' | 'admin' | 'contributor';
 }
 
-export type AppViewMode = 'discover' | 'studio' | 'legal';
+export type AppViewMode = 'discover' | 'studio' | 'legal' | 'profile' | 'admin';

@@ -320,4 +320,87 @@ describe('Cloudflare Worker API Routes', () => {
     assert.equal(getBody.username, 'TestContributor');
     assert.equal(getBody.isVerified, true);
   });
+
+  it('DELETE /v1/songs/:id: rejects unauthorized non-admin access with 403', async () => {
+    const res = await app.request('/v1/songs/song_yellow', {
+      method: 'DELETE',
+    });
+    assert.equal(res.status, 403);
+    const body = (await res.json()) as { error: string };
+    assert.ok(body.error.includes('strictly reserved for heysoybruno09'));
+  });
+
+  it('DELETE /v1/songs/:id: permits deletion when X-Admin-User is heysoybruno09', async () => {
+    // First, submit a test song to delete
+    const validTtml = `<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="en">
+  <head><metadata><ttm:title>To Delete</ttm:title><ttm:agent type="person" xml:id="v1">Artist</ttm:agent></metadata></head>
+  <body><div><p begin="00:00:01.000" end="00:00:02.000" ttm:agent="v1"><span begin="00:00:01.000" end="00:00:02.000">Word</span></p></div></body>
+</tt>`;
+
+    const submitRes = await app.request('/v1/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        metadata: {
+          spotifyId: 'test_delete_track_id',
+          title: 'Song To Delete',
+          artist: 'Delete Artist',
+          durationMs: 120000,
+        },
+        ttmlRaw: validTtml,
+        contributor: 'heysoybruno09',
+      }),
+    });
+    assert.equal(submitRes.status, 201);
+
+    // Now delete it as heysoybruno09
+    const deleteRes = await app.request('/v1/songs/test_delete_track_id', {
+      method: 'DELETE',
+      headers: {
+        'X-Admin-User': 'heysoybruno09',
+      },
+    });
+    assert.equal(deleteRes.status, 200);
+    const delBody = (await deleteRes.json()) as { success: boolean; deletedId: string };
+    assert.equal(delBody.success, true);
+    assert.equal(delBody.deletedId, 'test_delete_track_id');
+  });
+
+  it('POST /v1/admin/verify: rejects unauthorized non-admin access with 403', async () => {
+    const res = await app.request('/v1/admin/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ songId: 'song_yellow', verified: true }),
+    });
+    assert.equal(res.status, 403);
+  });
+
+  it('POST /v1/admin/verify: approves and verifies lyrics for heysoybruno09', async () => {
+    const res = await app.request('/v1/admin/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-User': 'heysoybruno09',
+      },
+      body: JSON.stringify({ songId: '4cOdK2wGLETKBW3PvgPWqT', verified: true }),
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { success: boolean; verified: boolean };
+    assert.equal(body.success, true);
+    assert.equal(body.verified, true);
+  });
+
+  it('GET /v1/admin/songs: returns complete catalog and submissions to heysoybruno09', async () => {
+    const res = await app.request('/v1/admin/songs', {
+      headers: {
+        'X-Admin-User': 'heysoybruno09',
+      },
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { success: boolean; catalog: unknown[]; submissions: unknown[] };
+    assert.equal(body.success, true);
+    assert.ok(Array.isArray(body.catalog));
+    assert.ok(Array.isArray(body.submissions));
+  });
 });

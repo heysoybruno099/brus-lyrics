@@ -29,12 +29,12 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
         {/* Intro Badge */}
         <div className="hero-pill-badge">
           <span className="hero-pill-dot" />
-          <span>Bru Lyrics. Bru Lyrics. Apple Music Grade TTML Engine</span>
+          <span>Apple Music Grade TTML Engine</span>
         </div>
 
         {/* Main Title */}
         <h1 className="hero-title">
-          Bru Lyrics. <span className="hero-title-accent">Bru Lyrics.</span>
+          Live Lyrics. <span className="hero-title-accent">Precision Sync.</span>
         </h1>
 
         {/* Description */}

@@ -195,3 +195,118 @@ describe('TTML Engine - BrusLyricsRenderer', () => {
     renderer.destroy();
   });
 });
+
+describe('Multi-Format Lyrics Parser (TTML, LRC, JSON)', () => {
+  it('detects lyrics format correctly from extension and content', async () => {
+    const { detectLyricsFormat } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+
+    assert.equal(detectLyricsFormat('some text', 'song.ttml'), 'ttml');
+    assert.equal(detectLyricsFormat('some text', 'song.xml'), 'ttml');
+    assert.equal(detectLyricsFormat('some text', 'song.lrc'), 'lrc');
+    assert.equal(detectLyricsFormat('some text', 'song.json'), 'json');
+
+    assert.equal(detectLyricsFormat('<tt xmlns="http://www.w3.org/ns/ttml">...</tt>'), 'ttml');
+    assert.equal(detectLyricsFormat('[00:12.30] Line text here'), 'lrc');
+    assert.equal(detectLyricsFormat('{"lines": [{"begin": 10, "text": "Hello"}]}'), 'json');
+    assert.equal(detectLyricsFormat('[{"time": 10, "text": "Hello"}]'), 'json');
+  });
+
+  it('parses standard line-by-line LRC (one line mode)', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+    const lrc = `
+[00:10.50] First verse line
+[00:15.00] Second verse line
+[00:20.00] Third chorus line
+`;
+    const res = parseMultiFormatLyrics(lrc, 'song.lrc', 30000);
+    assert.equal(res.format, 'lrc');
+    assert.equal(res.mode, 'line');
+    assert.equal(res.lines.length, 3);
+    assert.equal(res.lines[0]?.begin, 10500);
+    assert.equal(res.lines[0]?.text, 'First verse line');
+    assert.equal(res.lines[1]?.begin, 15000);
+    assert.equal(res.lines[1]?.end, 20000);
+  });
+
+  it('parses word-by-word syllable LRC (<mm:ss.xx> tags)', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+    const wordLrc = `
+[00:15.50] <00:15.50> Compa <00:16.10> que <00:16.90> le <00:17.50> parece
+[00:18.50] <00:18.50> La <00:19.20> que <00:20.00> anda <00:20.80> bailando <00:21.50> sola
+`;
+    const res = parseMultiFormatLyrics(wordLrc, 'song.lrc', 30000);
+    assert.equal(res.format, 'lrc');
+    assert.equal(res.mode, 'syllable');
+    assert.equal(res.lines.length, 2);
+
+    const line1 = res.lines[0]!;
+    assert.equal(line1.begin, 15500);
+    assert.equal(line1.syllables.length, 4);
+    assert.equal(line1.syllables[0]?.begin, 15500);
+    assert.equal(line1.syllables[0]?.end, 16100);
+    assert.equal(line1.syllables[0]?.text.trim(), 'Compa');
+  });
+
+  it('parses JSON format lyrics with lines and word objects', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+    const json = JSON.stringify({
+      metadata: {
+        title: 'JSON Song',
+        artist: 'JSON Artist',
+        durationMs: 120000,
+      },
+      lines: [
+        {
+          begin: 9.84,
+          end: 11.68,
+          text: 'Hello world',
+          words: [
+            { word: 'Hello ', begin: 9.84, end: 10.5 },
+            { word: 'world', begin: 10.5, end: 11.68 },
+          ],
+        },
+      ],
+    });
+
+    const res = parseMultiFormatLyrics(json, 'song.json');
+    assert.equal(res.format, 'json');
+    assert.equal(res.mode, 'syllable');
+    assert.equal(res.metadata.title, 'JSON Song');
+    assert.equal(res.lines.length, 1);
+    assert.equal(res.lines[0]?.begin, 9840);
+    assert.equal(res.lines[0]?.end, 11680);
+    assert.equal(res.lines[0]?.syllables.length, 2);
+  });
+
+  it('parses TTML XML format into synchronized matrix lines', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:itunes="http://music.apple.com/lyric-ttml-extensions">
+  <head>
+    <metadata>
+      <ttm:title>TTML Track</ttm:title>
+      <ttm:agent>TTML Singer</ttm:agent>
+    </metadata>
+  </head>
+  <body>
+    <div>
+      <p begin="00:00:05.000" end="00:00:08.000">
+        <span begin="00:00:05.000" end="00:00:06.500">Live </span>
+        <span begin="00:00:06.500" end="00:00:08.000">Lyrics</span>
+      </p>
+    </div>
+  </body>
+</tt>`;
+
+    const res = parseMultiFormatLyrics(xml, 'song.ttml');
+    assert.equal(res.format, 'ttml');
+    assert.equal(res.mode, 'syllable');
+    assert.equal(res.metadata.title, 'TTML Track');
+    assert.equal(res.metadata.artist, 'TTML Singer');
+    assert.equal(res.lines.length, 1);
+    assert.equal(res.lines[0]?.begin, 5000);
+    assert.equal(res.lines[0]?.end, 8000);
+    assert.equal(res.lines[0]?.syllables.length, 2);
+  });
+});
+

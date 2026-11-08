@@ -171,6 +171,26 @@ export class AudioPlayerEngine {
     return this.isPlaying;
   }
 
+  public loadAudioFile(file: File): void {
+    this.stop();
+    if (this.audioEl) {
+      const objUrl = URL.createObjectURL(file);
+      this.isUsingSynth = false;
+      this.audioEl.src = objUrl;
+      this.audioEl.load();
+      this.audioEl.addEventListener(
+        'loadedmetadata',
+        () => {
+          if (this.audioEl && !isNaN(this.audioEl.duration)) {
+            this.totalDurationMs = Math.round(this.audioEl.duration * 1000);
+            this.notifyTimeUpdate(0, this.totalDurationMs);
+          }
+        },
+        { once: true }
+      );
+    }
+  }
+
   // Fallback high-fidelity Web Audio chord & clock generator
   private fallbackToSynth(startAtMs: number): void {
     this.isUsingSynth = true;
@@ -187,6 +207,10 @@ export class AudioPlayerEngine {
     this.synthStartTimeMs = performance.now() - (startAtMs / this.playbackRate);
 
     if (this.animFrameId !== null) cancelAnimationFrame(this.animFrameId);
+    if (this.synthInterval !== null) {
+      window.clearInterval(this.synthInterval);
+      this.synthInterval = null;
+    }
 
     const updateClock = () => {
       if (!this.isPlaying || !this.isUsingSynth) return;
@@ -207,7 +231,15 @@ export class AudioPlayerEngine {
     };
 
     this.animFrameId = requestAnimationFrame(updateClock);
-    this.playAmbientChord();
+
+    // Continuous ambient music synthesis
+    this.playAmbientChord(0);
+    let chordIndex = 1;
+    this.synthInterval = window.setInterval(() => {
+      if (this.isPlaying && this.isUsingSynth) {
+        this.playAmbientChord(chordIndex++);
+      }
+    }, 2000);
   }
 
   private pauseSynth(): void {
@@ -228,7 +260,7 @@ export class AudioPlayerEngine {
       if (AudioCtxClass) {
         this.audioCtx = new AudioCtxClass();
         this.synthGain = this.audioCtx.createGain();
-        this.synthGain.gain.setValueAtTime(this.volume * 0.08, this.audioCtx.currentTime);
+        this.synthGain.gain.setValueAtTime(this.volume * 0.12, this.audioCtx.currentTime);
         this.synthGain.connect(this.audioCtx.destination);
       }
     } else if (this.audioCtx.state === 'suspended') {
@@ -236,31 +268,42 @@ export class AudioPlayerEngine {
     }
   }
 
-  private playAmbientChord(): void {
+  private playAmbientChord(progressionStep: number = 0): void {
     if (!this.audioCtx || !this.synthGain) return;
 
     try {
-      // Pleasant harmonic frequencies (A minor / C major pentatonic base notes)
-      const freqs = [220, 261.63, 329.63, 392.0];
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+
+      // Harmonic 4-chord progression: C maj -> G maj -> A min -> F maj
+      const chordProgressions = [
+        [261.63, 329.63, 392.0],  // C4, E4, G4
+        [196.0, 246.94, 293.66],  // G3, B3, D4
+        [220.0, 261.63, 329.63],  // A3, C4, E4
+        [174.61, 220.0, 261.63],  // F3, A3, C4
+      ];
+
+      const currentChord = chordProgressions[progressionStep % chordProgressions.length]!;
       const now = this.audioCtx.currentTime;
 
-      freqs.forEach((f, idx) => {
+      currentChord.forEach((f, idx) => {
         if (!this.audioCtx || !this.synthGain) return;
         const osc = this.audioCtx.createOscillator();
         const noteGain = this.audioCtx.createGain();
 
-        osc.type = 'sine';
+        osc.type = idx === 0 ? 'triangle' : 'sine';
         osc.frequency.setValueAtTime(f, now);
 
         noteGain.gain.setValueAtTime(0.001, now);
-        noteGain.gain.exponentialRampToValueAtTime(0.04 / (idx + 1), now + 0.1);
-        noteGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        noteGain.gain.exponentialRampToValueAtTime(0.05 / (idx + 1), now + 0.15);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
 
         osc.connect(noteGain);
         noteGain.connect(this.synthGain);
 
         osc.start(now);
-        osc.stop(now + 1.3);
+        osc.stop(now + 1.9);
       });
     } catch {
       // Ignore Web Audio errors if audio policy blocks

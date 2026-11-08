@@ -16,25 +16,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuthModal,
   onSignOut,
 }) => {
+  const isAdmin = Boolean(user && user.username.toLowerCase() === 'heysoybruno09');
+
   return (
     <header className="site-header">
       <div className="header-inner">
-        {/* Brand Logo */}
-        <div className="brand-group" onClick={() => onSelectView('discover')}>
-          <div className="brand-mark">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-          </div>
+        {/* Brand without logo icon and without Bru Lyrics branding */}
+        <div className="brand-group" onClick={() => onSelectView('discover')} style={{ cursor: 'pointer' }}>
           <div className="brand-text">
-            <span className="brand-name">Bru&apos;s Lyrics</span>
+            <span className="brand-name" style={{ letterSpacing: '-0.02em', fontWeight: 700 }}>Lyrics</span>
             <span className="brand-sub">Syllable Sync</span>
           </div>
         </div>
 
-        {/* Center Navigation Links */}
+        {/* Center Navigation Links - Terms of Service removed as requested */}
         <nav className="nav-menu">
           <button
             type="button"
@@ -59,19 +54,41 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!user && <span className="nav-tag-badge">Sign-in Only</span>}
           </button>
 
+          {/* Profile Tab */}
           <button
             type="button"
-            className={`nav-tab ${currentView === 'legal' ? 'active' : ''}`}
-            onClick={() => onSelectView('legal')}
+            className={`nav-tab ${currentView === 'profile' ? 'active' : ''}`}
+            onClick={() => {
+              if (user) {
+                onSelectView('profile');
+              } else {
+                onOpenAuthModal();
+              }
+            }}
           >
-            Legal &amp; Terms
+            Profile
           </button>
+
+          {/* Dedicated Admin Panel - STRICTLY heysoybruno09 ONLY */}
+          {isAdmin && (
+            <button
+              type="button"
+              className={`nav-tab ${currentView === 'admin' ? 'active' : ''}`}
+              onClick={() => onSelectView('admin')}
+              style={{
+                color: currentView === 'admin' ? '#4ade80' : '#86efac',
+                fontWeight: 600,
+              }}
+            >
+              Admin Panel
+            </button>
+          )}
         </nav>
 
         {/* Right Auth Area */}
         <div className="auth-group">
           {user ? (
-            <div className="user-profile-bar">
+            <div className="user-profile-bar" onClick={() => onSelectView('profile')} style={{ cursor: 'pointer' }}>
               {user.avatar ? (
                 <img src={user.avatar} alt={user.username} className="user-avatar" />
               ) : (
@@ -85,13 +102,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
                     <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
                   </svg>
-                  VERIFIED
+                  {isAdmin ? 'ADMIN' : 'VERIFIED'}
                 </span>
               </div>
               <button
                 type="button"
                 className="btn-ghost-sm"
-                onClick={onSignOut}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSignOut();
+                }}
                 title="Sign out"
               >
                 Sign out
@@ -114,3 +134,5 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
+export default Navbar;

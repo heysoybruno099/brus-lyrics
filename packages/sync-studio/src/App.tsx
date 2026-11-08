@@ -7,12 +7,14 @@ import { MusicPlayerBar } from './components/MusicPlayerBar.js';
 import { LyricsPopupModal } from './components/LyricsPopupModal.js';
 import { DiscordAuthModal } from './components/DiscordAuthModal.js';
 import { LegalDocumentation } from './components/LegalDocumentation.js';
+import { ProfileView } from './components/ProfileView.js';
+import { AdminPanel } from './components/AdminPanel.js';
 import { AudioMetadataDeck } from './components/AudioMetadataDeck.js';
 import { TapSyncMatrix } from './components/TapSyncMatrix.js';
 import { LivePreviewDeck } from './components/LivePreviewDeck.js';
 
 import { AudioPlayerEngine } from './lib/audio-player-engine.js';
-import { searchSongs, VERIFIED_FEATURED_TRACKS } from './lib/spotify-service.js';
+import { searchSongs, VERIFIED_FEATURED_TRACKS, resolveTrackPreviewUrl } from './lib/spotify-service.js';
 import {
   getStoredUser,
   clearUser,
@@ -32,15 +34,15 @@ export const App: React.FC = () => {
   const [songs, setSongs] = useState<UnifiedSongItem[]>(VERIFIED_FEATURED_TRACKS);
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
-  // Playback & Lyrics State
-  const [activeSong, setActiveSong] = useState<UnifiedSongItem | null>(null);
+  // Playback & Lyrics State - initialize with first featured song so playback is immediately available
+  const [activeSong, setActiveSong] = useState<UnifiedSongItem | null>(() => VERIFIED_FEATURED_TRACKS[0] || null);
   const [activeDocument, setActiveDocument] = useState<TTMLDocument | null>(null);
   const [isLoadingLyrics, setIsLoadingLyrics] = useState<boolean>(false);
   const [isLyricsPopupOpen, setIsLyricsPopupOpen] = useState<boolean>(false);
 
   // Player state
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0);
-  const [durationMs, setDurationMs] = useState<number>(180000);
+  const [durationMs, setDurationMs] = useState<number>(165600);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.8);
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
@@ -51,7 +53,7 @@ export const App: React.FC = () => {
     artist: 'Eslabon Armado, Peso Pluma',
     spotifyId: '3qhlB30KknSeipLHZaYeKc',
     ytmId: 'lZIAZhbmPvg',
-    contributor: 'Bru',
+    contributor: 'Community',
     durationMs: 165600,
   });
 
@@ -106,43 +108,57 @@ export const App: React.FC = () => {
       },
     });
 
+    // Preload initial featured song into audio engine
+    if (VERIFIED_FEATURED_TRACKS[0]?.previewUrl) {
+      engine.loadTrack(VERIFIED_FEATURED_TRACKS[0].previewUrl, VERIFIED_FEATURED_TRACKS[0].durationMs);
+    }
+
     return () => {
       unsubscribe();
       engine.stop();
     };
   }, []);
 
-  // Handle OAuth Redirect & URL Search Parameters
+  // Handle OAuth Redirect, /callback URL, & URL Search Parameters
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 1. Check for Discord OAuth redirect token in URL hash
+    // 1. Handle OAuth token from hash or URL
     const redirectToken = parseOAuthRedirectToken();
     if (redirectToken) {
       fetchDiscordUserProfile(redirectToken).then((u) => {
         if (u) {
           setUser(u);
-          // If came from redirect, automatically open studio
           setCurrentView('studio');
         }
       });
     }
 
-    // 2. Parse URL parameters (e.g. from Spicetify / YTM extension)
+    const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
     const modeParam = params.get('mode');
-    const path = window.location.pathname;
 
+    // Clean callback URL cleanly so the user doesn't get stuck on /callback
+    if (path.includes('/callback') || window.location.hash.includes('access_token')) {
+      window.history.replaceState(null, '', '/');
+    }
+
+    // Direct routing
+    if (path.includes('/terms') || modeParam === 'legal') {
+      setCurrentView('legal');
+    } else if (path.includes('/profile') || modeParam === 'profile') {
+      setCurrentView('profile');
+    } else if (path.includes('/admin') || modeParam === 'admin') {
+      setCurrentView('admin');
+    } else if (path.includes('/sync') || modeParam === 'studio') {
+      setCurrentView('studio');
+    }
+
+    // Handle track queries from extensions or external links
     const trackId = params.get('trackId');
     const title = params.get('title');
     const artist = params.get('artist');
     const duration = params.get('duration');
-
-    if (path.includes('/sync') || modeParam === 'studio') {
-      setCurrentView('studio');
-    } else if (modeParam === 'legal') {
-      setCurrentView('legal');
-    }
 
     if (title || artist || trackId) {
       const durNum = duration ? parseInt(duration, 10) : 180000;
@@ -160,7 +176,6 @@ export const App: React.FC = () => {
       }));
       setDurationMs(durNum);
 
-      // Match against local featured or construct unified song item
       const matched = VERIFIED_FEATURED_TRACKS.find(
         (t) =>
           (trackId && (t.spotifyId === trackId || t.id.includes(trackId))) ||
@@ -179,12 +194,11 @@ export const App: React.FC = () => {
         previewUrl: null,
         source: platform === 'spotify' ? 'spotify' : 'verified',
         isSyllableSynced: false,
-        contributor: user?.username || 'Bru',
+        contributor: user?.username || 'Community',
       };
 
       setActiveSong(targetSong);
 
-      // If user came via /sync or studio mode, start playback in background workstation without popup obstruction
       if (path.includes('/sync') || modeParam === 'studio') {
         setIsLyricsPopupOpen(false);
         if (audioEngineRef.current) {
@@ -223,32 +237,42 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Play Song Card Handler: "just one click on play card. Have your own music player, but make sure the lyrics pop up."
+  // Play Song Card Handler: Loads song, resolves audio preview, and plays with popup
   const handlePlaySongCard = useCallback(async (song: UnifiedSongItem) => {
-    setActiveSong(song);
-    setIsLyricsPopupOpen(true); // "make sure the lyrics pop up"
+    let playableSong = song;
+
+    // Resolve audio preview stream if missing
+    if (!playableSong.previewUrl) {
+      const resolved = await resolveTrackPreviewUrl(playableSong.title, playableSong.artist);
+      if (resolved) {
+        playableSong = { ...playableSong, previewUrl: resolved };
+      }
+    }
+
+    setActiveSong(playableSong);
+    setIsLyricsPopupOpen(true);
     setIsLoadingLyrics(true);
 
     // Load track and start audio playback
     if (audioEngineRef.current) {
-      audioEngineRef.current.loadTrack(song.previewUrl, song.durationMs);
-      await audioEngineRef.current.play();
+      audioEngineRef.current.loadTrack(playableSong.previewUrl, playableSong.durationMs);
+      await audioEngineRef.current.play().catch(() => {});
     }
 
     // Update studio metadata as well
     setStudioMetadata((prev) => ({
       ...prev,
-      title: song.title,
-      artist: song.artist,
-      album: song.album,
-      spotifyId: song.spotifyId || undefined,
-      ytmId: song.ytmId || undefined,
-      durationMs: song.durationMs,
+      title: playableSong.title,
+      artist: playableSong.artist,
+      album: playableSong.album,
+      spotifyId: playableSong.spotifyId || undefined,
+      ytmId: playableSong.ytmId || undefined,
+      durationMs: playableSong.durationMs,
     }));
 
     // Fetch synchronized lyrics
     try {
-      const doc = await fetchLyricsForTrack(song);
+      const doc = await fetchLyricsForTrack(playableSong);
       setActiveDocument(doc);
       if (doc && doc.lines && doc.lines.length > 0) {
         setStudioLines(doc.lines);
@@ -295,7 +319,7 @@ export const App: React.FC = () => {
   const handleSignOut = () => {
     clearUser();
     setUser(null);
-    if (currentView === 'studio') {
+    if (currentView === 'studio' || currentView === 'admin' || currentView === 'profile') {
       setCurrentView('discover');
     }
   };
@@ -326,14 +350,12 @@ export const App: React.FC = () => {
       <main className="app-main-content">
         {currentView === 'discover' && (
           <div className="discover-page-wrap">
-            {/* Intro: "Bru Lyrics. Bru Lyrics." */}
             <HeroIntro
               onSearch={handleSearch}
               isSearching={isSearching}
               totalTracksCount={songs.length}
             />
 
-            {/* Song Card Grid: "just one click on play card" */}
             <SongCardGrid
               songs={songs}
               currentTrackId={activeSong?.id}
@@ -350,7 +372,7 @@ export const App: React.FC = () => {
               {/* Top Workstation Header */}
               <header className="workstation-header">
                 <div className="brand-title">
-                  <span>Bru&apos;s Sync Studio</span>
+                  <span>Lyrics Studio</span>
                   <span className="brand-badge">Syllable Workstation</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -404,18 +426,22 @@ export const App: React.FC = () => {
                     studioAudioRef.current.src = objUrl;
                     studioAudioRef.current.load();
                   }
+                  if (audioEngineRef.current) {
+                    audioEngineRef.current.loadAudioFile(file);
+                  }
                   setDurationMs(totalDur);
                   setStudioMetadata((prev) => ({ ...prev, durationMs: totalDur }));
                 }}
               />
 
-              {/* Pane 2: Syllable Tap-Sync Matrix */}
+              {/* Pane 2: Multi-format Syllable Tap-Sync Matrix */}
               <TapSyncMatrix
                 lines={studioLines}
                 onChangeLines={setStudioLines}
                 currentTimeMs={currentTimeMs}
                 durationMs={durationMs}
                 onSeek={handleSeek}
+                onChangeMetadata={(meta) => setStudioMetadata((prev) => ({ ...prev, ...meta }))}
               />
 
               {/* Pane 3: Live 60FPS Render Preview & One-Click Publish */}
@@ -431,8 +457,69 @@ export const App: React.FC = () => {
           </div>
         )}
 
+        {currentView === 'profile' && (
+          <ProfileView
+            user={user}
+            onUpdateUser={setUser}
+            onSignOut={handleSignOut}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            onViewTerms={() => setCurrentView('legal')}
+          />
+        )}
+
+        {currentView === 'admin' && (
+          <AdminPanel
+            user={user}
+            onSelectAndPlaySong={handlePlaySongCard}
+            onOpenStudioWithTrack={(track) => {
+              setStudioMetadata((prev) => ({
+                ...prev,
+                title: track.title,
+                artist: track.artist,
+                spotifyId: track.id,
+              }));
+              setCurrentView('studio');
+            }}
+          />
+        )}
+
         {currentView === 'legal' && <LegalDocumentation />}
       </main>
+
+      {/* Universal Footer with Terms of Service and Privacy Policy */}
+      <footer className="site-footer" style={{ padding: '24px 20px', borderTop: '1px solid #1c1c24', backgroundColor: '#0d0d11', textAlign: 'center' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13, color: '#a1a1aa', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setCurrentView('legal')}
+              style={{ background: 'none', border: 'none', color: '#f4f4f6', cursor: 'pointer', padding: 0, fontSize: 'inherit', textDecoration: 'underline' }}
+            >
+              Terms of Service
+            </button>
+            <span style={{ color: '#52525b' }}>•</span>
+            <a
+              href="https://github.com/heysoybruno09"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#4ade80', textDecoration: 'underline' }}
+            >
+              Privacy Policy (heysoybruno09)
+            </a>
+            <span style={{ color: '#52525b' }}>•</span>
+            <button
+              type="button"
+              onClick={() => setCurrentView('legal')}
+              style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer', padding: 0, fontSize: 'inherit' }}
+            >
+              DMCA 512 Notice &amp; Takedown
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: '#71717a' }}>
+            International Copyright Safe Harbor • Berne Convention &amp; WIPO WCT Compliant
+          </div>
+        </div>
+      </footer>
 
       {/* In-Browser Music Player Bar: "Have your own music player" */}
       <MusicPlayerBar
@@ -464,11 +551,12 @@ export const App: React.FC = () => {
         isLoadingLyrics={isLoadingLyrics}
       />
 
-      {/* Discord Authentication Modal */}
+      {/* Discord Authentication Modal with Terms Acceptance Pop-up */}
       <DiscordAuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={handleAuthSuccess}
+        onViewTerms={() => setCurrentView('legal')}
       />
     </div>
   );

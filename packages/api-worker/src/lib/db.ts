@@ -189,6 +189,22 @@ export async function getPaginatedCatalog(
   };
 }
 
+export interface SubmissionRecord {
+  id: string;
+  spotify_id?: string | null;
+  ytm_id?: string | null;
+  isrc?: string | null;
+  title: string;
+  artist: string;
+  duration_ms: number;
+  contributor: string;
+  ttml_raw: string;
+  status: string;
+  created_at: string;
+}
+
+const memorySubmissions = new Map<string, SubmissionRecord>();
+
 export async function queueSubmission(
   env: Env,
   submission: {
@@ -203,26 +219,147 @@ export async function queueSubmission(
     ttml_raw: string;
   }
 ): Promise<void> {
+  const record: SubmissionRecord = {
+    ...submission,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+  };
+  memorySubmissions.set(submission.id, record);
+
   if (env.DB) {
-    const query = `
-      INSERT INTO submissions (id, spotify_id, ytm_id, isrc, title, artist, duration_ms, contributor, ttml_raw, status, created_at)
-      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 'pending', ?10)
-    `;
-    await env.DB.prepare(query)
-      .bind(
-        submission.id,
-        submission.spotify_id || null,
-        submission.ytm_id || null,
-        submission.isrc || null,
-        submission.title,
-        submission.artist,
-        submission.duration_ms,
-        submission.contributor,
-        submission.ttml_raw,
-        new Date().toISOString()
-      )
-      .run();
+    try {
+      const query = `
+        INSERT INTO submissions (id, spotify_id, ytm_id, isrc, title, artist, duration_ms, contributor, ttml_raw, status, created_at)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 'pending', ?10)
+      `;
+      await env.DB.prepare(query)
+        .bind(
+          submission.id,
+          submission.spotify_id || null,
+          submission.ytm_id || null,
+          submission.isrc || null,
+          submission.title,
+          submission.artist,
+          submission.duration_ms,
+          submission.contributor,
+          submission.ttml_raw,
+          record.created_at
+        )
+        .run();
+    } catch {
+      // Fallback to memorySubmissions
+    }
   }
+}
+
+export async function deleteSong(env: Env, songId: string): Promise<boolean> {
+  const cleanId = cleanTrackId(songId) || songId.trim();
+
+  // 1. Remove from D1 database
+  if (env.DB) {
+    try {
+      await env.DB.prepare('DELETE FROM songs WHERE id = ?1 OR spotify_id = ?1 OR ytm_id = ?1').bind(cleanId).run();
+      await env.DB.prepare('DELETE FROM submissions WHERE id = ?1 OR spotify_id = ?1 OR ytm_id = ?1').bind(cleanId).run();
+    } catch {
+      // Fallback
+    }
+  }
+
+  // 2. Remove from LOCAL_CATALOG
+  if (env.LOCAL_CATALOG) {
+    env.LOCAL_CATALOG = env.LOCAL_CATALOG.filter(
+      (s) => s.id !== cleanId && s.spotify_id !== cleanId && s.ytm_id !== cleanId && !s.id.includes(cleanId)
+    );
+  }
+
+  // 3. Remove from LOCAL_TTML_MAP
+  if (env.LOCAL_TTML_MAP) {
+    for (const key of Object.keys(env.LOCAL_TTML_MAP)) {
+      if (key.includes(cleanId) || key === cleanId) {
+        delete env.LOCAL_TTML_MAP[key];
+      }
+    }
+  }
+
+  // 4. Remove from memorySubmissions
+  memorySubmissions.delete(cleanId);
+  for (const [k, v] of memorySubmissions.entries()) {
+    if (v.id === cleanId || v.spotify_id === cleanId || v.ytm_id === cleanId) {
+      memorySubmissions.delete(k);
+    }
+  }
+
+  return true;
+}
+
+export async function verifySong(env: Env, songId: string, verified: boolean = true): Promise<boolean> {
+  const cleanId = cleanTrackId(songId) || songId.trim();
+  const newStatus = verified ? 'verified' : 'pending';
+
+  // 1. Update in D1
+  if (env.DB) {
+    try {
+      await env.DB.prepare('UPDATE submissions SET status = ?1 WHERE id = ?2 OR spotify_id = ?2').bind(newStatus, cleanId).run();
+      await env.DB.prepare('UPDATE songs SET contributor = ?1 WHERE id = ?2 OR spotify_id = ?2')
+        .bind(verified ? 'Verified Catalog' : 'community', cleanId)
+        .run();
+    } catch {
+      // Fallback
+    }
+  }
+
+  // 2. Update in LOCAL_CATALOG
+  if (env.LOCAL_CATALOG) {
+    const item = env.LOCAL_CATALOG.find(
+      (s) => s.id === cleanId || s.spotify_id === cleanId || s.ytm_id === cleanId || s.id.includes(cleanId)
+    );
+    if (item) {
+      item.contributor = verified ? 'Verified Catalog' : 'community';
+    }
+  }
+
+  // 3. Update in memorySubmissions
+  const sub = memorySubmissions.get(cleanId);
+  if (sub) {
+    sub.status = newStatus;
+  }
+  for (const v of memorySubmissions.values()) {
+    if (v.id === cleanId || v.spotify_id === cleanId) {
+      v.status = newStatus;
+    }
+  }
+
+  return true;
+}
+
+export async function getAllAdminSongs(env: Env): Promise<{ catalog: CatalogEntry[]; submissions: SubmissionRecord[] }> {
+  let catalog: CatalogEntry[] = [];
+  let submissions: SubmissionRecord[] = [];
+
+  if (env.DB) {
+    try {
+      const catRes = await env.DB.prepare('SELECT * FROM songs ORDER BY updated_at DESC').all<CatalogEntry>();
+      if (catRes && catRes.results) {
+        catalog = catRes.results;
+      }
+      const subRes = await env.DB.prepare('SELECT * FROM submissions ORDER BY created_at DESC').all<SubmissionRecord>();
+      if (subRes && subRes.results) {
+        submissions = subRes.results;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  if (catalog.length === 0) {
+    catalog = env.LOCAL_CATALOG || [];
+  }
+
+  if (submissions.length === 0) {
+    submissions = Array.from(memorySubmissions.values());
+  }
+
+  return { catalog, submissions };
 }
 
 export interface UserRecord {
