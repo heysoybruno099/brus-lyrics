@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LogoIcon } from './LogoIcon.js';
 
 interface HeroIntroProps {
   onSearch: (query: string) => void;
@@ -26,9 +27,9 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
   return (
     <section className="hero-intro-section">
       <div className="hero-content">
-        {/* Intro Badge */}
-        <div className="hero-pill-badge">
-          <span className="hero-pill-dot" />
+        {/* Intro Badge with Logo */}
+        <div className="hero-pill-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <LogoIcon size={16} color="#4ade80" />
           <span>Apple Music Grade TTML Engine</span>
         </div>
 

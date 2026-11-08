@@ -60,8 +60,8 @@ export class YouTubePlayer {
 
         try {
           this.player = new window.YT.Player(elementId, {
-            height: '1',
-            width: '1',
+            height: '180',
+            width: '240',
             videoId: '',
             playerVars: {
               autoplay: 0,

@@ -353,3 +353,96 @@ describe('Spotify & YouTube Music Streaming Integration', () => {
   });
 });
 
+describe('Sync Studio Export & Persistence Features', () => {
+  it('serializes studio lines to synced LRC format with line and word timestamps', async () => {
+    const { serializeLinesToLRC } = await import('../../sync-studio/src/lib/ttml-serializer.js');
+
+    const metadata = {
+      title: 'Ella Baila Sola',
+      artist: 'Eslabon Armado',
+      album: 'Desvelado',
+      contributor: 'heysoybruno09',
+    };
+
+    const lines = [
+      {
+        id: 'line_1',
+        begin: 15500,
+        end: 18200,
+        agent: 'v1',
+        text: 'Compa que le parece esa morra',
+        syllables: [
+          { begin: 15500, end: 16100, text: 'Compa ' },
+          { begin: 16100, end: 16900, text: 'que ' },
+          { begin: 16900, end: 17500, text: 'le ' },
+          { begin: 17500, end: 18200, text: 'parece ' },
+        ],
+      },
+    ];
+
+    const lrc = serializeLinesToLRC(metadata, lines);
+    assert.ok(lrc.includes('[ti:Ella Baila Sola]'));
+    assert.ok(lrc.includes('[ar:Eslabon Armado]'));
+    assert.ok(lrc.includes('[al:Desvelado]'));
+    assert.ok(lrc.includes('[by:heysoybruno09]'));
+    assert.ok(lrc.includes('[00:15.50] <00:15.50>Compa <00:16.10>que <00:16.90>le <00:17.50>parece '));
+  });
+
+  it('serializes studio lines to structured JSON format for instant export', async () => {
+    const { serializeLinesToJSON } = await import('../../sync-studio/src/lib/ttml-serializer.js');
+
+    const metadata = {
+      title: 'Test Song',
+      artist: 'Test Artist',
+      durationMs: 180000,
+      spotifyId: 'track_test_123',
+      contributor: 'heysoybruno09',
+    };
+
+    const lines = [
+      {
+        id: 'line_1',
+        begin: 5000,
+        end: 8000,
+        agent: 'v1',
+        text: 'Hello world',
+        syllables: [
+          { begin: 5000, end: 6000, text: 'Hello ' },
+          { begin: 6000, end: 8000, text: 'world' },
+        ],
+      },
+    ];
+
+    const jsonStr = serializeLinesToJSON(metadata, lines);
+    const parsed = JSON.parse(jsonStr);
+    assert.equal(parsed.metadata.title, 'Test Song');
+    assert.equal(parsed.metadata.artist, 'Test Artist');
+    assert.equal(parsed.lines.length, 1);
+    assert.equal(parsed.lines[0].text, 'Hello world');
+    assert.equal(parsed.lines[0].syllables.length, 2);
+  });
+
+  it('builds Discord OAuth URL with /callback redirect URI matching developer portal', async () => {
+    const { buildDiscordOAuthUrl } = await import('../../sync-studio/src/lib/discord-auth.js');
+
+    const url = buildDiscordOAuthUrl('https://brus-lyrics.pages.dev/callback');
+    assert.ok(url.startsWith('https://discord.com/api/oauth2/authorize?'));
+    assert.ok(url.includes('redirect_uri=https%3A%2F%2Fbrus-lyrics.pages.dev%2Fcallback'));
+    assert.ok(url.includes('response_type=token'));
+  });
+
+  it('verifies logo.svg vector path exists and contains closed boundary geometry', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const svgPath = path.resolve(process.cwd(), 'packages/sync-studio/public/logo.svg');
+    assert.ok(fs.existsSync(svgPath));
+
+    const content = fs.readFileSync(svgPath, 'utf8');
+    assert.ok(content.includes('<svg'));
+    assert.ok(content.includes('viewBox="0 0 1024 1024"'));
+    assert.ok(content.includes('fill-rule="evenodd"'));
+    assert.ok(content.includes('M 264,126'));
+  });
+});
+

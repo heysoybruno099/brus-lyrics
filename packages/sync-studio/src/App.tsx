@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import type { TTMLLine, TTMLMetadata, TTMLDocument } from '@brus-lyrics/shared-types';
+import type { TTMLLine, TTMLMetadata, TTMLDocument, SubmitLyricsResponse } from '@brus-lyrics/shared-types';
 import { Navbar } from './components/Navbar.js';
 import { HeroIntro } from './components/HeroIntro.js';
 import { SongCardGrid } from './components/SongCardGrid.js';
@@ -12,6 +12,7 @@ import { AdminPanel } from './components/AdminPanel.js';
 import { AudioMetadataDeck } from './components/AudioMetadataDeck.js';
 import { TapSyncMatrix } from './components/TapSyncMatrix.js';
 import { LivePreviewDeck } from './components/LivePreviewDeck.js';
+import { LogoIcon } from './components/LogoIcon.js';
 
 import { AudioPlayerEngine } from './lib/audio-player-engine.js';
 import { SpotifyWebPlayer } from './lib/spotify-web-player.js';
@@ -32,7 +33,35 @@ import {
   fetchDiscordUserProfile,
 } from './lib/discord-auth.js';
 import { fetchLyricsForTrack } from './lib/lyrics-service.js';
+import { serializeStudioToTTML, serializeLinesToLRC, serializeLinesToJSON } from './lib/ttml-serializer.js';
+import { getApiBaseUrl, DEFAULT_PRODUCTION_API } from './lib/config.js';
 import type { AppViewMode, DiscordUser, SpotifyUserProfile, UnifiedSongItem } from './lib/types.js';
+
+const STUDIO_DRAFT_KEY = 'brus_lyrics_studio_draft';
+
+function getStoredStudioDraft(): { metadata: TTMLMetadata; lines: TTMLLine[]; savedAt: number } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STUDIO_DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function downloadFile(content: string, filename: string, mimeType: string): void {
+  if (typeof window === 'undefined') return;
+  const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 export const App: React.FC = () => {
   // Navigation & View
@@ -66,44 +95,63 @@ export const App: React.FC = () => {
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
 
   // Studio Workstation state
-  const [studioMetadata, setStudioMetadata] = useState<TTMLMetadata>({
-    title: 'Ella Baila Sola',
-    artist: 'Eslabon Armado, Peso Pluma',
-    spotifyId: '3qhlB30KknSeipLHZaYeKc',
-    ytmId: 'lZIAZhbmPvg',
-    contributor: 'Community',
-    durationMs: 165600,
+  const [studioMetadata, setStudioMetadata] = useState<TTMLMetadata>(() => {
+    const draft = getStoredStudioDraft();
+    if (draft?.metadata) return draft.metadata;
+    return {
+      title: 'Ella Baila Sola',
+      artist: 'Eslabon Armado, Peso Pluma',
+      spotifyId: '3qhlB30KknSeipLHZaYeKc',
+      ytmId: 'lZIAZhbmPvg',
+      contributor: 'Community',
+      durationMs: 165600,
+    };
   });
 
-  const [studioLines, setStudioLines] = useState<TTMLLine[]>([
-    {
-      id: 'line_1',
-      begin: 15500,
-      end: 18200,
-      agent: 'v1',
-      text: 'Compa que le parece esa morra',
-      syllables: [
-        { begin: 15500, end: 16100, text: 'Compa ' },
-        { begin: 16100, end: 16900, text: 'que ' },
-        { begin: 16900, end: 17500, text: 'le ' },
-        { begin: 17500, end: 18200, text: 'parece ' },
-      ],
-    },
-    {
-      id: 'line_2',
-      begin: 18500,
-      end: 22000,
-      agent: 'v2',
-      text: 'La que anda bailando sola',
-      syllables: [
-        { begin: 18500, end: 19200, text: 'La ' },
-        { begin: 19200, end: 20000, text: 'que ' },
-        { begin: 20000, end: 20800, text: 'anda ' },
-        { begin: 20800, end: 21500, text: 'bailando ' },
-        { begin: 21500, end: 22000, text: 'sola' },
-      ],
-    },
-  ]);
+  const [studioLines, setStudioLines] = useState<TTMLLine[]>(() => {
+    const draft = getStoredStudioDraft();
+    if (draft?.lines && draft.lines.length > 0) return draft.lines;
+    return [
+      {
+        id: 'line_1',
+        begin: 15500,
+        end: 18200,
+        agent: 'v1',
+        text: 'Compa que le parece esa morra',
+        syllables: [
+          { begin: 15500, end: 16100, text: 'Compa ' },
+          { begin: 16100, end: 16900, text: 'que ' },
+          { begin: 16900, end: 17500, text: 'le ' },
+          { begin: 17500, end: 18200, text: 'parece ' },
+        ],
+      },
+      {
+        id: 'line_2',
+        begin: 18500,
+        end: 22000,
+        agent: 'v2',
+        text: 'La que anda bailando sola',
+        syllables: [
+          { begin: 18500, end: 19200, text: 'La ' },
+          { begin: 19200, end: 20000, text: 'que ' },
+          { begin: 20000, end: 20800, text: 'anda ' },
+          { begin: 20800, end: 21500, text: 'bailando ' },
+          { begin: 21500, end: 22000, text: 'sola' },
+        ],
+      },
+    ];
+  });
+
+  // Sync Editor Workstation Save & Export State
+  const [saveStatus, setSaveStatus] = useState<{
+    type: 'success' | 'warning' | 'info';
+    message: string;
+  } | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(() => {
+    const draft = getStoredStudioDraft();
+    return draft?.savedAt ? new Date(draft.savedAt).toLocaleTimeString() : null;
+  });
 
   // Player Engine References
   const audioEngineRef = useRef<AudioPlayerEngine | null>(null);
@@ -160,6 +208,16 @@ export const App: React.FC = () => {
           setIsPlaying(false);
         }
       },
+      onError: (err) => {
+        console.warn('[YouTubePlayer] Playback error encountered, falling back to audio engine:', err);
+        if (currentPlaybackSource === 'youtube' && activeSong) {
+          setCurrentPlaybackSource('preview');
+          if (audioEngineRef.current) {
+            audioEngineRef.current.loadTrack(activeSong.previewUrl, activeSong.durationMs);
+            audioEngineRef.current.play().catch(() => {});
+          }
+        }
+      },
     });
 
     youtubePlayerRef.current = yt;
@@ -168,7 +226,7 @@ export const App: React.FC = () => {
     return () => {
       yt.destroy();
     };
-  }, [currentPlaybackSource]);
+  }, [currentPlaybackSource, activeSong]);
 
   // Initialize Spotify Web Playback SDK if token is present
   useEffect(() => {
@@ -349,6 +407,16 @@ export const App: React.FC = () => {
     } else if (playableSong.ytmId && youtubePlayerRef.current) {
       setCurrentPlaybackSource('youtube');
       youtubePlayerRef.current.loadVideo(playableSong.ytmId, true);
+
+      // Auto-fallback watchdog: if YouTube does not start or fails within 3.5s, switch to preview
+      setTimeout(() => {
+        if (youtubePlayerRef.current && !youtubePlayerRef.current.getIsPlaying() && audioEngineRef.current) {
+          console.warn('[YouTubeWatchdog] YouTube playback not detected within 3.5s, activating audio preview fallback');
+          setCurrentPlaybackSource('preview');
+          audioEngineRef.current.loadTrack(playableSong.previewUrl, playableSong.durationMs);
+          audioEngineRef.current.play().catch(() => {});
+        }
+      }, 3500);
     } else if (audioEngineRef.current) {
       setCurrentPlaybackSource('preview');
       audioEngineRef.current.loadTrack(playableSong.previewUrl, playableSong.durationMs);
@@ -450,19 +518,142 @@ export const App: React.FC = () => {
     }
   };
 
+  // Sync Editor Workstation Save & Export Handlers
+  const getExportBaseName = () => {
+    const raw = `${studioMetadata.artist || 'artist'}_${studioMetadata.title || 'lyrics'}`;
+    return raw.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+  };
+
+  const handleExportTTML = () => {
+    const xml = serializeStudioToTTML(studioMetadata, studioLines);
+    downloadFile(xml, `${getExportBaseName()}.ttml`, 'application/xml');
+  };
+
+  const handleExportLRC = () => {
+    const lrc = serializeLinesToLRC(studioMetadata, studioLines);
+    downloadFile(lrc, `${getExportBaseName()}.lrc`, 'text/plain');
+  };
+
+  const handleExportJSON = () => {
+    const json = serializeLinesToJSON(studioMetadata, studioLines);
+    downloadFile(json, `${getExportBaseName()}.json`, 'application/json');
+  };
+
+  const handleSaveStudioWork = async () => {
+    // 1. Immediately cache locally so no work is ever lost
+    try {
+      localStorage.setItem(
+        STUDIO_DRAFT_KEY,
+        JSON.stringify({
+          metadata: studioMetadata,
+          lines: studioLines,
+          savedAt: Date.now(),
+        })
+      );
+      const timeStr = new Date().toLocaleTimeString();
+      setLastSavedAt(timeStr);
+    } catch {
+      // Local storage quota or unavailable
+    }
+
+    // 2. If not authenticated, inform the user and open Discord sign-in modal
+    if (!user) {
+      setSaveStatus({
+        type: 'info',
+        message: 'Draft saved to browser storage. Sign in with Discord to publish your synchronized lyrics to the catalog.',
+      });
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    // 3. Authenticated: submit to Cloudflare Worker API
+    setIsSaving(true);
+    setSaveStatus({
+      type: 'info',
+      message: 'Submitting synchronized lyrics to catalog...',
+    });
+
+    const xml = serializeStudioToTTML(studioMetadata, studioLines);
+    const duration =
+      studioMetadata.durationMs ||
+      (studioLines.length > 0 ? studioLines[studioLines.length - 1]!.end : 0);
+    const effectiveContributor = user.username || studioMetadata.contributor || 'Community';
+
+    const payload = {
+      metadata: {
+        title: studioMetadata.title || 'Untitled',
+        artist: studioMetadata.artist || 'Unknown Artist',
+        album: studioMetadata.album || null,
+        durationMs: duration,
+        spotifyId: studioMetadata.spotifyId || null,
+        ytmId: studioMetadata.ytmId || null,
+        isrc: studioMetadata.isrc || null,
+        contributor: effectiveContributor,
+      },
+      ttmlRaw: xml,
+      contributor: effectiveContributor,
+    };
+
+    const targetUrl = `${getApiBaseUrl().replace(/\/+$/, '')}/v1/submit`;
+
+    try {
+      let response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok && !targetUrl.includes('heysoybruno09')) {
+        try {
+          const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (fallbackRes.ok) response = fallbackRes;
+        } catch {
+          // Keep primary response
+        }
+      }
+
+      const data: SubmitLyricsResponse = await response.json();
+
+      if (response.ok && data.success) {
+        setSaveStatus({
+          type: 'success',
+          message: `Saved locally and published as @${effectiveContributor}: ${data.message} (${data.action})`,
+        });
+      } else {
+        setSaveStatus({
+          type: 'warning',
+          message: `Draft preserved in local storage. Note: ${data.message || 'Submission pending'}`,
+        });
+      }
+    } catch (err: any) {
+      setSaveStatus({
+        type: 'warning',
+        message: `Draft preserved in local storage. Offline note: ${err?.message || 'Network unavailable'}`,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="app-shell">
-      {/* Hidden YouTube IFrame Player mount */}
+      {/* YouTube IFrame Player mount */}
       <div
         id="yt-player-mount"
         style={{
           position: 'fixed',
-          bottom: -100,
-          right: -100,
-          width: 1,
-          height: 1,
-          opacity: 0.01,
+          bottom: 0,
+          right: 0,
+          width: 240,
+          height: 180,
+          clipPath: 'inset(100%)',
+          clip: 'rect(0 0 0 0)',
           pointerEvents: 'none',
+          zIndex: -9999,
         }}
       />
 
@@ -562,27 +753,128 @@ export const App: React.FC = () => {
         {currentView === 'studio' && (
           <div className="studio-container-wrap">
             <div className="workstation-container">
-              {/* Top Workstation Header */}
-              <header className="workstation-header">
-                <div className="brand-title">
+              {/* Top Workstation Header with Logo, High-Contrast Save, and Export Actions */}
+              <header className="workstation-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <div className="brand-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <LogoIcon size={22} color="#ffffff" />
                   <span>Lyrics Studio</span>
                   <span className="brand-badge">Syllable Workstation</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  {lastSavedAt && (
+                    <span style={{ fontSize: 11, color: '#71717a', marginRight: 4 }}>
+                      Draft saved {lastSavedAt}
+                    </span>
+                  )}
+
+                  {/* Prominent High-Contrast Primary Save Button */}
+                  <button
+                    type="button"
+                    onClick={handleSaveStudioWork}
+                    disabled={isSaving}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      backgroundColor: '#ffffff',
+                      color: '#09090b',
+                      fontWeight: 700,
+                      fontSize: 13,
+                      padding: '8px 18px',
+                      borderRadius: 6,
+                      border: '1px solid #ffffff',
+                      cursor: isSaving ? 'wait' : 'pointer',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+                      transition: 'all 0.15s ease',
+                    }}
+                    title="Save draft locally and publish to catalog"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                      <polyline points="17 21 17 13 7 13 7 21" />
+                      <polyline points="7 3 7 8 15 8" />
+                    </svg>
+                    <span>{isSaving ? 'Saving...' : 'Save'}</span>
+                  </button>
+
+                  {/* Quick Export Button Group */}
+                  <div style={{ display: 'inline-flex', borderRadius: 6, overflow: 'hidden', border: '1px solid #2e2e38' }}>
+                    <button
+                      type="button"
+                      onClick={handleExportTTML}
+                      style={{
+                        backgroundColor: '#18181f',
+                        color: '#e4e4e7',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: '8px 12px',
+                        border: 'none',
+                        borderRight: '1px solid #2e2e38',
+                        cursor: 'pointer',
+                      }}
+                      title="Download Apple Music TTML XML file"
+                    >
+                      Export TTML
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportLRC}
+                      style={{
+                        backgroundColor: '#18181f',
+                        color: '#e4e4e7',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: '8px 12px',
+                        border: 'none',
+                        borderRight: '1px solid #2e2e38',
+                        cursor: 'pointer',
+                      }}
+                      title="Download Synced LRC file"
+                    >
+                      Export LRC
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportJSON}
+                      style={{
+                        backgroundColor: '#18181f',
+                        color: '#e4e4e7',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: '8px 12px',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                      title="Download JSON format lyrics"
+                    >
+                      Export JSON
+                    </button>
+                  </div>
+
                   {user ? (
-                    <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
                       <span className="header-status">
                         Contributor: <strong style={{ color: '#f4f4f6' }}>@{user.username}</strong>
                       </span>
                       <span className="brand-badge" style={{ color: '#4ade80' }}>
                         VERIFIED
                       </span>
-                    </>
+                    </div>
                   ) : (
                     <button
                       type="button"
                       className="brand-badge"
-                      style={{ cursor: 'pointer', background: '#1c1c24', color: '#a1a1aa', border: '1px solid #33333d' }}
+                      style={{ cursor: 'pointer', background: '#1c1c24', color: '#a1a1aa', border: '1px solid #33333d', marginLeft: 8 }}
                       onClick={() => setIsAuthModalOpen(true)}
                     >
                       Sign in to Publish
@@ -590,6 +882,64 @@ export const App: React.FC = () => {
                   )}
                 </div>
               </header>
+
+              {/* Status Banner / Toast */}
+              {saveStatus && (
+                <div
+                  style={{
+                    margin: '12px 0',
+                    padding: '10px 16px',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor:
+                      saveStatus.type === 'success'
+                        ? '#052e16'
+                        : saveStatus.type === 'warning'
+                        ? '#271d05'
+                        : '#18181f',
+                    border: `1px solid ${
+                      saveStatus.type === 'success'
+                        ? '#15803d'
+                        : saveStatus.type === 'warning'
+                        ? '#a16207'
+                        : '#3b82f6'
+                    }`,
+                    color:
+                      saveStatus.type === 'success'
+                        ? '#86efac'
+                        : saveStatus.type === 'warning'
+                        ? '#fde047'
+                        : '#93c5fd',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                      <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+                    </svg>
+                    <span>{saveStatus.message}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSaveStatus(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      fontSize: 14,
+                      opacity: 0.7,
+                    }}
+                    aria-label="Dismiss notice"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
 
               {/* Hidden audio element for file decoding */}
               <audio
@@ -683,9 +1033,13 @@ export const App: React.FC = () => {
         {currentView === 'legal' && <LegalDocumentation />}
       </main>
 
-      {/* Universal Footer with Terms of Service and Privacy Policy */}
+      {/* Universal Footer with Terms of Service, Privacy Policy, and Logo */}
       <footer className="site-footer" style={{ padding: '24px 20px', borderTop: '1px solid #1c1c24', backgroundColor: '#0d0d11', textAlign: 'center' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+            <LogoIcon size={18} color="#ffffff" />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#f4f4f6' }}>Lyrics</span>
+          </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13, color: '#a1a1aa', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               type="button"

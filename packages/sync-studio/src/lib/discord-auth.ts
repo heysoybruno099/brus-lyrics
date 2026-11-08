@@ -30,8 +30,8 @@ export function buildDiscordOAuthUrl(redirectUri?: string): string {
   const redirect =
     redirectUri ||
     (typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}`
-      : 'http://localhost:5173');
+      ? `${window.location.origin}/callback`
+      : 'https://brus-lyrics.pages.dev/callback');
 
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,

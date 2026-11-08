@@ -107,3 +107,74 @@ export function linesToTTMLDocument(
     rawXml,
   };
 }
+
+function formatLrcTag(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  const hundredths = Math.floor((ms % 1000) / 10);
+  return `[${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}]`;
+}
+
+function formatWordTag(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  const hundredths = Math.floor((ms % 1000) / 10);
+  return `<${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}>`;
+}
+
+export function serializeLinesToLRC(metadata: TTMLMetadata, lines: TTMLLine[]): string {
+  const headers = [
+    `[ti:${metadata.title || 'Untitled'}]`,
+    `[ar:${metadata.artist || 'Unknown Artist'}]`,
+    metadata.album ? `[al:${metadata.album}]` : null,
+    metadata.contributor ? `[by:${metadata.contributor}]` : null,
+    `[re:Lyrics Syllable Sync]`,
+  ].filter(Boolean).join('\n');
+
+  const body = lines.map((line) => {
+    const lineTag = formatLrcTag(line.begin);
+    if (line.syllables && line.syllables.length > 0) {
+      const words = line.syllables
+        .map((s) => `${formatWordTag(s.begin)}${s.text}`)
+        .join('');
+      return `${lineTag} ${words}`;
+    }
+    return `${lineTag} ${line.text}`;
+  }).join('\n');
+
+  return `${headers}\n\n${body}\n`;
+}
+
+export function serializeLinesToJSON(metadata: TTMLMetadata, lines: TTMLLine[]): string {
+  return JSON.stringify(
+    {
+      metadata: {
+        title: metadata.title || '',
+        artist: metadata.artist || '',
+        album: metadata.album || null,
+        durationMs: metadata.durationMs || (lines.length > 0 ? lines[lines.length - 1]!.end : 0),
+        spotifyId: metadata.spotifyId || null,
+        ytmId: metadata.ytmId || null,
+        contributor: metadata.contributor || 'Community',
+      },
+      lines: lines.map((line) => ({
+        id: line.id,
+        begin: line.begin,
+        end: line.end,
+        text: line.text,
+        agent: line.agent || 'v1',
+        syllables: line.syllables?.map((s) => ({
+          begin: s.begin,
+          end: s.end,
+          text: s.text,
+          role: s.role || 'lead',
+        })) || [],
+      })),
+    },
+    null,
+    2
+  );
+}
+

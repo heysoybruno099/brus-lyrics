@@ -1,5 +1,6 @@
 import React from 'react';
 import type { AppViewMode, DiscordUser } from '../lib/types.js';
+import { LogoIcon } from './LogoIcon.js';
 
 interface NavbarProps {
   currentView: AppViewMode;
@@ -21,8 +22,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="site-header">
       <div className="header-inner">
-        {/* Brand without logo icon and without Bru Lyrics branding */}
-        <div className="brand-group" onClick={() => onSelectView('discover')} style={{ cursor: 'pointer' }}>
+        {/* Brand with lowercase geometric 'b' logo and clean Lyrics title */}
+        <div className="brand-group" onClick={() => onSelectView('discover')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            className="brand-logo-badge"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 8,
+              backgroundColor: '#18181f',
+              border: '1px solid #2e2e38',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <LogoIcon size={20} color="#ffffff" />
+          </div>
           <div className="brand-text">
             <span className="brand-name" style={{ letterSpacing: '-0.02em', fontWeight: 700 }}>Lyrics</span>
             <span className="brand-sub">Syllable Sync</span>

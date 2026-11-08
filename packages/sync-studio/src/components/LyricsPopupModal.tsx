@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { TTMLDocument } from '@brus-lyrics/shared-types';
 import type { UnifiedSongItem } from '../lib/types.js';
+import { LogoIcon } from './LogoIcon.js';
 
 interface LyricsPopupModalProps {
   isOpen: boolean;
@@ -75,6 +76,21 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
           </div>
 
           <div className="lyrics-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 8px',
+                borderRadius: 4,
+                backgroundColor: '#18181f',
+                border: '1px solid #2e2e38',
+              }}
+            >
+              <LogoIcon size={14} color="#ffffff" />
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#e4e4e7' }}>Lyrics</span>
+            </div>
+
             {cleanSpotifyId && (
               <a
                 href={`https://open.spotify.com/track/${cleanSpotifyId}`}
