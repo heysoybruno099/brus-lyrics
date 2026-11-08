@@ -62,6 +62,100 @@ spotifyRoute.get('/spotify/token', async (c) => {
   });
 });
 
+async function handleSpotifyExchange(c: any) {
+  let body: any = {};
+  const contentType = c.req.header('content-type') || '';
+  if (contentType.includes('application/json')) {
+    body = await c.req.json().catch(() => ({}));
+  } else {
+    body = await c.req.parseBody().catch(() => ({}));
+  }
+
+  const code = body.code;
+  const codeVerifier = body.code_verifier || body.codeVerifier;
+  const redirectUri = body.redirect_uri || body.redirectUri;
+  const grantType = body.grant_type || (body.refresh_token ? 'refresh_token' : 'authorization_code');
+  const refreshToken = body.refresh_token || body.refreshToken;
+
+  const clientId = c.env?.SPOTIFY_CLIENT_ID || DEFAULT_SPOTIFY_CLIENT_ID;
+  const clientSecret = c.env?.SPOTIFY_CLIENT_SECRET || DEFAULT_SPOTIFY_CLIENT_SECRET;
+
+  if (grantType === 'authorization_code') {
+    if (!code || !codeVerifier) {
+      return c.json({ error: 'Missing code or code_verifier parameter' }, 400);
+    }
+
+    const params = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: String(code),
+      redirect_uri: String(redirectUri || ''),
+      client_id: clientId,
+      code_verifier: String(codeVerifier),
+    });
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    if (clientSecret) {
+      headers['Authorization'] = `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
+    }
+
+    try {
+      const res = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers,
+        body: params.toString(),
+      });
+
+      const data = (await res.json()) as any;
+      if (!res.ok) {
+        return c.json(data, res.status as any);
+      }
+      return c.json(data);
+    } catch (err: any) {
+      return c.json({ error: 'Failed to exchange Spotify authorization code', message: err.message }, 502);
+    }
+  } else if (grantType === 'refresh_token') {
+    if (!refreshToken) {
+      return c.json({ error: 'Missing refresh_token parameter' }, 400);
+    }
+
+    const params = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: String(refreshToken),
+      client_id: clientId,
+    });
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    if (clientSecret) {
+      headers['Authorization'] = `Basic ${btoa(`${clientId}:${clientSecret}`)}`;
+    }
+
+    try {
+      const res = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers,
+        body: params.toString(),
+      });
+
+      const data = (await res.json()) as any;
+      if (!res.ok) {
+        return c.json(data, res.status as any);
+      }
+      return c.json(data);
+    } catch (err: any) {
+      return c.json({ error: 'Failed to refresh Spotify token', message: err.message }, 502);
+    }
+  }
+
+  return c.json({ error: 'Unsupported grant_type' }, 400);
+}
+
+spotifyRoute.post('/spotify/exchange', handleSpotifyExchange);
+spotifyRoute.post('/exchange', handleSpotifyExchange);
+
 spotifyRoute.get('/spotify/search', async (c) => {
   const query = c.req.query('q');
   const limit = Math.min(50, Math.max(1, parseInt(c.req.query('limit') || '20', 10)));

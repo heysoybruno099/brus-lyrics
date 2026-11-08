@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS songs (
     duration_ms INTEGER NOT NULL,
     file_path TEXT NOT NULL,
     contributor TEXT NOT NULL DEFAULT 'community',
+    is_verified INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL
 );
 
@@ -20,6 +21,7 @@ CREATE INDEX IF NOT EXISTS idx_songs_spotify_id ON songs(spotify_id);
 CREATE INDEX IF NOT EXISTS idx_songs_ytm_id ON songs(ytm_id);
 CREATE INDEX IF NOT EXISTS idx_songs_norm ON songs(title_norm, artist_norm);
 CREATE INDEX IF NOT EXISTS idx_songs_duration ON songs(duration_ms);
+CREATE INDEX IF NOT EXISTS idx_songs_verified ON songs(is_verified);
 
 CREATE TABLE IF NOT EXISTS submissions (
     id TEXT PRIMARY KEY,

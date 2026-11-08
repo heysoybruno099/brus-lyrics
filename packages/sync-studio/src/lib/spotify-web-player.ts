@@ -1,4 +1,4 @@
-import { getStoredSpotifyToken } from './spotify-auth.js';
+import { getStoredSpotifyToken, refreshSpotifyToken } from './spotify-auth.js';
 
 export interface SpotifyPlayerCallbacks {
   onTimeUpdate?: (positionMs: number, durationMs: number) => void;
@@ -47,9 +47,15 @@ export class SpotifyWebPlayer {
 
           const player = new window.Spotify.Player({
             name: 'Lyrics Syllable Web Player',
-            getOAuthToken: (cb: (token: string) => void) => {
-              const currentToken = getStoredSpotifyToken() || this.accessToken;
-              if (currentToken) cb(currentToken);
+            getOAuthToken: async (cb: (token: string) => void) => {
+              let currentToken = getStoredSpotifyToken() || this.accessToken;
+              if (!currentToken) {
+                currentToken = await refreshSpotifyToken();
+              }
+              if (currentToken) {
+                this.accessToken = currentToken;
+                cb(currentToken);
+              }
             },
             volume: this.currentVolume,
           });

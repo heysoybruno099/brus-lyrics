@@ -6,6 +6,7 @@ interface SongCardGridProps {
   currentTrackId?: string | null;
   isPlaying: boolean;
   onSelectAndPlay: (song: UnifiedSongItem) => void;
+  onOpenStudio?: (song: UnifiedSongItem) => void;
   isLoading: boolean;
 }
 
@@ -22,6 +23,7 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
   currentTrackId,
   isPlaying,
   onSelectAndPlay,
+  onOpenStudio,
   isLoading,
 }) => {
   if (isLoading) {
@@ -171,14 +173,53 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
                   <span className="card-duration">{formatDuration(song.durationMs)}</span>
                   {song.isSyllableSynced ? (
                     <span className="card-badge-syllable">TTML SYLLABLE</span>
-                  ) : song.ytmId ? (
+                  ) : song.source === 'verified' ? (
                     <span className="card-badge-standard" style={{ color: '#4ade80', borderColor: '#22c55e' }}>
-                      FREE FULL (YTM)
+                      VERIFIED
+                    </span>
+                  ) : song.ytmId ? (
+                    <span className="card-badge-standard" style={{ color: '#60a5fa', borderColor: '#3b82f6' }}>
+                      YTM AUDIO
                     </span>
                   ) : (
                     <span className="card-badge-standard">{song.source.toUpperCase()}</span>
                   )}
                 </div>
+
+                {!song.isSyllableSynced && song.source !== 'verified' && (
+                  <button
+                    type="button"
+                    className="btn-add-lyrics"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenStudio?.(song);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      width: '100%',
+                      marginTop: 10,
+                      padding: '7px 12px',
+                      backgroundColor: '#ffffff',
+                      color: '#09090b',
+                      border: '1px solid #ffffff',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+                    }}
+                    title="Add verified lyrics in Sync Studio"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <span>Add it</span>
+                  </button>
+                )}
               </div>
             </article>
           );

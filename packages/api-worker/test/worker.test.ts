@@ -289,6 +289,45 @@ describe('Cloudflare Worker API Routes', () => {
     assert.equal(body.token_type, 'Bearer');
   });
 
+  it('POST /v1/spotify/exchange: rejects request missing code or code_verifier with 400', async () => {
+    const res = await app.request('/v1/spotify/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grant_type: 'authorization_code', code: 'test_code' }),
+    });
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, 'Missing code or code_verifier parameter');
+  });
+
+  it('POST /v1/spotify/exchange: rejects refresh_token grant missing token with 400', async () => {
+    const res = await app.request('/v1/spotify/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grant_type: 'refresh_token' }),
+    });
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, 'Missing refresh_token parameter');
+  });
+
+  it('POST /v1/spotify/exchange: relays PKCE exchange request to Spotify and returns response', async () => {
+    const res = await app.request('/v1/spotify/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type: 'authorization_code',
+        code: 'invalid_mock_code_for_testing',
+        code_verifier: 'test_verifier_sample_1234567890123456789012345678901234567890',
+        redirect_uri: 'https://brus-lyrics.pages.dev/callback',
+      }),
+    });
+    // Spotify accounts API returns 400 invalid_grant for invalid authorization code
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, 'invalid_grant');
+  });
+
   it('GET /v1/auth/users/Bru returns verified creator profile', async () => {
     const res = await app.request('/v1/auth/users/Bru');
     assert.equal(res.status, 200);

@@ -312,20 +312,36 @@ describe('Multi-Format Lyrics Parser (TTML, LRC, JSON)', () => {
 
 describe('Spotify & YouTube Music Streaming Integration', () => {
   it('builds valid Spotify OAuth URL with required Web Playback SDK scopes', async () => {
-    const { buildSpotifyOAuthUrl, SPOTIFY_CLIENT_ID, SPOTIFY_SCOPES } = await import(
-      '../../sync-studio/src/lib/spotify-auth.js'
-    );
+    const {
+      buildSpotifyOAuthUrl,
+      generateCodeVerifier,
+      generateCodeChallenge,
+      SPOTIFY_CLIENT_ID,
+      SPOTIFY_SCOPES,
+    } = await import('../../sync-studio/src/lib/spotify-auth.js');
 
     assert.equal(SPOTIFY_CLIENT_ID, '9b91a4fd101942cfb3fafbfad89e5d70');
     assert.ok(SPOTIFY_SCOPES.includes('streaming'));
     assert.ok(SPOTIFY_SCOPES.includes('user-modify-playback-state'));
     assert.ok(SPOTIFY_SCOPES.includes('user-read-playback-state'));
 
-    const url = buildSpotifyOAuthUrl('https://brus-lyrics.pages.dev/callback');
+    const url = await buildSpotifyOAuthUrl('https://brus-lyrics.pages.dev/callback');
     assert.ok(url.startsWith('https://accounts.spotify.com/authorize?'));
     assert.ok(url.includes('client_id=9b91a4fd101942cfb3fafbfad89e5d70'));
     assert.ok(url.includes('state=spotify_auth'));
-    assert.ok(url.includes('response_type=token'));
+    assert.ok(url.includes('response_type=code'));
+    assert.ok(url.includes('code_challenge_method=S256'));
+    assert.ok(url.includes('code_challenge='));
+
+    // RFC 7636 test vector validation
+    const testVerifier = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+    const testChallenge = await generateCodeChallenge(testVerifier);
+    assert.equal(testChallenge, 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
+
+    // Generated verifier length and character set validation
+    const generatedVerifier = generateCodeVerifier(64);
+    assert.equal(generatedVerifier.length, 64);
+    assert.match(generatedVerifier, /^[A-Za-z0-9\-._~]+$/);
   });
 
   it('normalizes YouTube Music track IDs and instantiates YouTube player', async () => {

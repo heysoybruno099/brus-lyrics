@@ -50,8 +50,6 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
   if (!song) return null;
 
   const progress = durationMs > 0 ? Math.min(1, Math.max(0, currentTimeMs / durationMs)) : 0;
-  const cleanSpotifyId = song.spotifyId ? song.spotifyId.replace(/^spotify:track:/i, '').replace(/^spotify_/i, '') : null;
-  const cleanYtmId = song.ytmId ? song.ytmId.replace(/^ytm_/i, '') : null;
 
   const handleScrubberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
@@ -117,16 +115,6 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
           }}
         >
           <span>Free Full Song Playback via YouTube Music</span>
-          {cleanYtmId && (
-            <a
-              href={`https://music.youtube.com/watch?v=${cleanYtmId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#93c5fd', textDecoration: 'underline', fontWeight: 600 }}
-            >
-              Open in YouTube Music
-            </a>
-          )}
         </div>
       )}
 
@@ -145,16 +133,6 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
           }}
         >
           <span>Spotify Premium Active • Full Track Unlocked</span>
-          {cleanSpotifyId && (
-            <a
-              href={`https://open.spotify.com/track/${cleanSpotifyId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#86efac', textDecoration: 'underline', fontWeight: 600 }}
-            >
-              Open in Spotify
-            </a>
-          )}
         </div>
       )}
 
@@ -193,53 +171,6 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
-            {cleanSpotifyId && (
-              <a
-                href={`https://open.spotify.com/track/${cleanSpotifyId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open in Spotify"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  backgroundColor: '#1db95420',
-                  color: '#1db954',
-                  border: '1px solid #1db95440',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Open in Spotify
-              </a>
-            )}
-
-            {cleanYtmId && (
-              <a
-                href={`https://music.youtube.com/watch?v=${cleanYtmId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open in YouTube Music"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '2px 6px',
-                  borderRadius: 4,
-                  backgroundColor: '#ff000020',
-                  color: '#f87171',
-                  border: '1px solid #ff000040',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Open in YouTube Music
-              </a>
-            )}
-
             {!isSpotifyPremium && onConnectSpotify && (
               <button
                 type="button"
@@ -261,7 +192,6 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
                 Unlock Full Song
               </button>
             )}
-          </div>
         </div>
 
         {/* Center Controls */}

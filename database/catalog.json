@@ -5,7 +5,7 @@
     {
       "id": "song_4cOdK2wGLETKBW3PvgPWqT",
       "spotify_id": "4cOdK2wGLETKBW3PvgPWqT",
-      "ytm_id": null,
+      "ytm_id": "yKNxeF4KMsY",
       "isrc": "GBAYE0000512",
       "title": "Yellow",
       "artist": "Coldplay",
@@ -14,12 +14,13 @@
       "duration_ms": 266773,
       "file_path": "database/ttml/4cOdK2wGLETKBW3PvgPWqT.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T00:00:00.000Z"
+      "updated_at": "2026-11-07T00:00:00.000Z",
+      "is_verified": 1
     },
     {
       "id": "song_1X4mH8d1n6zU80o6U7M1uX",
       "spotify_id": "1X4mH8d1n6zU80o6U7M1uX",
-      "ytm_id": "d-diB65654A",
+      "ytm_id": "3J1oLIvQTGU",
       "isrc": null,
       "title": "Entre Golpes y Besos",
       "artist": "Los Dareyes de la Sierra",
@@ -28,12 +29,13 @@
       "duration_ms": 192000,
       "file_path": "database/ttml/1X4mH8d1n6zU80o6U7M1uX.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T00:00:00.000Z"
+      "updated_at": "2026-11-07T00:00:00.000Z",
+      "is_verified": 1
     },
     {
       "id": "song_3qhlB30KknSeipLHZaYeKc",
       "spotify_id": "3qhlB30KknSeipLHZaYeKc",
-      "ytm_id": "lZIAZhbmPvg",
+      "ytm_id": "1TVyEcR5pcw",
       "isrc": "US27Q2300067",
       "title": "Ella Baila Sola",
       "artist": "Eslabon Armado, Peso Pluma",
@@ -42,12 +44,13 @@
       "duration_ms": 165600,
       "file_path": "database/ttml/3qhlB30KknSeipLHZaYeKc.ttml",
       "contributor": "CommunityDrop",
-      "updated_at": "2026-11-07T22:33:43.081Z"
+      "updated_at": "2026-11-07T22:33:43.081Z",
+      "is_verified": 1
     },
     {
       "id": "song_36SJ7ZFx8J1f1RsewmUwMX",
       "spotify_id": "36SJ7ZFx8J1f1RsewmUwMX",
-      "ytm_id": "9tQRhAuJHGE",
+      "ytm_id": "PPYLkEY8jt0",
       "isrc": null,
       "title": "Magalenha",
       "artist": "Sérgio Mendes",
@@ -56,12 +59,13 @@
       "duration_ms": 216933,
       "file_path": "database/ttml/36SJ7ZFx8J1f1RsewmUwMX.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.891Z"
+      "updated_at": "2026-11-07T23:50:04.891Z",
+      "is_verified": 1
     },
     {
       "id": "song_0VjIjW4GlUZAMYd2vXMi3b",
       "spotify_id": "0VjIjW4GlUZAMYd2vXMi3b",
-      "ytm_id": "4NRXx6U8ABQ",
+      "ytm_id": "fHI8X4OXluQ",
       "isrc": null,
       "title": "Blinding Lights",
       "artist": "The Weeknd",
@@ -70,7 +74,8 @@
       "duration_ms": 200040,
       "file_path": "database/ttml/0VjIjW4GlUZAMYd2vXMi3b.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.872Z"
+      "updated_at": "2026-11-07T23:50:04.872Z",
+      "is_verified": 1
     },
     {
       "id": "song_11mDIi9MNeOXoeSqiYQnWI",
@@ -84,12 +89,13 @@
       "duration_ms": 279685,
       "file_path": "database/ttml/11mDIi9MNeOXoeSqiYQnWI.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.879Z"
+      "updated_at": "2026-11-07T23:50:04.879Z",
+      "is_verified": 1
     },
     {
       "id": "song_1ipcb9qXpSHWhSUvdxJhsx",
       "spotify_id": "1ipcb9qXpSHWhSUvdxJhsx",
-      "ytm_id": null,
+      "ytm_id": "SuT4LVM2aMA",
       "isrc": null,
       "title": "Forever and Ever, Amen",
       "artist": "Randy Travis",
@@ -98,12 +104,13 @@
       "duration_ms": 212640,
       "file_path": "database/ttml/1ipcb9qXpSHWhSUvdxJhsx.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.883Z"
+      "updated_at": "2026-11-07T23:50:04.883Z",
+      "is_verified": 1
     },
     {
       "id": "song_2Jko3yQgktaKnFcmyLv3g7",
       "spotify_id": "2Jko3yQgktaKnFcmyLv3g7",
-      "ytm_id": null,
+      "ytm_id": "HOb2fv_D2iY",
       "isrc": "GBAPA7700002",
       "title": "1865 (96º In The Shade)",
       "artist": "Third World",
@@ -112,12 +119,13 @@
       "duration_ms": 267826,
       "file_path": "database/ttml/2Jko3yQgktaKnFcmyLv3g7.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.885Z"
+      "updated_at": "2026-11-07T23:50:04.885Z",
+      "is_verified": 1
     },
     {
       "id": "song_2XRqhe4lmCQVaUWawR5wRo",
       "spotify_id": "2XRqhe4lmCQVaUWawR5wRo",
-      "ytm_id": null,
+      "ytm_id": "VijlGdZxtAg",
       "isrc": null,
       "title": "Rica y Apretadita",
       "artist": "El General, Anayka",
@@ -126,12 +134,13 @@
       "duration_ms": 261866,
       "file_path": "database/ttml/2XRqhe4lmCQVaUWawR5wRo.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.888Z"
+      "updated_at": "2026-11-07T23:50:04.888Z",
+      "is_verified": 1
     },
     {
       "id": "song_3h5T5JypYU7huFiVYhv1dr",
       "spotify_id": "3h5T5JypYU7huFiVYhv1dr",
-      "ytm_id": null,
+      "ytm_id": "fRIhCiUVaKs",
       "isrc": null,
       "title": "BbY WOW",
       "artist": "KAROL G",
@@ -140,7 +149,8 @@
       "duration_ms": 225834,
       "file_path": "database/ttml/3h5T5JypYU7huFiVYhv1dr.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.894Z"
+      "updated_at": "2026-11-07T23:50:04.894Z",
+      "is_verified": 1
     },
     {
       "id": "song_3KkXRkHbMCARz0aVfEt68P",
@@ -154,7 +164,8 @@
       "duration_ms": 158040,
       "file_path": "database/ttml/3KkXRkHbMCARz0aVfEt68P.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.897Z"
+      "updated_at": "2026-11-07T23:50:04.897Z",
+      "is_verified": 1
     },
     {
       "id": "song_4Dvkj6JhhA12EX05fT7y2e",
@@ -168,12 +179,13 @@
       "duration_ms": 167303,
       "file_path": "database/ttml/4Dvkj6JhhA12EX05fT7y2e.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.899Z"
+      "updated_at": "2026-11-07T23:50:04.899Z",
+      "is_verified": 1
     },
     {
       "id": "song_5tRNzcUvgWGtuOozOR7skP",
       "spotify_id": "5tRNzcUvgWGtuOozOR7skP",
-      "ytm_id": null,
+      "ytm_id": "uj80VjraMQc",
       "isrc": "USA2P2477184",
       "title": "El Paso del Gigante",
       "artist": "Grupo Soñador",
@@ -182,7 +194,8 @@
       "duration_ms": 216950,
       "file_path": "database/ttml/5tRNzcUvgWGtuOozOR7skP.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.901Z"
+      "updated_at": "2026-11-07T23:50:04.901Z",
+      "is_verified": 1
     },
     {
       "id": "song_7catwNsmz9tHX68C1SOfcj",
@@ -196,12 +209,13 @@
       "duration_ms": 72013,
       "file_path": "database/ttml/7catwNsmz9tHX68C1SOfcj.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.904Z"
+      "updated_at": "2026-11-07T23:50:04.904Z",
+      "is_verified": 1
     },
     {
       "id": "song_7qiZfU4dY1lWllzX7mPBI3",
       "spotify_id": "7qiZfU4dY1lWllzX7mPBI3",
-      "ytm_id": "JGwWNGJdvx8",
+      "ytm_id": "_dK2tDK9grQ",
       "isrc": null,
       "title": "Shape of You",
       "artist": "Ed Sheeran",
@@ -210,7 +224,8 @@
       "duration_ms": 233712,
       "file_path": "database/ttml/7qiZfU4dY1lWllzX7mPBI3.ttml",
       "contributor": "Bru",
-      "updated_at": "2026-11-07T23:50:04.907Z"
+      "updated_at": "2026-11-07T23:50:04.907Z",
+      "is_verified": 1
     }
   ]
 }

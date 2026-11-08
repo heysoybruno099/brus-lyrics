@@ -17,6 +17,7 @@ interface LyricsPopupModalProps {
   currentPlaybackSource?: 'spotify' | 'youtube' | 'preview';
   isSpotifyPremium?: boolean;
   onConnectSpotify?: () => void;
+  onOpenStudio?: (song: UnifiedSongItem) => void;
 }
 
 export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
@@ -33,6 +34,7 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
   currentPlaybackSource = 'preview',
   isSpotifyPremium = false,
   onConnectSpotify,
+  onOpenStudio,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
@@ -72,6 +74,77 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
             <div className="lyrics-header-text">
               <h3 className="lyrics-header-title">{song.title}</h3>
               <p className="lyrics-header-artist">{song.artist}</p>
+              <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                {cleanSpotifyId && (
+                  <a
+                    href={`https://open.spotify.com/track/${cleanSpotifyId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open in Spotify"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      backgroundColor: '#1db95420',
+                      color: '#1db954',
+                      border: '1px solid #1db95440',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Open in Spotify
+                  </a>
+                )}
+                {cleanYtmId && (
+                  <a
+                    href={`https://music.youtube.com/watch?v=${cleanYtmId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open in YouTube Music"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      backgroundColor: '#ff000020',
+                      color: '#f87171',
+                      border: '1px solid #ff000040',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Open in YouTube Music
+                  </a>
+                )}
+                {onOpenStudio && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenStudio(song);
+                    }}
+                    title="Open sync workstation to add lyrics"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      backgroundColor: '#ffffff',
+                      color: '#09090b',
+                      border: '1px solid #ffffff',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Add Lyrics
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -90,52 +163,6 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
               <LogoIcon size={14} color="#ffffff" />
               <span style={{ fontSize: 11, fontWeight: 600, color: '#e4e4e7' }}>Lyrics</span>
             </div>
-
-            {cleanSpotifyId && (
-              <a
-                href={`https://open.spotify.com/track/${cleanSpotifyId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open in Spotify"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '4px 8px',
-                  borderRadius: 4,
-                  backgroundColor: '#1db95420',
-                  color: '#1db954',
-                  border: '1px solid #1db95440',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Open in Spotify
-              </a>
-            )}
-
-            {cleanYtmId && (
-              <a
-                href={`https://music.youtube.com/watch?v=${cleanYtmId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Open in YouTube Music"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '4px 8px',
-                  borderRadius: 4,
-                  backgroundColor: '#ff000020',
-                  color: '#f87171',
-                  border: '1px solid #ff000040',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Open in YouTube Music
-              </a>
-            )}
 
             <button
               type="button"
@@ -242,6 +269,36 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
             <div className="lyrics-status-center">
               <span className="lyrics-empty-notice">No synchronized lyrics available for this song yet.</span>
               <span className="lyrics-empty-help">Sign in with Discord to be the first to sync it in the studio.</span>
+              {onOpenStudio && (
+                <button
+                  type="button"
+                  className="btn-add-lyrics"
+                  onClick={() => {
+                    onClose();
+                    onOpenStudio(song);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '8px 18px',
+                    backgroundColor: '#ffffff',
+                    color: '#09090b',
+                    border: '1px solid #ffffff',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    marginTop: 14,
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  <span>Add Lyrics in Studio</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="lyrics-stream-wrapper">

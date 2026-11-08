@@ -1,5 +1,5 @@
 import type { CatalogEntry, CatalogPaginationResponse } from '@brus-lyrics/shared-types';
-import { cleanTrackId } from '@brus-lyrics/shared-types';
+import { cleanTrackId, normalizeString } from '@brus-lyrics/shared-types';
 import type { Env } from '../types.js';
 
 export async function findSongByTrackId(
@@ -295,14 +295,44 @@ export async function deleteSong(env: Env, songId: string): Promise<boolean> {
 export async function verifySong(env: Env, songId: string, verified: boolean = true): Promise<boolean> {
   const cleanId = cleanTrackId(songId) || songId.trim();
   const newStatus = verified ? 'verified' : 'pending';
+  const verifiedInt = verified ? 1 : 0;
 
   // 1. Update in D1
   if (env.DB) {
     try {
       await env.DB.prepare('UPDATE submissions SET status = ?1 WHERE id = ?2 OR spotify_id = ?2').bind(newStatus, cleanId).run();
-      await env.DB.prepare('UPDATE songs SET contributor = ?1 WHERE id = ?2 OR spotify_id = ?2')
-        .bind(verified ? 'Verified Catalog' : 'community', cleanId)
+      const updatedSongs = await env.DB.prepare('UPDATE songs SET is_verified = ?1, contributor = ?2 WHERE id = ?3 OR spotify_id = ?3')
+        .bind(verifiedInt, verified ? 'Verified Catalog' : 'community', cleanId)
         .run();
+
+      // If song is not in songs table yet and is being verified, check submissions and promote
+      if (verified && updatedSongs && (updatedSongs as any).meta && (updatedSongs as any).meta.changes === 0) {
+        const sub = await env.DB.prepare('SELECT * FROM submissions WHERE id = ?1 OR spotify_id = ?1 LIMIT 1').bind(cleanId).first<SubmissionRecord>();
+        if (sub) {
+          const titleNorm = normalizeString(sub.title);
+          const artistNorm = normalizeString(sub.artist);
+          const filePath = `database/ttml/${sub.spotify_id || sub.ytm_id || sub.id.replace(/^song_/, '')}.ttml`;
+          const now = new Date().toISOString();
+          await env.DB.prepare(`
+            INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1, ?12)
+            ON CONFLICT(id) DO UPDATE SET is_verified = 1, contributor = excluded.contributor, updated_at = excluded.updated_at
+          `).bind(
+            sub.id,
+            sub.spotify_id || null,
+            sub.ytm_id || null,
+            sub.isrc || null,
+            sub.title,
+            sub.artist,
+            titleNorm,
+            artistNorm,
+            sub.duration_ms,
+            filePath,
+            'Verified Catalog',
+            now
+          ).run();
+        }
+      }
     } catch {
       // Fallback
     }
@@ -315,6 +345,7 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
     );
     if (item) {
       item.contributor = verified ? 'Verified Catalog' : 'community';
+      item.is_verified = verifiedInt;
     }
   }
 

@@ -107,6 +107,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         setNotice({ type: 'success', message: `"${songTitle}" was deleted successfully.` });
         setCatalog((prev) => prev.filter((s) => s.id !== songId && s.spotify_id !== songId && s.ytm_id !== songId));
         setSubmissions((prev) => prev.filter((s) => s.id !== songId && s.spotify_id !== songId));
+        await fetchAdminData();
       } else {
         const err = await res.json();
         setNotice({ type: 'error', message: err.error || 'Failed to delete song' });
@@ -118,6 +119,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // 1-Click Verify / Approve Lyrics
   const handleVerifyLyrics = async (songId: string, songTitle: string) => {
+    // Optimistically update local state immediately
+    setSubmissions((prev) =>
+      prev.map((sub) => (sub.id === songId || sub.spotify_id === songId ? { ...sub, status: 'verified' } : sub))
+    );
+    setCatalog((prev) =>
+      prev.map((cat) => (cat.id === songId || cat.spotify_id === songId ? { ...cat, is_verified: 1, contributor: 'Verified Catalog' } : cat))
+    );
+
     try {
       const res = await fetch(`${apiBase}/v1/admin/verify`, {
         method: 'POST',
@@ -130,18 +139,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       if (res.ok) {
         setNotice({ type: 'success', message: `Lyrics for "${songTitle}" verified and approved!` });
-        setSubmissions((prev) =>
-          prev.map((sub) => (sub.id === songId || sub.spotify_id === songId ? { ...sub, status: 'verified' } : sub))
-        );
-        setCatalog((prev) =>
-          prev.map((cat) => (cat.id === songId || cat.spotify_id === songId ? { ...cat, is_verified: 1 } : cat))
-        );
+        await fetchAdminData();
       } else {
         const err = await res.json();
         setNotice({ type: 'error', message: err.error || 'Failed to verify song' });
+        await fetchAdminData();
       }
     } catch (err: any) {
       setNotice({ type: 'error', message: `Verification error: ${err.message}` });
+      await fetchAdminData();
     }
   };
 
@@ -315,6 +321,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, backgroundColor: '#27272a', color: '#e4e4e7' }}>
                           @{s.contributor || 'Community'}
                         </span>
+                        {(s.is_verified === 1 || s.is_verified === true || s.contributor === 'Verified Catalog') && (
+                          <span style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', borderRadius: 4, backgroundColor: '#14532d', color: '#4ade80', fontWeight: 600 }}>
+                            VERIFIED
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: 8 }}>

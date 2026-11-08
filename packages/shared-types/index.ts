@@ -10,6 +10,7 @@ export interface CatalogEntry {
   duration_ms: number;
   file_path: string;
   contributor: string;
+  is_verified?: number | boolean;
   updated_at: string;
 }
 
