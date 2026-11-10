@@ -659,11 +659,12 @@ export async function getContributorProfile(env: Env, rawUsername: string): Prom
   const isAdmin =
     normUser === 'heysoybruno09' ||
     normUser === 'heysoybruno099' ||
+    normUser === '708497847753900042' ||
     normUser === '1568826229006540882';
   const isCreator = isAdmin || normUser === 'bru' || user?.role === 'verified_creator' || user?.role === 'admin';
 
   const userRecord = {
-    id: isAdmin ? '1568826229006540882' : (user?.id || (normUser === 'bru' ? '1568826229006540882' : `user_${normUser}`)),
+    id: isAdmin ? '708497847753900042' : (user?.id || (normUser === 'bru' ? '708497847753900042' : `user_${normUser}`)),
     username: user?.username || (isAdmin ? 'heysoybruno09' : rawUsername.trim().replace(/^@/, '')),
     isVerified: isCreator || Boolean(user?.is_verified),
     role: isAdmin ? 'admin' : isCreator ? 'verified_creator' : user?.role || 'contributor',
@@ -876,12 +877,26 @@ export interface UserRecord {
 
 const memoryUsers = new Map<string, UserRecord>([
   [
+    '708497847753900042',
+    {
+      id: '708497847753900042',
+      username: 'heysoybruno09',
+      discriminator: '0',
+      avatar: 'cb459d924a3706f8ce8695793c2124f6',
+      email: 'heysoybruno09@bruslyrics.com',
+      role: 'admin',
+      is_verified: 1,
+      created_at: '2026-11-08T00:00:00.000Z',
+      updated_at: '2026-11-08T00:00:00.000Z',
+    },
+  ],
+  [
     'heysoybruno09',
     {
-      id: '1568826229006540882',
+      id: '708497847753900042',
       username: 'heysoybruno09',
-      discriminator: '8903',
-      avatar: null,
+      discriminator: '0',
+      avatar: 'cb459d924a3706f8ce8695793c2124f6',
       email: 'heysoybruno09@bruslyrics.com',
       role: 'admin',
       is_verified: 1,
@@ -892,9 +907,9 @@ const memoryUsers = new Map<string, UserRecord>([
   [
     'heysoybruno099',
     {
-      id: '1568826229006540882',
+      id: '708497847753900042',
       username: 'heysoybruno099',
-      discriminator: '8903',
+      discriminator: '0',
       avatar: null,
       email: 'heysoybruno099@bruslyrics.com',
       role: 'admin',
@@ -920,7 +935,7 @@ const memoryUsers = new Map<string, UserRecord>([
   [
     'bru',
     {
-      id: '1568826229006540882',
+      id: '708497847753900042',
       username: 'Bru',
       discriminator: '0',
       avatar: null,
@@ -947,6 +962,7 @@ export async function upsertUser(
 ): Promise<UserRecord> {
   const now = new Date().toISOString();
   const isAdmin =
+    user.id === '708497847753900042' ||
     user.id === '1568826229006540882' ||
     user.username.toLowerCase() === 'heysoybruno09' ||
     user.username.toLowerCase() === 'heysoybruno099' ||
@@ -1008,8 +1024,8 @@ export async function getUserByUsername(env: Env, username: string): Promise<Use
   if (normUser === 'heysoybruno099') {
     return memoryUsers.get('heysoybruno099') || null;
   }
-  if (normUser === '1568826229006540882') {
-    return memoryUsers.get('1568826229006540882') || null;
+  if (normUser === '708497847753900042' || normUser === '1568826229006540882') {
+    return memoryUsers.get('708497847753900042') || memoryUsers.get('1568826229006540882') || null;
   }
   if (normUser === 'bru') {
     return memoryUsers.get('bru') || null;
@@ -1036,6 +1052,7 @@ export async function getUserByUsername(env: Env, username: string): Promise<Use
 
 export async function getUserById(env: Env, id: string): Promise<UserRecord | null> {
   const cleanId = id.trim();
+  if (cleanId === '708497847753900042') return memoryUsers.get('708497847753900042') || null;
   if (cleanId === '1568826229006540882') return memoryUsers.get('1568826229006540882') || null;
   if (cleanId === 'heysoybruno09') return memoryUsers.get('heysoybruno09') || null;
   if (cleanId === 'heysoybruno099') return memoryUsers.get('heysoybruno099') || null;

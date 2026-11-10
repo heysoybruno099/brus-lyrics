@@ -20,7 +20,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const isAdmin = Boolean(
     user &&
-      (user.id === '1568826229006540882' ||
+      (user.id === '708497847753900042' ||
+        user.id === '1568826229006540882' ||
         user.username.toLowerCase() === 'heysoybruno09' ||
         user.username.toLowerCase() === 'heysoybruno099' ||
         user.username.toLowerCase() === 'bru' ||

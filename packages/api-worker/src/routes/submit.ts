@@ -84,14 +84,21 @@ submitRoute.post('/submit', async (c) => {
     const queryAdminId = (c.req.query('adminId') || c.req.query('admin_id') || '').trim();
     const normContributor = contributorName.toLowerCase().replace(/^@/, '');
 
-    const adminUsers = ['heysoybruno09', 'heysoybruno099', 'bru', '1568826229006540882'];
-    const isAutoApproved =
-      adminUsers.includes(normContributor) ||
-      adminUsers.includes(adminHeader) ||
-      adminHeader === '1568826229006540882' ||
-      adminIdHeader === '1568826229006540882' ||
-      adminUsers.includes(queryAdmin) ||
-      queryAdminId === '1568826229006540882';
+    const adminIds = ['708497847753900042', '1568826229006540882'];
+    const adminUsernames = ['heysoybruno09', 'heysoybruno099', 'bru'];
+
+    const isAdminCaller =
+      adminIds.includes(adminIdHeader) ||
+      adminIds.includes(queryAdminId) ||
+      adminUsernames.includes(adminHeader) ||
+      adminUsernames.includes(queryAdmin);
+
+    const isAutoApproved = Boolean(isAdminCaller);
+
+    // Anti-spoofing security: If contributor claims to be heysoybruno09, require authenticated admin credentials
+    if (['heysoybruno09', 'heysoybruno099'].includes(normContributor) && !isAdminCaller) {
+      return c.json({ error: 'Forbidden: Cannot submit as protected creator heysoybruno09 without admin authentication' }, 403);
+    }
 
     // 2. Queue or record in D1 if available
     await queueSubmission(c.env, {

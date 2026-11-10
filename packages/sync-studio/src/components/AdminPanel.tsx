@@ -15,6 +15,7 @@ interface AdminPanelProps {
     ytmId?: string;
     durationMs?: number;
   }) => void;
+  onCatalogUpdated?: () => void;
 }
 
 interface SongRecord {
@@ -49,10 +50,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   user,
   onSelectAndPlaySong,
   onOpenStudioWithTrack,
+  onCatalogUpdated,
 }) => {
   const isAdmin = Boolean(
     user &&
-      (user.id === '1568826229006540882' ||
+      (user.id === '708497847753900042' ||
+        user.id === '1568826229006540882' ||
         user.username.toLowerCase() === 'heysoybruno09' ||
         user.username.toLowerCase() === 'heysoybruno099' ||
         user.username.toLowerCase() === 'bru' ||
@@ -68,7 +71,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const apiBase = getApiBaseUrl();
   const adminUsername = user?.username || 'heysoybruno09';
-  const adminId = user?.id || '1568826229006540882';
+  const adminId = user?.id || '708497847753900042';
   const adminHeaders = {
     'X-Admin-User': adminUsername,
     'X-Admin-Id': adminId,
@@ -111,7 +114,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       <div className="admin-restricted-container" style={{ padding: 60, textAlign: 'center', color: '#f87171' }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>Access Restricted</h2>
         <p style={{ color: '#a1a1aa', fontSize: 14 }}>
-          This dedicated administration console is strictly restricted to user <strong>heysoybruno09</strong> (Discord ID: 1568826229006540882).
+          This dedicated administration console is strictly restricted to user <strong>heysoybruno09</strong> (Discord ID: 708497847753900042).
         </p>
       </div>
     );
@@ -137,6 +140,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         setCatalog((prev) => prev.filter((s) => s.id !== songId && s.spotify_id !== songId && s.ytm_id !== songId));
         setSubmissions((prev) => prev.filter((s) => s.id !== songId && s.spotify_id !== songId));
         await fetchAdminData(true);
+        onCatalogUpdated?.();
       } else {
         const err = await res.json();
         setNotice({ type: 'error', message: err.error || 'Failed to delete song' });
@@ -172,7 +176,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           cat.id === songId ||
           cat.id.replace(/^song_/, '').toLowerCase() === cleanId ||
           (cat.spotify_id && cat.spotify_id.toLowerCase() === cleanId)
-            ? { ...cat, is_verified: 1, contributor: 'Verified Catalog' }
+            ? { ...cat, is_verified: 1 }
             : cat
         );
       }
@@ -192,7 +196,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             title: matchedSub.title,
             artist: matchedSub.artist,
             duration_ms: matchedSub.duration_ms,
-            contributor: 'Verified Catalog',
+            contributor: matchedSub.contributor || 'Verified Catalog',
             is_verified: 1,
             updated_at: new Date().toISOString(),
           },
@@ -218,6 +222,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       if (res.ok) {
         setNotice({ type: 'success', message: `Lyrics for "${songTitle}" verified and approved!` });
         await fetchAdminData(true);
+        onCatalogUpdated?.();
       } else {
         const err = await res.json();
         setNotice({ type: 'error', message: err.error || 'Failed to verify song' });

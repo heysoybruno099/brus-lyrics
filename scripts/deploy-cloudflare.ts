@@ -65,17 +65,24 @@ if (databaseId && fs.existsSync(wranglerTomlPath)) {
   console.log(`[Cloudflare Deploy] Patched wrangler.toml with database_id: ${databaseId}`);
 }
 
-console.log('[Cloudflare Deploy] Step 3: Running schema migration on D1...');
-const migrationFile = path.join(rootDir, 'database', 'migrations', '0001_initial.sql');
-if (fs.existsSync(migrationFile)) {
-  try {
-    execSync(`npx wrangler d1 execute brus-lyrics-db --remote --file="${migrationFile}"`, {
-      cwd: apiWorkerDir,
-      stdio: 'inherit',
-    });
-    console.log('[Cloudflare Deploy] Database schema applied successfully.');
-  } catch (err: any) {
-    console.warn('[Cloudflare Deploy] Remote D1 migration skipped or failed (will run in local simulation if offline).');
+console.log('[Cloudflare Deploy] Step 3: Running schema migrations on D1...');
+const migrationsDir = path.join(rootDir, 'database', 'migrations');
+if (fs.existsSync(migrationsDir)) {
+  const migrationFiles = fs
+    .readdirSync(migrationsDir)
+    .filter((f) => f.endsWith('.sql') && !f.includes('latest_inserts'))
+    .sort();
+  for (const f of migrationFiles) {
+    const fullPath = path.join(migrationsDir, f);
+    try {
+      execSync(`npx wrangler d1 execute brus-lyrics-db --remote --file="${fullPath}"`, {
+        cwd: apiWorkerDir,
+        stdio: 'inherit',
+      });
+      console.log(`[Cloudflare Deploy] Migration applied: ${f}`);
+    } catch (err: any) {
+      console.warn(`[Cloudflare Deploy] Migration ${f} skipped or already applied:`, err.message);
+    }
   }
 }
 

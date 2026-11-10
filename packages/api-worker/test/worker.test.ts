@@ -397,7 +397,10 @@ describe('Cloudflare Worker API Routes', () => {
 
     const submitRes = await app.request('/v1/submit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Id': '708497847753900042',
+      },
       body: JSON.stringify({
         metadata: {
           spotifyId: 'test_delete_track_id',
@@ -548,7 +551,10 @@ describe('Cloudflare Worker API Routes', () => {
 
     const submitRes = await app.request('/v1/submit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Id': '708497847753900042',
+      },
       body: JSON.stringify({
         metadata: {
           spotifyId: 'spotify_desync_test_id',
@@ -630,6 +636,77 @@ describe('Cloudflare Worker API Routes', () => {
     const afterBody = (await catalogAfterDelete.json()) as any;
     const match = afterBody.songs.find((s: any) => s.spotify_id === 'spotify_auto_approve_test');
     assert.equal(match, undefined);
+  });
+
+  it('POST /v1/submit: rejects unauthenticated contributor pretending to be heysoybruno09 with 403', async () => {
+    const fakeTtml = `<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="en">
+  <head><metadata><ttm:title>Spoof Song</ttm:title><ttm:agent type="person" xml:id="v1">Spoofer</ttm:agent></metadata></head>
+  <body><div><p begin="00:00:01.000" end="00:00:03.000" ttm:agent="v1"><span begin="00:00:01.000" end="00:00:03.000">Fake</span></p></div></body>
+</tt>`;
+
+    const res = await app.request('/v1/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        metadata: {
+          spotifyId: 'spotify_fake_spoof',
+          title: 'Spoof Song',
+          artist: 'Spoofer',
+          durationMs: 180000,
+        },
+        ttmlRaw: fakeTtml,
+        contributor: 'heysoybruno09',
+      }),
+    });
+    assert.equal(res.status, 403);
+  });
+
+  it('POST /v1/submit: auto-approves and verifies for authentic Discord user ID 708497847753900042', async () => {
+    const brunoTtml = `<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="en">
+  <head><metadata><ttm:title>Bruno Verified Drop</ttm:title><ttm:agent type="person" xml:id="v1">Bruno Creator</ttm:agent></metadata></head>
+  <body><div><p begin="00:00:01.000" end="00:00:03.000" ttm:agent="v1"><span begin="00:00:01.000" end="00:00:03.000">Direct verified sync line</span></p></div></body>
+</tt>`;
+
+    const submitRes = await app.request('/v1/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Id': '708497847753900042',
+        'X-Admin-User': 'heysoybruno09',
+      },
+      body: JSON.stringify({
+        metadata: {
+          spotifyId: 'spotify_bruno_authentic_id_test',
+          title: 'Bruno Verified Drop',
+          artist: 'Bruno Creator',
+          durationMs: 200000,
+        },
+        ttmlRaw: brunoTtml,
+        contributor: 'heysoybruno09',
+      }),
+    });
+    assert.equal(submitRes.status, 201);
+
+    // Verify it is verified in catalog
+    const catalogRes = await app.request('/v1/catalog?q=Bruno%20Verified%20Drop');
+    assert.equal(catalogRes.status, 200);
+    const catData = (await catalogRes.json()) as any;
+    assert.ok(catData.songs.length > 0);
+    assert.equal(catData.songs[0].is_verified, 1);
+    assert.equal(catData.songs[0].contributor, 'heysoybruno09');
+
+    // Admin delete using Discord ID 708497847753900042
+    const delRes = await app.request('/v1/songs/spotify_bruno_authentic_id_test', {
+      method: 'DELETE',
+      headers: {
+        'X-Admin-Id': '708497847753900042',
+      },
+    });
+    assert.equal(delRes.status, 200);
   });
 });
 

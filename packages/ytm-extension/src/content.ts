@@ -290,7 +290,7 @@ class BrusYtmExtension {
 
     const brandTitle = document.createElement('span');
     brandTitle.className = 'brus-ytm-branding';
-    brandTitle.textContent = "Bru's Lyrics";
+    brandTitle.textContent = "BruLyrics";
 
     this.songTitleEl = document.createElement('span');
     this.songTitleEl.style.fontSize = '12px';
@@ -424,7 +424,7 @@ class BrusYtmExtension {
       this.currentSource = source;
       if (this.statusBadgeEl) {
         if (source === 'brus-lyrics-verified') {
-          this.statusBadgeEl.textContent = "Bru's Lyrics Verified";
+          this.statusBadgeEl.textContent = "BruLyrics Verified";
           this.statusBadgeEl.setAttribute('data-source', 'brus-lyrics-verified');
         } else {
           this.statusBadgeEl.textContent = 'LRCLIB Fallback';

@@ -83,6 +83,7 @@ authRoute.get('/auth/discord/user', async (c) => {
       : `https://cdn.discordapp.com/embed/avatars/${parseInt(u.discriminator || '0', 10) % 5}.png`;
 
     const isAdmin =
+      u.id === '708497847753900042' ||
       u.id === '1568826229006540882' ||
       u.username?.toLowerCase() === 'heysoybruno09' ||
       u.username?.toLowerCase() === 'heysoybruno099';
@@ -145,7 +146,8 @@ authRoute.post('/auth/users', async (c) => {
       const adminHeader = c.req.header('X-Admin-User') || '';
       const adminIdHeader = c.req.header('X-Admin-Id') || '';
       const isAdminCaller =
-        ['heysoybruno09', 'heysoybruno099', 'bru', '1568826229006540882'].includes(adminHeader.toLowerCase()) ||
+        ['heysoybruno09', 'heysoybruno099', 'bru', '708497847753900042', '1568826229006540882'].includes(adminHeader.toLowerCase()) ||
+        adminIdHeader === '708497847753900042' ||
         adminIdHeader === '1568826229006540882';
       if (!isAdminCaller) {
         return c.json({ error: 'Forbidden: Cannot claim protected administrative account' }, 403);

@@ -412,9 +412,13 @@ export const App: React.FC = () => {
       const songId = songMatch ? decodeURIComponent(songMatch[2] || songMatch[1]) : songParam;
       if (songId) {
         const cleanId = songId.replace(/^song_/, '').replace(/^spotify:/i, '');
-        const matched = VERIFIED_FEATURED_TRACKS.find(
-          (s) => s.id === songId || s.spotifyId === cleanId || s.id === `song_${cleanId}`
-        );
+        const matched =
+          VERIFIED_FEATURED_TRACKS.find(
+            (s) => s.id === songId || s.spotifyId === cleanId || s.id === `song_${cleanId}`
+          ) ||
+          songs.find(
+            (s) => s.id === songId || s.spotifyId === cleanId || s.id === `song_${cleanId}`
+          );
         const songObj: UnifiedSongItem = matched || {
           id: cleanId,
           title: `Song ${cleanId}`,
@@ -432,7 +436,20 @@ export const App: React.FC = () => {
         setCurrentView('song');
         setIsLoadingSongLyrics(true);
         fetchLyricsForTrack(songObj)
-          .then((doc) => setSongPageDocument(doc))
+          .then((doc) => {
+            setSongPageDocument(doc);
+            if (doc?.metadata?.title && (songObj.title.startsWith('Song ') || !songObj.title)) {
+              setSelectedSongForPage((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      title: doc.metadata.title || prev.title,
+                      artist: doc.metadata.artist || prev.artist,
+                    }
+                  : prev
+              );
+            }
+          })
           .catch(() => setSongPageDocument(null))
           .finally(() => setIsLoadingSongLyrics(false));
         return;
@@ -563,7 +580,7 @@ export const App: React.FC = () => {
             contributor: s.contributor || 'Bru',
           }));
 
-          if (remoteSongs.length > 0 && !activeSearchQueryRef.current) {
+          if (!activeSearchQueryRef.current) {
             setSongs(remoteSongs);
           }
         }
@@ -641,6 +658,19 @@ export const App: React.FC = () => {
     if (typeof window !== 'undefined') {
       const path = view === 'discover' ? '/' : `/${view}`;
       window.history.pushState({ view }, '', path);
+      if (window.document) {
+        if (view === 'discover') {
+          window.document.title = 'BruLyrics - Syllable-Synchronized Lyrics & Player';
+        } else if (view === 'studio') {
+          window.document.title = 'Sync Studio | BruLyrics';
+        } else if (view === 'admin') {
+          window.document.title = 'Admin Console | BruLyrics';
+        } else if (view === 'profile') {
+          window.document.title = 'Profile | BruLyrics';
+        } else if (view === 'legal') {
+          window.document.title = 'Terms of Service & Copyright | BruLyrics';
+        }
+      }
     }
   }, [user]);
 
@@ -1428,6 +1458,7 @@ export const App: React.FC = () => {
                 contributor: user?.username || 'Community',
               });
             }}
+            onCatalogUpdated={fetchLiveCatalog}
           />
         )}
 

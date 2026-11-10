@@ -747,7 +747,7 @@ class BrusSpicetifyExtension {
 
     if (!this.topbarBtn) {
       this.topbarBtn = new window.Spicetify.Topbar.Button(
-        "Bru's Lyrics",
+        "BruLyrics",
         'lyrics',
         () => this.toggleView(),
         false,
@@ -1032,7 +1032,7 @@ class BrusSpicetifyExtension {
 
     if (res.source === 'brus-lyrics-verified') {
       if (this.sourceBadgeEl) {
-        this.sourceBadgeEl.textContent = "Bru's Lyrics Verified";
+        this.sourceBadgeEl.textContent = "BruLyrics Verified";
         this.sourceBadgeEl.setAttribute('data-source', 'brus-lyrics-verified');
       }
     } else if (res.source === 'spotify-musixmatch') {

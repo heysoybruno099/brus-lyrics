@@ -126,12 +126,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const isHeysoybruno =
     safeTargetUsername.toLowerCase() === 'heysoybruno09' ||
     safeTargetUsername.toLowerCase() === 'heysoybruno099' ||
+    safeTargetUsername === '708497847753900042' ||
     safeTargetUsername === '1568826229006540882' ||
+    user?.id === '708497847753900042' ||
     user?.id === '1568826229006540882' ||
     safeTargetUsername.toLowerCase() === 'bru';
 
   const effectiveUser = publicProfile || {
-    id: user?.id || (isHeysoybruno ? '1568826229006540882' : `user_${safeTargetUsername || 'contributor'}`),
+    id: user?.id || (isHeysoybruno ? '708497847753900042' : `user_${safeTargetUsername || 'contributor'}`),
     username: safeTargetUsername || user?.username || 'contributor',
     isVerified: Boolean(user?.isVerified) || safeTargetUsername.toLowerCase() === 'bru' || isHeysoybruno,
     role: isHeysoybruno ? 'admin' : user?.role || 'contributor',
@@ -147,6 +149,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const username = effectiveUser?.username || safeTargetUsername || user?.username || 'contributor';
   const isAdmin =
     isHeysoybruno ||
+    effectiveUser?.id === '708497847753900042' ||
     effectiveUser?.id === '1568826229006540882' ||
     effectiveUser?.role === 'admin' ||
     username.toLowerCase() === 'heysoybruno09' ||

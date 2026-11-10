@@ -12,19 +12,19 @@ export function checkAdminAccess(c: any): boolean {
   const queryId = c.req.query('adminId') || c.req.query('admin_id');
 
   const normalize = (val?: string | null) => (val || '').trim().toLowerCase().replace(/^@/, '');
-  const adminUsers = ['heysoybruno09', 'heysoybruno099', 'bru', '1568826229006540882'];
-  const adminIds = ['1568826229006540882'];
+  const adminUsers = ['heysoybruno09', 'heysoybruno099', 'bru', '708497847753900042', '1568826229006540882'];
+  const adminIds = ['708497847753900042', '1568826229006540882'];
 
   const normHeader = normalize(adminHeader);
-  const normId = normalize(adminIdHeader);
+  const normId = (adminIdHeader || '').trim();
   const normQuery = normalize(queryUser);
-  const normQueryId = normalize(queryId);
+  const normQueryId = (queryId || '').trim();
   const normAuth = authHeader ? authHeader.toLowerCase() : '';
 
+  if (adminIds.includes(normId)) return true;
+  if (adminIds.includes(normQueryId)) return true;
   if (adminUsers.includes(normHeader)) return true;
-  if (adminIds.includes(normId) || adminUsers.includes(normId)) return true;
   if (adminUsers.includes(normQuery)) return true;
-  if (adminIds.includes(normQueryId) || adminUsers.includes(normQueryId)) return true;
   if (adminUsers.some((u) => normAuth.includes(u))) return true;
 
   return false;

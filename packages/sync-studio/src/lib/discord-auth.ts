@@ -10,7 +10,19 @@ export function getStoredUser(): DiscordUser | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as DiscordUser;
+    const u = JSON.parse(raw) as DiscordUser;
+    if (
+      u &&
+      (u.id === '708497847753900042' ||
+        u.id === '1568826229006540882' ||
+        u.username?.toLowerCase() === 'heysoybruno09' ||
+        u.username?.toLowerCase() === 'heysoybruno099' ||
+        u.username?.toLowerCase() === 'bru')
+    ) {
+      u.role = 'admin';
+      u.isVerified = true;
+    }
+    return u;
   } catch {
     return null;
   }
@@ -66,6 +78,13 @@ export async function fetchDiscordUserProfile(accessToken: string): Promise<Disc
       ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128`
       : `https://cdn.discordapp.com/embed/avatars/${parseInt(u.discriminator || '0', 10) % 5}.png`;
 
+    const isAdmin =
+      u.id === '708497847753900042' ||
+      u.id === '1568826229006540882' ||
+      u.username?.toLowerCase() === 'heysoybruno09' ||
+      u.username?.toLowerCase() === 'heysoybruno099' ||
+      u.username?.toLowerCase() === 'bru';
+
     const user: DiscordUser = {
       id: u.id,
       username: u.username,
@@ -73,7 +92,7 @@ export async function fetchDiscordUserProfile(accessToken: string): Promise<Disc
       avatar: avatarUrl,
       email: u.email || null,
       isVerified: true,
-      role: 'verified_creator',
+      role: isAdmin ? 'admin' : 'verified_creator',
     };
     saveUser(user);
     return user;
@@ -83,15 +102,18 @@ export async function fetchDiscordUserProfile(accessToken: string): Promise<Disc
 }
 
 // Seamless developer / contributor sign-in for testing & verified creation
-export function createMockVerifiedUser(username: string = 'Bru'): DiscordUser {
+export function createMockVerifiedUser(username: string = 'heysoybruno09'): DiscordUser {
+  const isHey =
+    username.toLowerCase().includes('heysoybruno09') ||
+    username.toLowerCase() === 'bru';
   const user: DiscordUser = {
-    id: DISCORD_CLIENT_ID,
+    id: isHey ? '708497847753900042' : DISCORD_CLIENT_ID,
     username,
     discriminator: '0001',
     avatar: null,
     email: `${username.toLowerCase()}@bruslyrics.com`,
     isVerified: true,
-    role: 'verified_creator',
+    role: isHey ? 'admin' : 'verified_creator',
   };
   saveUser(user);
   return user;

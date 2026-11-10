@@ -69,21 +69,26 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
     (line: TTMLLine) => currentTimeMs >= line.begin && currentTimeMs <= line.end
   ) ?? -1;
 
-  const previewLyricLine = document?.lines?.[0]?.text?.trim() || '';
+  const previewLyricLine =
+    document?.lines?.find((line: TTMLLine) => line.text && line.text.trim().length > 0)?.text?.trim() || '';
   const activeLineText = activeLineIndex >= 0 ? document?.lines?.[activeLineIndex]?.text?.trim() : '';
   const currentLyricLine = activeLineText || previewLyricLine || song.artist;
+  const effectiveTitle =
+    song.title && !song.title.startsWith('Song ')
+      ? song.title
+      : document?.metadata?.title || song.title;
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.document) {
       const lyricSuffix = currentLyricLine || song.artist;
-      window.document.title = `${song.title} - ${lyricSuffix} | BruLyrics`;
+      window.document.title = `${effectiveTitle} - ${lyricSuffix} | BruLyrics`;
     }
     return () => {
       if (typeof window !== 'undefined' && window.document) {
         window.document.title = 'BruLyrics - Syllable-Synchronized Lyrics & Player';
       }
     };
-  }, [song.title, song.artist, currentLyricLine]);
+  }, [effectiveTitle, song.artist, currentLyricLine]);
 
   return (
     <div className="dedicated-song-container" style={{ maxWidth: 1040, margin: '0 auto', padding: '32px 20px 80px 20px' }}>

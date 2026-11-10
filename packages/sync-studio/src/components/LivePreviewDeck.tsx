@@ -87,7 +87,7 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  // Handle Publish to Bru's Lyrics API
+  // Handle Publish to BruLyrics API
   const handlePublish = async () => {
     setPublishStatus({ type: 'loading', message: 'Submitting lyrics to catalog...' });
 
@@ -162,9 +162,7 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
         try {
           const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: submitHeaders,
             body: JSON.stringify(payload),
           });
           const data: SubmitLyricsResponse = await fallbackRes.json();
