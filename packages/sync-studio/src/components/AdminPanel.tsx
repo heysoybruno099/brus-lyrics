@@ -91,9 +91,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         const data = await res.json();
         setCatalog(data.catalog || []);
         setSubmissions(data.submissions || []);
+      } else {
+        const fallbackRes = await fetch(`${apiBase}/v1/catalog`);
+        if (fallbackRes.ok) {
+          const fbData = await fallbackRes.json();
+          setCatalog(fbData.songs || []);
+        }
       }
     } catch {
-      // Fallback
+      try {
+        const fallbackRes = await fetch(`${apiBase}/v1/catalog`);
+        if (fallbackRes.ok) {
+          const fbData = await fallbackRes.json();
+          setCatalog(fbData.songs || []);
+        }
+      } catch {
+        // Fallback exhausted
+      }
     } finally {
       if (!silent) setIsLoading(false);
     }

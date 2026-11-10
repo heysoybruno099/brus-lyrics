@@ -26,8 +26,20 @@ app.use(
   '*',
   cors({
     origin: '*',
-    allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'X-Admin-User'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Admin-User',
+      'X-Admin-Id',
+      'X-Admin-Token',
+      'x-admin-user',
+      'x-admin-id',
+      'x-admin-token',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+    ],
     exposeHeaders: [
       'X-Lyrics-Source',
       'X-Song-Id',

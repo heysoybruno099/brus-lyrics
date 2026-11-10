@@ -111,7 +111,10 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
       contributor: effectiveContributor,
     };
 
-    const targetUrl = `${apiBaseUrl.replace(/\/+$/, '')}/v1/submit`;
+    const adminQuery = user
+      ? `?adminUser=${encodeURIComponent(user.username)}&adminId=${encodeURIComponent(user.id)}`
+      : '';
+    const targetUrl = `${apiBaseUrl.replace(/\/+$/, '')}/v1/submit${adminQuery}`;
     const submitHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -130,7 +133,7 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
       // If initial target failed and wasn't already production, attempt production worker
       if (!response.ok && !targetUrl.includes('heysoybruno09')) {
         try {
-          const fallbackResponse = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
+          const fallbackResponse = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit${adminQuery}`, {
             method: 'POST',
             headers: submitHeaders,
             body: JSON.stringify(payload),
@@ -160,7 +163,7 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
       // Try production fallback on network exception
       if (!targetUrl.includes('heysoybruno09')) {
         try {
-          const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
+          const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit${adminQuery}`, {
             method: 'POST',
             headers: submitHeaders,
             body: JSON.stringify(payload),

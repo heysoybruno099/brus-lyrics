@@ -1019,7 +1019,10 @@ export const App: React.FC = () => {
       contributor: effectiveContributor,
     };
 
-    const targetUrl = `${getApiBaseUrl().replace(/\/+$/, '')}/v1/submit`;
+    const adminQuery = user
+      ? `?adminUser=${encodeURIComponent(user.username)}&adminId=${encodeURIComponent(user.id)}`
+      : '';
+    const targetUrl = `${getApiBaseUrl().replace(/\/+$/, '')}/v1/submit${adminQuery}`;
     const submitHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -1037,7 +1040,7 @@ export const App: React.FC = () => {
 
       if (!response.ok && !targetUrl.includes('heysoybruno09')) {
         try {
-          const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
+          const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit${adminQuery}`, {
             method: 'POST',
             headers: submitHeaders,
             body: JSON.stringify(payload),

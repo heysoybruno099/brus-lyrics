@@ -708,5 +708,33 @@ describe('Cloudflare Worker API Routes', () => {
     });
     assert.equal(delRes.status, 200);
   });
+
+  it('OPTIONS preflight: allows X-Admin-Id and X-Admin-User on /v1/submit and /v1/admin/songs', async () => {
+    const submitPreflight = await app.request('/v1/submit', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://brus-lyrics.pages.dev',
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type, x-admin-user, x-admin-id',
+      },
+    });
+    assert.equal(submitPreflight.status, 204);
+    const submitAllowHeaders = submitPreflight.headers.get('Access-Control-Allow-Headers') || '';
+    assert.ok(submitAllowHeaders.toLowerCase().includes('x-admin-id'));
+    assert.ok(submitAllowHeaders.toLowerCase().includes('x-admin-user'));
+
+    const adminPreflight = await app.request('/v1/admin/songs', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://brus-lyrics.pages.dev',
+        'Access-Control-Request-Method': 'GET',
+        'Access-Control-Request-Headers': 'x-admin-user, x-admin-id',
+      },
+    });
+    assert.equal(adminPreflight.status, 204);
+    const adminAllowHeaders = adminPreflight.headers.get('Access-Control-Allow-Headers') || '';
+    assert.ok(adminAllowHeaders.toLowerCase().includes('x-admin-id'));
+    assert.ok(adminAllowHeaders.toLowerCase().includes('x-admin-user'));
+  });
 });
 
