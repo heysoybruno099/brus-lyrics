@@ -38,9 +38,11 @@ export async function fetchTTML(env: Env, filePath: string): Promise<string | nu
   if (env.DB) {
     try {
       const idWithoutExt = baseName.replace(/\.ttml$/i, '');
+      const prefixed = idWithoutExt.startsWith('song_') ? idWithoutExt : `song_${idWithoutExt}`;
+      const unprefixed = idWithoutExt.replace(/^song_/, '');
       const subRow = await env.DB.prepare(
-        'SELECT ttml_raw FROM submissions WHERE spotify_id = ?1 OR ytm_id = ?1 OR id = ?1 LIMIT 1'
-      ).bind(idWithoutExt).first<{ ttml_raw: string }>();
+        'SELECT ttml_raw FROM submissions WHERE spotify_id = ?1 OR spotify_id = ?2 OR ytm_id = ?1 OR ytm_id = ?2 OR id = ?1 OR id = ?2 OR id = ?3 LIMIT 1'
+      ).bind(idWithoutExt, unprefixed, prefixed).first<{ ttml_raw: string }>();
       if (subRow && subRow.ttml_raw) {
         return subRow.ttml_raw;
       }

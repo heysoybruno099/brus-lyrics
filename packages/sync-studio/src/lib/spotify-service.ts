@@ -178,7 +178,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Forever and Ever, Amen',
     artist: 'Randy Travis',
     album: 'Always & Forever',
-    artworkUrl: 'https://i.ytimg.com/vi/SuT4LVM2aMA/hqdefault.jpg',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273723376f081b369b02795a7fb',
     durationMs: 212640,
     previewUrl: null,
     source: 'verified',
@@ -192,7 +192,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: '1865 (96º In The Shade)',
     artist: 'Third World',
     album: '96° in the Shade',
-    artworkUrl: 'https://i.ytimg.com/vi/HOb2fv_D2iY/hqdefault.jpg',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b27385022daef38da8c9a7f81ac6',
     durationMs: 267826,
     previewUrl: null,
     source: 'verified',
@@ -206,7 +206,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Rica y Apretadita',
     artist: 'El General, Anayka',
     album: 'Rica y Apretadita',
-    artworkUrl: 'https://i.ytimg.com/vi/VijlGdZxtAg/hqdefault.jpg',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273a908ed6eeeb286b8775a1724',
     durationMs: 261866,
     previewUrl: null,
     source: 'verified',
@@ -220,7 +220,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'BbY WOW',
     artist: 'KAROL G',
     album: 'BbY WOW',
-    artworkUrl: 'https://i.ytimg.com/vi/fRIhCiUVaKs/hqdefault.jpg',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b27321deb742375f88edfb2e7368',
     durationMs: 225834,
     previewUrl: null,
     source: 'verified',
@@ -234,7 +234,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'El Paso del Gigante',
     artist: 'Grupo Soñador',
     album: 'El Gigante de Hierro',
-    artworkUrl: 'https://i.ytimg.com/vi/uj80VjraMQc/hqdefault.jpg',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273103311b7c4c2c73922d393f1',
     durationMs: 216950,
     previewUrl: null,
     source: 'verified',
@@ -248,7 +248,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Me Quedo',
     artist: 'Daddy Yankee',
     album: 'Legendaddy',
-    artworkUrl: 'https://i.ytimg.com/vi/O6b2KX0FOSo/hqdefault.jpg',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b7b93e3343f9e4b2d91c2204',
     durationMs: 72013,
     previewUrl: null,
     source: 'verified',
@@ -258,18 +258,12 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
 ];
 
 export function resolveTrackArtwork(item: { artworkUrl?: string | null; ytmId?: string | null; spotifyId?: string | null }): string {
-  if (item.artworkUrl && !item.artworkUrl.includes('unsplash.com')) {
+  if (item.artworkUrl && !item.artworkUrl.includes('unsplash.com') && !item.artworkUrl.includes('ytimg.com')) {
     return item.artworkUrl;
   }
-  if (item.ytmId) {
-    const clean = item.ytmId.trim().replace(/^.*[?&]v=/, '').split('&')[0];
-    return `https://i.ytimg.com/vi/${clean}/hqdefault.jpg`;
-  }
-  if (item.spotifyId) {
-    return 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce';
-  }
-  return 'https://i.ytimg.com/vi/hqdefault.jpg';
+  return 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce';
 }
+
 
 let clientCredentialsToken: { token: string; expiresAt: number } | null = null;
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { AppViewMode, DiscordUser } from '../lib/types.js';
 import { LogoIcon } from './LogoIcon.js';
+import { VerifiedSticker } from './VerifiedSticker.js';
 
 interface NavbarProps {
   currentView: AppViewMode;
@@ -112,15 +113,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {user.username.charAt(0).toUpperCase()}
                 </div>
               )}
-              <div className="user-info-text">
+              <div className="user-info-text" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span className="user-name">@{user.username}</span>
-                <span className="user-verified-pill">
-                  <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
-                  </svg>
-                  {isAdmin ? 'ADMIN' : 'VERIFIED'}
-                </span>
+                <VerifiedSticker tier={isAdmin ? 'admin' : 'contributor'} size="sm" />
               </div>
+
               <button
                 type="button"
                 className="btn-ghost-sm"

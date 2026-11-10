@@ -6,6 +6,8 @@ interface SongCardGridProps {
   currentTrackId?: string | null;
   isPlaying: boolean;
   onSelectAndPlay: (song: UnifiedSongItem) => void;
+  onOpenSongPage?: (song: UnifiedSongItem) => void;
+  onOpenArtistPage?: (artist: string) => void;
   onOpenStudio?: (song: UnifiedSongItem) => void;
   isLoading: boolean;
 }
@@ -23,6 +25,8 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
   currentTrackId,
   isPlaying,
   onSelectAndPlay,
+  onOpenSongPage,
+  onOpenArtistPage,
   onOpenStudio,
   isLoading,
 }) => {
@@ -48,7 +52,7 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
     <div className="song-cards-container">
       <div className="section-header-row">
         <h2 className="section-title">Available Songs</h2>
-        <span className="section-subtitle">Click any card to play and display synced lyrics</span>
+        <span className="section-subtitle">Click card to play • Double-click for dedicated song page</span>
       </div>
 
       <div className="song-cards-grid">
@@ -61,6 +65,10 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
               key={song.id}
               className={`song-card ${isCurrent ? 'is-active-card' : ''}`}
               onClick={() => onSelectAndPlay(song)}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                onOpenSongPage?.(song);
+              }}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
@@ -101,13 +109,31 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
               {/* Card Meta */}
               <div className="card-meta">
                 <div className="card-meta-top">
-                  <h3 className="card-title" title={song.title}>
+                  <h3
+                    className="card-title"
+                    title={`${song.title} (Double-click to open song page)`}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      onOpenSongPage?.(song);
+                    }}
+                  >
                     {song.title}
                   </h3>
-                  <p className="card-artist" title={song.artist}>
+                  <p
+                    className="card-artist"
+                    title={`View ${song.artist} artist page`}
+                    onClick={(e) => {
+                      if (onOpenArtistPage) {
+                        e.stopPropagation();
+                        onOpenArtistPage(song.artist);
+                      }
+                    }}
+                    style={{ cursor: onOpenArtistPage ? 'pointer' : 'inherit' }}
+                  >
                     {song.artist}
                   </p>
                 </div>
+
 
                 <div className="card-external-links" style={{ display: 'flex', gap: 6, margin: '6px 0', flexWrap: 'wrap' }}>
                   {song.spotifyId && (
@@ -166,6 +192,38 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
                       </svg>
                       <span>YouTube Music</span>
                     </a>
+                  )}
+
+                  {onOpenSongPage && (
+                    <button
+                      type="button"
+                      className="card-ext-link"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenSongPage(song);
+                      }}
+                      title="Open dedicated song website link"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 10,
+                        padding: '3px 7px',
+                        borderRadius: 4,
+                        backgroundColor: '#38bdf820',
+                        color: '#38bdf8',
+                        border: '1px solid #38bdf840',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                      </svg>
+                      <span>Song Page</span>
+                    </button>
                   )}
                 </div>
 

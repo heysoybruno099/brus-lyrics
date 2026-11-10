@@ -17,6 +17,7 @@ out/
 Thumbs.db
 *.log
 *.tmp
+*.tsbuildinfo
 .env
 .env.local
 .env.*.local

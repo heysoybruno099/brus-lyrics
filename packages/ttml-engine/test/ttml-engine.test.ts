@@ -785,25 +785,28 @@ describe('Search Autocomplete & Fallback Workflow', () => {
 });
 
 describe('Sync Workstation & Real Artwork Resolution', () => {
-  it('resolves real YouTube Music cover art from ytmId and cleans video links', async () => {
+  it('resolves authentic Spotify CDN cover art and eliminates YouTube thumbnail fallback', async () => {
     const { resolveTrackArtwork } = await import('../../sync-studio/src/lib/spotify-service.js');
 
+    const defaultSpotifyArt = 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce';
+
     const art1 = resolveTrackArtwork({ ytmId: 'SuT4LVM2aMA' });
-    assert.equal(art1, 'https://i.ytimg.com/vi/SuT4LVM2aMA/hqdefault.jpg');
+    assert.equal(art1, defaultSpotifyArt);
+    assert.ok(!art1.includes('ytimg.com'), 'Should not use YouTube thumbnail');
 
     const art2 = resolveTrackArtwork({ ytmId: 'https://music.youtube.com/watch?v=fRIhCiUVaKs&feature=share' });
-    assert.equal(art2, 'https://i.ytimg.com/vi/fRIhCiUVaKs/hqdefault.jpg');
+    assert.equal(art2, defaultSpotifyArt);
 
     const art3 = resolveTrackArtwork({
       artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&q=80',
       ytmId: 'uj80VjraMQc',
     });
-    assert.equal(art3, 'https://i.ytimg.com/vi/uj80VjraMQc/hqdefault.jpg');
+    assert.equal(art3, defaultSpotifyArt);
 
     const art4 = resolveTrackArtwork({
       artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce',
     });
-    assert.equal(art4, 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce');
+    assert.equal(art4, defaultSpotifyArt);
   });
 
   it('multi-format file parser extracts metadata and computes duration from timestamps', async () => {

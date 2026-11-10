@@ -1,21 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export const LegalDocumentation: React.FC = () => {
-  const [hasAgreed, setHasAgreed] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('brus_lyrics_legal_agreed') === 'true';
-    }
-    return false;
-  });
-
-  const handleAgreeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setHasAgreed(checked);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('brus_lyrics_legal_agreed', checked ? 'true' : 'false');
-    }
-  };
-
   return (
     <div className="legal-page-container">
       <div className="legal-page-inner">
@@ -37,29 +22,6 @@ export const LegalDocumentation: React.FC = () => {
           </div>
         </div>
 
-        {/* Interactive Agreement Box */}
-        <div className="legal-agreement-box">
-          <div className="agreement-checkbox-row">
-            <input
-              type="checkbox"
-              id="legal-agree-checkbox"
-              checked={hasAgreed}
-              onChange={handleAgreeChange}
-              className="legal-checkbox"
-            />
-            <label htmlFor="legal-agree-checkbox" className="agreement-label">
-              <strong>Express Acceptance of Terms &amp; Policies:</strong> I have fully read, understand, and agree to these Terms of Service, the International DMCA / WIPO Notice &amp; Takedown Procedure, and the Privacy Policy established for this platform.
-            </label>
-          </div>
-          {hasAgreed && (
-            <div className="agreement-confirmed-badge">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" />
-              </svg>
-              <span>Consent recorded in local storage.</span>
-            </div>
-          )}
-        </div>
 
         {/* Content Body */}
         <div className="legal-sections-wrapper">
@@ -186,7 +148,7 @@ export const LegalDocumentation: React.FC = () => {
                 We value your privacy and comply with global privacy standards, including GDPR and CCPA principles.
               </p>
               <p>
-                Our official privacy policy is maintained and hosted at <strong style={{ color: '#f4f4f6' }}>heysoybruno09</strong>.
+                Our official privacy policy is maintained and hosted at <strong style={{ color: '#f4f4f6' }}>heysoybruno099</strong>.
               </p>
               <div style={{ marginTop: 14, padding: 16, backgroundColor: '#141418', borderRadius: 6, border: '1px solid #26262e' }}>
                 <p style={{ margin: 0, fontSize: 13, color: '#e4e4e7' }}>
@@ -194,15 +156,16 @@ export const LegalDocumentation: React.FC = () => {
                 </p>
                 <p style={{ margin: '8px 0 0 0' }}>
                   <a
-                    href="https://github.com/heysoybruno09"
+                    href="https://github.com/heysoybruno099"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: '#4ade80', textDecoration: 'underline', fontWeight: 600, fontSize: 14 }}
                   >
-                    https://github.com/heysoybruno09 (heysoybruno09 Official Privacy Policy)
+                    https://github.com/heysoybruno099 (heysoybruno099 Official Privacy Policy)
                   </a>
                 </p>
               </div>
+
             </div>
           </section>
         </div>

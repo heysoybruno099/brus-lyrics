@@ -9,10 +9,13 @@ import { DiscordAuthModal } from './components/DiscordAuthModal.js';
 import { LegalDocumentation } from './components/LegalDocumentation.js';
 import { ProfileView } from './components/ProfileView.js';
 import { AdminPanel } from './components/AdminPanel.js';
+import { DedicatedSongView } from './components/DedicatedSongView.js';
+import { DedicatedArtistView } from './components/DedicatedArtistView.js';
 import { AudioMetadataDeck } from './components/AudioMetadataDeck.js';
 import { TapSyncMatrix } from './components/TapSyncMatrix.js';
 import { LivePreviewDeck } from './components/LivePreviewDeck.js';
 import { LogoIcon } from './components/LogoIcon.js';
+import { normalizeString } from '@brus-lyrics/shared-types';
 
 import { AudioPlayerEngine } from './lib/audio-player-engine.js';
 import { SpotifyWebPlayer } from './lib/spotify-web-player.js';
@@ -74,6 +77,11 @@ function downloadFile(content: string, filename: string, mimeType: string): void
 export const App: React.FC = () => {
   // Navigation & View
   const [currentView, setCurrentView] = useState<AppViewMode>('discover');
+  const [selectedSongForPage, setSelectedSongForPage] = useState<UnifiedSongItem | null>(null);
+  const [selectedArtistForPage, setSelectedArtistForPage] = useState<string | null>(null);
+  const [selectedUserForPage, setSelectedUserForPage] = useState<string | null>(null);
+  const [songPageDocument, setSongPageDocument] = useState<TTMLDocument | null>(null);
+  const [isLoadingSongLyrics, setIsLoadingSongLyrics] = useState<boolean>(false);
   const [user, setUser] = useState<DiscordUser | null>(() => getStoredUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
@@ -385,23 +393,90 @@ export const App: React.FC = () => {
 
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
-    const modeParam = params.get('mode');
 
     // Clean callback URL cleanly so user does not 404 or get stuck on /callback
     if (path.includes('/callback')) {
       window.history.replaceState(null, '', '/');
     }
 
-    // Direct routing
-    if (path.includes('/terms') || modeParam === 'legal') {
-      setCurrentView('legal');
-    } else if (path.includes('/profile') || modeParam === 'profile') {
-      setCurrentView('profile');
-    } else if (path.includes('/admin') || modeParam === 'admin') {
-      setCurrentView('admin');
-    } else if (path.includes('/sync') || modeParam === 'studio') {
-      setCurrentView('studio');
-    }
+    const handlePopRoute = () => {
+      const currentPath = window.location.pathname;
+      const currentParams = new URLSearchParams(window.location.search);
+      const modeParam = currentParams.get('mode');
+      const songParam = currentParams.get('song');
+      const artistParam = currentParams.get('artist');
+      const userParam = currentParams.get('user');
+
+      // Check /song/:id or ?song=:id
+      const songMatch = currentPath.match(/^\/song\/([^\/?#]+)/i);
+      const songId = songMatch ? decodeURIComponent(songMatch[1]) : songParam;
+      if (songId) {
+        const cleanId = songId.replace(/^song_/, '').replace(/^spotify:/i, '');
+        const matched = VERIFIED_FEATURED_TRACKS.find(
+          (s) => s.id === songId || s.spotifyId === cleanId || s.id === `song_${cleanId}`
+        );
+        const songObj: UnifiedSongItem = matched || {
+          id: cleanId,
+          title: `Song ${cleanId}`,
+          artist: 'Featured Artist',
+          album: 'Single',
+          artworkUrl: resolveTrackArtwork({ artworkUrl: null, spotifyId: cleanId }),
+          durationMs: 180000,
+          previewUrl: null,
+          spotifyId: cleanId,
+          source: 'verified',
+          isSyllableSynced: false,
+          contributor: 'Community',
+        };
+        setSelectedSongForPage(songObj);
+        setCurrentView('song');
+        setIsLoadingSongLyrics(true);
+        fetchLyricsForTrack(songObj)
+          .then((doc) => setSongPageDocument(doc))
+          .catch(() => setSongPageDocument(null))
+          .finally(() => setIsLoadingSongLyrics(false));
+        return;
+      }
+
+      // Check /artist/:slug or ?artist=:slug
+      const artistMatch = currentPath.match(/^\/artist\/([^\/?#]+)/i);
+      const artistQuery = artistMatch ? decodeURIComponent(artistMatch[1]) : artistParam;
+      if (artistQuery) {
+        const matchedSong = VERIFIED_FEATURED_TRACKS.find(
+          (s) => normalizeString(s.artist).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') === artistQuery
+        );
+        const finalArtist = matchedSong ? matchedSong.artist : artistQuery;
+        setSelectedArtistForPage(finalArtist);
+        setCurrentView('artist');
+        return;
+      }
+
+      // Check /user/:username or ?user=:username
+      const userMatch = currentPath.match(/^\/user\/([^\/?#]+)/i);
+      const userQuery = userMatch ? decodeURIComponent(userMatch[1]) : userParam;
+      if (userQuery) {
+        setSelectedUserForPage(userQuery.replace(/^@/, ''));
+        setCurrentView('profile');
+        return;
+      }
+
+      // Direct routing
+      if (currentPath.includes('/terms') || currentPath.includes('/legal') || modeParam === 'legal') {
+        setCurrentView('legal');
+      } else if (currentPath.includes('/profile') || modeParam === 'profile') {
+        setSelectedUserForPage(getStoredUser()?.username || null);
+        setCurrentView('profile');
+      } else if (currentPath.includes('/admin') || modeParam === 'admin') {
+        setCurrentView('admin');
+      } else if (currentPath.includes('/sync') || currentPath.includes('/studio') || modeParam === 'studio') {
+        setCurrentView('studio');
+      } else if (currentPath === '/' || currentPath === '') {
+        setCurrentView('discover');
+      }
+    };
+
+    handlePopRoute();
+    window.addEventListener('popstate', handlePopRoute);
 
     // External track query support
     const trackId = params.get('trackId');
@@ -454,6 +529,10 @@ export const App: React.FC = () => {
       setActiveSong(targetSong);
       handlePlaySongCard(targetSong);
     }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopRoute);
+    };
   }, []);
 
   // Search handler
@@ -468,6 +547,52 @@ export const App: React.FC = () => {
       setIsSearching(false);
     }
   }, []);
+
+  // Deep-linking navigation functions
+  const navigateToSongPage = useCallback((song: UnifiedSongItem) => {
+    setSelectedSongForPage(song);
+    setCurrentView('song');
+    const cleanId = (song.spotifyId || song.id).replace(/^song_/, '').replace(/^spotify:/i, '');
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ view: 'song', id: cleanId }, '', `/song/${encodeURIComponent(cleanId)}`);
+    }
+    setIsLoadingSongLyrics(true);
+    fetchLyricsForTrack(song)
+      .then((doc) => {
+        setSongPageDocument(doc);
+      })
+      .catch(() => setSongPageDocument(null))
+      .finally(() => setIsLoadingSongLyrics(false));
+  }, []);
+
+  const navigateToArtistPage = useCallback((artistName: string) => {
+    setSelectedArtistForPage(artistName);
+    setCurrentView('artist');
+    const slug = normalizeString(artistName).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ view: 'artist', artist: artistName }, '', `/artist/${encodeURIComponent(slug || artistName)}`);
+    }
+  }, []);
+
+  const navigateToUserPage = useCallback((username: string) => {
+    const clean = username.replace(/^@/, '');
+    setSelectedUserForPage(clean);
+    setCurrentView('profile');
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ view: 'profile', user: clean }, '', `/user/${encodeURIComponent(clean)}`);
+    }
+  }, []);
+
+  const navigateToView = useCallback((view: AppViewMode) => {
+    if (view === 'profile') {
+      setSelectedUserForPage(user?.username || null);
+    }
+    setCurrentView(view);
+    if (typeof window !== 'undefined') {
+      const path = view === 'discover' ? '/' : `/${view}`;
+      window.history.pushState({ view }, '', path);
+    }
+  }, [user]);
 
   // Open sync workstation preloaded with track metadata, audio, and synchronized lyrics
   const handleOpenStudioWithTrack = useCallback(async (song: UnifiedSongItem) => {
@@ -884,7 +1009,7 @@ export const App: React.FC = () => {
           if (view === 'studio' && !user) {
             setIsAuthModalOpen(true);
           } else {
-            setCurrentView(view);
+            navigateToView(view);
           }
         }}
         user={user}
@@ -905,12 +1030,13 @@ export const App: React.FC = () => {
               onQuickAdd={handleOpenStudioWithTrack}
             />
 
-
             <SongCardGrid
               songs={songs}
               currentTrackId={activeSong?.id}
               isPlaying={isPlaying}
               onSelectAndPlay={handlePlaySongCard}
+              onOpenSongPage={navigateToSongPage}
+              onOpenArtistPage={navigateToArtistPage}
               onOpenStudio={handleOpenStudioWithTrack}
               isLoading={isSearching}
             />
@@ -1168,16 +1294,54 @@ export const App: React.FC = () => {
           </div>
         )}
 
+        {currentView === 'song' && selectedSongForPage && (
+          <DedicatedSongView
+            song={selectedSongForPage}
+            document={songPageDocument}
+            currentTimeMs={currentTimeMs}
+            durationMs={durationMs}
+            isPlaying={isPlaying && (activeSong?.id === selectedSongForPage.id || activeSong?.spotifyId === selectedSongForPage.spotifyId)}
+            onTogglePlay={() => {
+              if (activeSong?.id === selectedSongForPage.id || activeSong?.spotifyId === selectedSongForPage.spotifyId) {
+                handleTogglePlay();
+              } else {
+                handlePlaySongCard(selectedSongForPage);
+              }
+            }}
+            onSeek={handleSeek}
+            isLoadingLyrics={isLoadingSongLyrics}
+            onOpenArtist={navigateToArtistPage}
+            onOpenContributor={navigateToUserPage}
+            onOpenStudio={handleOpenStudioWithTrack}
+            onBackToCatalog={() => navigateToView('discover')}
+          />
+        )}
+
+        {currentView === 'artist' && selectedArtistForPage && (
+          <DedicatedArtistView
+            artistName={selectedArtistForPage}
+            songs={songs}
+            onSelectAndPlaySong={handlePlaySongCard}
+            onOpenSongPage={navigateToSongPage}
+            onOpenStudio={handleOpenStudioWithTrack}
+            onBackToCatalog={() => navigateToView('discover')}
+          />
+        )}
+
         {currentView === 'profile' && (
           <ProfileView
             user={user}
+            profileUsername={selectedUserForPage}
             onUpdateUser={setUser}
             onSignOut={handleSignOut}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
-            onViewTerms={() => setCurrentView('legal')}
+            onViewTerms={() => navigateToView('legal')}
             spotifyUser={spotifyUser}
             onConnectSpotify={handleConnectSpotify}
             onDisconnectSpotify={handleDisconnectSpotify}
+            onSelectAndPlaySong={handlePlaySongCard}
+            onOpenSongPage={navigateToSongPage}
+            onBackToCatalog={() => navigateToView('discover')}
           />
         )}
 
@@ -1221,14 +1385,14 @@ export const App: React.FC = () => {
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13, color: '#a1a1aa', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               type="button"
-              onClick={() => setCurrentView('legal')}
+              onClick={() => navigateToView('legal')}
               style={{ background: 'none', border: 'none', color: '#f4f4f6', cursor: 'pointer', padding: 0, fontSize: 'inherit', textDecoration: 'underline' }}
             >
               Terms of Service
             </button>
             <span style={{ color: '#52525b' }}>•</span>
             <a
-              href="https://github.com/heysoybruno09"
+              href="https://github.com/heysoybruno099"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: '#4ade80', textDecoration: 'underline' }}

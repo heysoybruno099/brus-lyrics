@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../types.js';
-import { upsertUser, getUserByUsername } from '../lib/db.js';
+import { upsertUser, getUserByUsername, getContributorProfile } from '../lib/db.js';
 
 export const authRoute = new Hono<{ Bindings: Env }>();
 
@@ -112,28 +112,15 @@ authRoute.get('/auth/discord/user', async (c) => {
   }
 });
 
-// Lookup user verification status by username (for contributor badges and compact storage)
+// Lookup user verification status and profile stats by username
 authRoute.get('/auth/users/:username', async (c) => {
   const username = c.req.param('username');
   if (!username) {
     return c.json({ error: 'Username is required' }, 400);
   }
 
-  const user = await getUserByUsername(c.env, username);
-  if (!user) {
-    return c.json({
-      username,
-      isVerified: false,
-      role: 'contributor',
-    });
-  }
-
-  return c.json({
-    id: user.id,
-    username: user.username,
-    isVerified: Boolean(user.is_verified),
-    role: user.role,
-  });
+  const profile = await getContributorProfile(c.env, username);
+  return c.json(profile);
 });
 
 // Register or upsert custom verified creator/contributor username

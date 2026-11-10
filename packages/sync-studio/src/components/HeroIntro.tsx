@@ -330,17 +330,8 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
             <span className="stat-label">Active Catalog:</span>
             <span className="stat-value">{totalTracksCount} Verified Songs</span>
           </div>
-          <div className="hero-stat-sep">/</div>
-          <div className="hero-stat-item">
-            <span className="stat-label">Playback:</span>
-            <span className="stat-value">In-Browser Player</span>
-          </div>
-          <div className="hero-stat-sep">/</div>
-          <div className="hero-stat-item">
-            <span className="stat-label">Contributors:</span>
-            <span className="stat-value">Discord OAuth Verified</span>
-          </div>
         </div>
+
       </div>
     </section>
   );

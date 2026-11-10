@@ -25,7 +25,7 @@ export interface DiscordUser {
   role: 'creator' | 'verified_creator' | 'admin' | 'contributor';
 }
 
-export type AppViewMode = 'discover' | 'studio' | 'legal' | 'profile' | 'admin';
+export type AppViewMode = 'discover' | 'studio' | 'legal' | 'profile' | 'admin' | 'song' | 'artist';
 
 export interface SpotifyUserProfile {
   id: string;

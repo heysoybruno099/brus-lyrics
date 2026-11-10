@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { DiscordUser, UnifiedSongItem } from '../lib/types.js';
 import { getApiBaseUrl } from '../lib/config.js';
 import { formatTimestampTTML } from '@brus-lyrics/shared-types';
+import { VerifiedSticker } from './VerifiedSticker.js';
 
 interface AdminPanelProps {
   user: DiscordUser | null;
@@ -209,9 +210,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <h1 style={{ fontSize: 24, fontWeight: 700, color: '#f4f4f6', margin: 0 }}>
               Dedicated Admin Panel
             </h1>
+            <VerifiedSticker tier="admin" size="md" />
             <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 9999, backgroundColor: '#14532d', color: '#4ade80', fontWeight: 600 }}>
               heysoybruno09 ONLY
             </span>
+
           </div>
           <p style={{ fontSize: 13, color: '#a1a1aa', margin: '4px 0 0 0' }}>
             Manage published songs and incoming submissions. 1-click verify or delete mistakes with immediate sync.

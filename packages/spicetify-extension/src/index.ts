@@ -540,17 +540,27 @@ class BrusSpicetifyExtension {
         color: #a1a1aa;
       }
 
-      .brus-attribution-text {
+      .brus-attribution-text,
+      .brus-attribution-link {
         font-weight: 500;
         color: #f4f4f6;
+        text-decoration: underline;
+        text-decoration-color: rgba(255, 255, 255, 0.2);
+        transition: color 0.15s ease, text-decoration-color 0.15s ease;
+        cursor: pointer;
+      }
+
+      .brus-attribution-link:hover {
+        color: #ffffff;
+        text-decoration-color: #38bdf8;
       }
 
       .brus-verified-badge {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        padding: 2px 6px;
-        border-radius: 3px;
+        padding: 2px 7px;
+        border-radius: 4px;
         background-color: rgba(34, 197, 94, 0.12);
         border: 1px solid rgba(34, 197, 94, 0.25);
         color: #4ade80;
@@ -558,10 +568,27 @@ class BrusSpicetifyExtension {
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.05em;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .brus-admin-badge {
+        background: linear-gradient(135deg, #f59e0b25 0%, #fbbf2440 100%) !important;
+        border-color: #f59e0b80 !important;
+        color: #fbbf24 !important;
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+      }
+
+      .brus-contributor-badge {
+        background: linear-gradient(135deg, #0284c725 0%, #38bdf840 100%) !important;
+        border-color: #38bdf880 !important;
+        color: #38bdf8 !important;
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
       }
     `;
     document.head.appendChild(style);
   }
+
 
   private createDom(): void {
     if (this.rootElement) return;

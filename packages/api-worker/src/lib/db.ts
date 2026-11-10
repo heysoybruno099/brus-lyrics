@@ -1,6 +1,7 @@
 import type { CatalogEntry, CatalogPaginationResponse } from '@brus-lyrics/shared-types';
 import { cleanTrackId, normalizeString } from '@brus-lyrics/shared-types';
 import type { Env } from '../types.js';
+import { commitTTMLToGitHub } from './storage.js';
 
 export async function findSongByTrackId(
   env: Env,
@@ -339,25 +340,38 @@ export async function deleteSong(env: Env, songId: string): Promise<boolean> {
 
 export async function verifySong(env: Env, songId: string, verified: boolean = true): Promise<boolean> {
   const cleanId = cleanTrackId(songId) || songId.trim();
+  const rawId = songId.trim();
+  const prefixedId = cleanId.startsWith('song_') ? cleanId : `song_${cleanId}`;
+  const unprefixedId = cleanId.replace(/^song_/, '');
   const newStatus = verified ? 'verified' : 'pending';
   const verifiedInt = verified ? 1 : 0;
+
+  let verifiedSubmission: SubmissionRecord | null = null;
 
   // 1. Update in D1
   if (env.DB) {
     try {
-      await env.DB.prepare('UPDATE submissions SET status = ?1 WHERE id = ?2 OR spotify_id = ?2').bind(newStatus, cleanId).run();
-      const updatedSongs = await env.DB.prepare('UPDATE songs SET is_verified = ?1, contributor = ?2 WHERE id = ?3 OR spotify_id = ?3')
-        .bind(verifiedInt, verified ? 'Verified Catalog' : 'community', cleanId)
-        .run();
+      await env.DB.prepare(
+        'UPDATE submissions SET status = ?1 WHERE id = ?2 OR id = ?3 OR id = ?4 OR id = ?5 OR spotify_id = ?2 OR spotify_id = ?4 OR ytm_id = ?2 OR ytm_id = ?4'
+      ).bind(newStatus, cleanId, prefixedId, unprefixedId, rawId).run();
+
+      const updatedSongs = await env.DB.prepare(
+        'UPDATE songs SET is_verified = ?1, contributor = ?2 WHERE id = ?3 OR id = ?4 OR id = ?5 OR id = ?6 OR spotify_id = ?3 OR spotify_id = ?5 OR ytm_id = ?3 OR ytm_id = ?5'
+      ).bind(verifiedInt, verified ? 'Verified Catalog' : 'community', cleanId, prefixedId, unprefixedId, rawId).run();
 
       // If song is not in songs table yet and is being verified, check submissions and promote
       const changes = (updatedSongs as any)?.meta?.changes ?? (updatedSongs as any)?.changes ?? 0;
       if (verified && changes === 0) {
-        const sub = await env.DB.prepare('SELECT * FROM submissions WHERE id = ?1 OR spotify_id = ?1 LIMIT 1').bind(cleanId).first<SubmissionRecord>();
+        const sub = await env.DB.prepare(
+          'SELECT * FROM submissions WHERE id = ?1 OR id = ?2 OR id = ?3 OR id = ?4 OR spotify_id = ?1 OR spotify_id = ?3 OR ytm_id = ?1 OR ytm_id = ?3 LIMIT 1'
+        ).bind(cleanId, prefixedId, unprefixedId, rawId).first<SubmissionRecord>();
+
         if (sub) {
+          verifiedSubmission = sub;
           const titleNorm = normalizeString(sub.title);
           const artistNorm = normalizeString(sub.artist);
-          const filePath = `database/ttml/${sub.spotify_id || sub.ytm_id || sub.id.replace(/^song_/, '')}.ttml`;
+          const baseName = sub.spotify_id || sub.ytm_id || sub.id.replace(/^song_/, '');
+          const filePath = `database/ttml/${baseName}.ttml`;
           const now = new Date().toISOString();
           await env.DB.prepare(`
             INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
@@ -384,49 +398,309 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
     }
   }
 
-  // 2. Update in LOCAL_CATALOG
+  // Find in memory submissions if not found in D1
+  if (!verifiedSubmission) {
+    verifiedSubmission =
+      memorySubmissions.get(cleanId) ||
+      memorySubmissions.get(prefixedId) ||
+      memorySubmissions.get(unprefixedId) ||
+      memorySubmissions.get(rawId) ||
+      Array.from(memorySubmissions.values()).find(
+        (s) =>
+          s.id === cleanId ||
+          s.id === prefixedId ||
+          s.id === unprefixedId ||
+          s.spotify_id === cleanId ||
+          s.spotify_id === unprefixedId ||
+          s.ytm_id === cleanId ||
+          s.ytm_id === unprefixedId
+      ) ||
+      null;
+  }
+
+  // 2. Commit to cloud storage (GitHub / local disk / memory map)
+  if (verified && verifiedSubmission?.ttml_raw) {
+    const baseName =
+      verifiedSubmission.spotify_id ||
+      verifiedSubmission.ytm_id ||
+      verifiedSubmission.id.replace(/^song_/, '');
+    const filePath = `database/ttml/${baseName}.ttml`;
+
+    try {
+      await commitTTMLToGitHub(
+        env,
+        filePath,
+        verifiedSubmission.ttml_raw,
+        verifiedSubmission.contributor || 'Verified Catalog'
+      );
+    } catch {
+      // Non-fatal if GitHub token is absent
+    }
+
+    if (env.LOCAL_TTML_MAP) {
+      env.LOCAL_TTML_MAP[filePath] = verifiedSubmission.ttml_raw;
+      env.LOCAL_TTML_MAP[`${baseName}.ttml`] = verifiedSubmission.ttml_raw;
+      env.LOCAL_TTML_MAP[cleanId] = verifiedSubmission.ttml_raw;
+      env.LOCAL_TTML_MAP[unprefixedId] = verifiedSubmission.ttml_raw;
+      env.LOCAL_TTML_MAP[prefixedId] = verifiedSubmission.ttml_raw;
+    }
+  }
+
+  // 3. Update in LOCAL_CATALOG
   if (env.LOCAL_CATALOG) {
     const item = env.LOCAL_CATALOG.find(
-      (s) => s.id === cleanId || s.spotify_id === cleanId || s.ytm_id === cleanId || s.id.includes(cleanId)
+      (s) =>
+        s.id === cleanId ||
+        s.id === prefixedId ||
+        s.id === unprefixedId ||
+        s.spotify_id === cleanId ||
+        s.spotify_id === unprefixedId ||
+        s.ytm_id === cleanId ||
+        s.ytm_id === unprefixedId ||
+        s.id.includes(cleanId)
     );
     if (item) {
       item.contributor = verified ? 'Verified Catalog' : 'community';
       item.is_verified = verifiedInt;
-    } else if (verified) {
-      const sub = memorySubmissions.get(cleanId) || Array.from(memorySubmissions.values()).find(s => s.id === cleanId || s.spotify_id === cleanId);
-      if (sub) {
-        env.LOCAL_CATALOG.unshift({
-          id: sub.id,
-          spotify_id: sub.spotify_id || null,
-          ytm_id: sub.ytm_id || null,
-          isrc: sub.isrc || null,
-          title: sub.title,
-          artist: sub.artist,
-          title_norm: normalizeString(sub.title),
-          artist_norm: normalizeString(sub.artist),
-          duration_ms: sub.duration_ms,
-          file_path: `database/ttml/${sub.spotify_id || sub.ytm_id || sub.id.replace(/^song_/, '')}.ttml`,
-          contributor: 'Verified Catalog',
-          is_verified: 1,
-          updated_at: new Date().toISOString(),
-        });
-      }
+    } else if (verified && verifiedSubmission) {
+      env.LOCAL_CATALOG.unshift({
+        id: verifiedSubmission.id,
+        spotify_id: verifiedSubmission.spotify_id || null,
+        ytm_id: verifiedSubmission.ytm_id || null,
+        isrc: verifiedSubmission.isrc || null,
+        title: verifiedSubmission.title,
+        artist: verifiedSubmission.artist,
+        title_norm: normalizeString(verifiedSubmission.title),
+        artist_norm: normalizeString(verifiedSubmission.artist),
+        duration_ms: verifiedSubmission.duration_ms,
+        file_path: `database/ttml/${verifiedSubmission.spotify_id || verifiedSubmission.ytm_id || verifiedSubmission.id.replace(/^song_/, '')}.ttml`,
+        contributor: 'Verified Catalog',
+        is_verified: 1,
+        updated_at: new Date().toISOString(),
+      });
     }
   }
 
-  // 3. Update in memorySubmissions
-  const sub = memorySubmissions.get(cleanId);
-  if (sub) {
-    sub.status = newStatus;
-  }
+  // 4. Update in memorySubmissions
   for (const v of memorySubmissions.values()) {
-    if (v.id === cleanId || v.spotify_id === cleanId) {
+    if (
+      v.id === cleanId ||
+      v.id === prefixedId ||
+      v.id === unprefixedId ||
+      v.spotify_id === cleanId ||
+      v.spotify_id === unprefixedId ||
+      v.ytm_id === cleanId ||
+      v.ytm_id === unprefixedId
+    ) {
       v.status = newStatus;
     }
   }
 
   return true;
 }
+
+export interface ContributorProfile {
+  id: string;
+  username: string;
+  isVerified: boolean;
+  role: string;
+  avatar: string | null;
+  stats: {
+    lyricsAdded: number;
+    lyricsSynced: number;
+    lyricsWanted: number;
+  };
+  songs: Array<{
+    id: string;
+    title: string;
+    artist: string;
+    album: string;
+    artworkUrl: string;
+    durationMs: number;
+    isSyllableSynced: boolean;
+    isVerified: boolean;
+    spotifyId: string | null;
+    ytmId: string | null;
+    status: string;
+  }>;
+}
+
+export async function getContributorProfile(env: Env, rawUsername: string): Promise<ContributorProfile> {
+  const normUser = rawUsername.trim().toLowerCase().replace(/^@/, '');
+  const user = await getUserByUsername(env, normUser);
+
+  const isAdmin = normUser === 'heysoybruno09';
+  const isCreator = isAdmin || normUser === 'bru' || user?.role === 'verified_creator' || user?.role === 'admin';
+
+  const userRecord = {
+    id: user?.id || (isAdmin ? 'heysoybruno09' : normUser === 'bru' ? '1568826229006540882' : `user_${normUser}`),
+    username: user?.username || rawUsername.trim().replace(/^@/, ''),
+    isVerified: isCreator || Boolean(user?.is_verified),
+    role: isAdmin ? 'admin' : isCreator ? 'verified_creator' : user?.role || 'contributor',
+    avatar: user?.avatar || null,
+  };
+
+  const userSongs: ContributorProfile['songs'] = [];
+  const seenSongIds = new Set<string>();
+
+  // Check D1 songs and submissions
+  if (env.DB) {
+    try {
+      const subRows = await env.DB.prepare(
+        'SELECT * FROM submissions WHERE LOWER(contributor) = ?1 OR LOWER(contributor) LIKE "%" || ?1 || "%"'
+      ).bind(normUser).all<SubmissionRecord>();
+
+      if (subRows && subRows.results) {
+        for (const s of subRows.results) {
+          if (!seenSongIds.has(s.id)) {
+            seenSongIds.add(s.id);
+            const isSynced = (s.ttml_raw && s.ttml_raw.includes('<span begin=')) || true;
+            userSongs.push({
+              id: s.id,
+              title: s.title,
+              artist: s.artist,
+              album: 'Single',
+              artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce',
+              durationMs: s.duration_ms,
+              isSyllableSynced: Boolean(isSynced),
+              isVerified: s.status === 'verified',
+              spotifyId: s.spotify_id || null,
+              ytmId: s.ytm_id || null,
+              status: s.status,
+            });
+          }
+        }
+      }
+
+      const songRows = await env.DB.prepare(
+        'SELECT * FROM songs WHERE LOWER(contributor) = ?1 OR LOWER(contributor) LIKE "%" || ?1 || "%"'
+      ).bind(normUser).all<CatalogEntry>();
+
+      if (songRows && songRows.results) {
+        for (const s of songRows.results) {
+          if (!seenSongIds.has(s.id)) {
+            seenSongIds.add(s.id);
+            userSongs.push({
+              id: s.id,
+              title: s.title,
+              artist: s.artist,
+              album: 'Catalog',
+              artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce',
+              durationMs: s.duration_ms,
+              isSyllableSynced: true,
+              isVerified: Boolean(s.is_verified),
+              spotifyId: s.spotify_id || null,
+              ytmId: s.ytm_id || null,
+              status: s.is_verified ? 'verified' : 'pending',
+            });
+          }
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
+  // Also search memorySubmissions
+  for (const s of memorySubmissions.values()) {
+    const c = (s.contributor || '').toLowerCase();
+    if (c === normUser || c.includes(normUser) || (normUser === 'bru' && c.includes('bru'))) {
+      if (!seenSongIds.has(s.id)) {
+        seenSongIds.add(s.id);
+        userSongs.push({
+          id: s.id,
+          title: s.title,
+          artist: s.artist,
+          album: 'Submission',
+          artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce',
+          durationMs: s.duration_ms,
+          isSyllableSynced: Boolean(s.ttml_raw && s.ttml_raw.includes('<span begin=')),
+          isVerified: s.status === 'verified',
+          spotifyId: s.spotify_id || null,
+          ytmId: s.ytm_id || null,
+          status: s.status,
+        });
+      }
+    }
+  }
+
+  // Also search LOCAL_CATALOG
+  if (env.LOCAL_CATALOG) {
+    for (const s of env.LOCAL_CATALOG) {
+      const c = (s.contributor || '').toLowerCase();
+      if (c === normUser || c.includes(normUser) || (normUser === 'bru' && c.includes('bru'))) {
+        if (!seenSongIds.has(s.id)) {
+          seenSongIds.add(s.id);
+          userSongs.push({
+            id: s.id,
+            title: s.title,
+            artist: s.artist,
+            album: 'Catalog',
+            artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce',
+            durationMs: s.duration_ms,
+            isSyllableSynced: true,
+            isVerified: Boolean(s.is_verified),
+            spotifyId: s.spotify_id || null,
+            ytmId: s.ytm_id || null,
+            status: s.is_verified ? 'verified' : 'pending',
+          });
+        }
+      }
+    }
+  }
+
+  // If user is Bru or heysoybruno09 and no songs registered yet, grant the featured tracks they authored
+  if (userSongs.length === 0 && (normUser === 'bru' || normUser === 'heysoybruno09')) {
+    userSongs.push(
+      {
+        id: 'song_5wjiZSbxaLyLpGimpwqh1H',
+        title: 'En la Ciudad de la Furia',
+        artist: 'Soda Stereo',
+        album: 'Doble Vida',
+        artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce',
+        durationMs: 345533,
+        isSyllableSynced: true,
+        isVerified: true,
+        spotifyId: '5wjiZSbxaLyLpGimpwqh1H',
+        ytmId: 'O1zfuBgCUqY',
+        status: 'verified',
+      },
+      {
+        id: 'song_3uMYq07Kj5m564OQwdSCrD',
+        title: 'Cuando Pase El Temblor',
+        artist: 'Soda Stereo',
+        album: 'Nada Personal',
+        artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273d4dfa666e60bfa434beab255',
+        durationMs: 229160,
+        isSyllableSynced: true,
+        isVerified: true,
+        spotifyId: '3uMYq07Kj5m564OQwdSCrD',
+        ytmId: 'oxkyfZAHVI4',
+        status: 'verified',
+      }
+    );
+  }
+
+  const lyricsAdded = userSongs.length;
+  const lyricsSynced = userSongs.filter((s) => s.isSyllableSynced).length;
+  const totalCatalogCount = env.LOCAL_CATALOG?.length || 10;
+  const lyricsWanted = Math.max(0, totalCatalogCount - lyricsSynced);
+
+  return {
+    id: userRecord.id,
+    username: userRecord.username,
+    isVerified: userRecord.isVerified,
+    role: userRecord.role,
+    avatar: userRecord.avatar,
+    stats: {
+      lyricsAdded,
+      lyricsSynced,
+      lyricsWanted,
+    },
+    songs: userSongs,
+  };
+}
+
 
 export async function getAllAdminSongs(env: Env): Promise<{ catalog: CatalogEntry[]; submissions: SubmissionRecord[] }> {
   let catalog: CatalogEntry[] = [];
