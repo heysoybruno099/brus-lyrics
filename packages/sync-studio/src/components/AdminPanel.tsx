@@ -50,7 +50,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSelectAndPlaySong,
   onOpenStudioWithTrack,
 }) => {
-  const isAdmin = Boolean(user && user.username.toLowerCase() === 'heysoybruno09');
+  const isAdmin = Boolean(
+    user &&
+      (user.username.toLowerCase() === 'heysoybruno09' ||
+        user.username.toLowerCase() === 'heysoybruno099' ||
+        user.username.toLowerCase() === 'bru')
+  );
 
   const [catalog, setCatalog] = useState<SongRecord[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
@@ -60,14 +65,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const apiBase = getApiBaseUrl();
+  const adminUsername = user?.username || 'heysoybruno099';
 
   const fetchAdminData = useCallback(async () => {
     if (!isAdmin) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`${apiBase}/v1/admin/songs`, {
+      const res = await fetch(`${apiBase}/v1/admin/songs?adminUser=${encodeURIComponent(adminUsername)}`, {
         headers: {
-          'X-Admin-User': 'heysoybruno09',
+          'X-Admin-User': adminUsername,
         },
       });
       if (res.ok) {
@@ -80,7 +86,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [apiBase, isAdmin]);
+  }, [apiBase, isAdmin, adminUsername]);
 
   useEffect(() => {
     fetchAdminData();
@@ -91,7 +97,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       <div className="admin-restricted-container" style={{ padding: 60, textAlign: 'center', color: '#f87171' }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>Access Restricted</h2>
         <p style={{ color: '#a1a1aa', fontSize: 14 }}>
-          This dedicated administration console is strictly restricted to user <strong>heysoybruno09</strong>.
+          This dedicated administration console is strictly restricted to user <strong>heysoybruno099</strong>.
         </p>
       </div>
     );
@@ -104,10 +110,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     try {
-      const res = await fetch(`${apiBase}/v1/songs/${encodeURIComponent(songId)}`, {
+      const res = await fetch(`${apiBase}/v1/songs/${encodeURIComponent(songId)}?adminUser=${encodeURIComponent(adminUsername)}`, {
         method: 'DELETE',
         headers: {
-          'X-Admin-User': 'heysoybruno09',
+          'X-Admin-User': adminUsername,
         },
       });
 
@@ -127,20 +133,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // 1-Click Verify / Approve Lyrics
   const handleVerifyLyrics = async (songId: string, songTitle: string) => {
+    const cleanId = songId.replace(/^song_/, '').toLowerCase();
+
     // Optimistically update local state immediately
     setSubmissions((prev) =>
-      prev.map((sub) => (sub.id === songId || sub.spotify_id === songId ? { ...sub, status: 'verified' } : sub))
+      prev.map((sub) =>
+        sub.id === songId ||
+        sub.id.replace(/^song_/, '').toLowerCase() === cleanId ||
+        (sub.spotify_id && sub.spotify_id.toLowerCase() === cleanId)
+          ? { ...sub, status: 'verified' }
+          : sub
+      )
     );
     setCatalog((prev) => {
-      const exists = prev.some((cat) => cat.id === songId || cat.spotify_id === songId);
+      const exists = prev.some(
+        (cat) =>
+          cat.id === songId ||
+          cat.id.replace(/^song_/, '').toLowerCase() === cleanId ||
+          (cat.spotify_id && cat.spotify_id.toLowerCase() === cleanId)
+      );
       if (exists) {
         return prev.map((cat) =>
-          cat.id === songId || cat.spotify_id === songId
+          cat.id === songId ||
+          cat.id.replace(/^song_/, '').toLowerCase() === cleanId ||
+          (cat.spotify_id && cat.spotify_id.toLowerCase() === cleanId)
             ? { ...cat, is_verified: 1, contributor: 'Verified Catalog' }
             : cat
         );
       }
-      const matchedSub = submissions.find((sub) => sub.id === songId || sub.spotify_id === songId);
+      const matchedSub = submissions.find(
+        (sub) =>
+          sub.id === songId ||
+          sub.id.replace(/^song_/, '').toLowerCase() === cleanId ||
+          (sub.spotify_id && sub.spotify_id.toLowerCase() === cleanId)
+      );
       if (matchedSub) {
         return [
           {
@@ -162,11 +188,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
 
     try {
-      const res = await fetch(`${apiBase}/v1/admin/verify`, {
+      const res = await fetch(`${apiBase}/v1/admin/verify?adminUser=${encodeURIComponent(adminUsername)}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Admin-User': 'heysoybruno09',
+          'X-Admin-User': adminUsername,
         },
         body: JSON.stringify({ songId, verified: true }),
       });
@@ -212,7 +238,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </h1>
             <VerifiedSticker tier="admin" size="md" />
             <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 9999, backgroundColor: '#14532d', color: '#4ade80', fontWeight: 600 }}>
-              heysoybruno09 ONLY
+              ADMIN ONLY
             </span>
 
           </div>

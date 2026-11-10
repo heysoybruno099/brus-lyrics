@@ -148,6 +148,14 @@ export async function buildSpotifyOAuthUrl(
       ? `${window.location.origin}/auth/callback`
       : 'https://brus-lyrics.pages.dev/auth/callback');
 
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.setItem('brus_spotify_redirect_uri', redirect);
+    } catch {
+      // Ignore
+    }
+  }
+
   const verifier = existingVerifier || generateCodeVerifier();
   saveSpotifyCodeVerifier(verifier);
   const challenge = await generateCodeChallenge(verifier);
@@ -168,8 +176,9 @@ export async function buildSpotifyOAuthUrl(
 
 /**
  * Exchanges authorization code for access and refresh tokens using PKCE verifier.
- * Tries the dedicated API Worker route (/v1/spotify/exchange) first for seamless CORS,
- * falling back to accounts.spotify.com/api/token directly.
+ * Tries candidate redirect URIs matching Spotify Developer Dashboard (https://brus-lyrics.pages.dev/,
+ * https://brus-lyrics.pages.dev/auth/callback, https://brus-lyrics.pages.dev)
+ * first through the dedicated worker API route, falling back to direct exchange.
  */
 export async function exchangeSpotifyCodeForToken(
   code: string,
@@ -181,82 +190,105 @@ export async function exchangeSpotifyCodeForToken(
     return null;
   }
 
-  const redirect =
-    redirectUri ||
-    (typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/callback`
-      : 'https://brus-lyrics.pages.dev/auth/callback');
-
-  // Attempt 1: Worker API route POST /v1/spotify/exchange
-  try {
-    const apiBase = getApiBaseUrl().replace(/\/+$/, '');
-    const workerRes = await fetch(`${apiBase}/v1/spotify/exchange`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        grant_type: 'authorization_code',
-        code,
-        code_verifier: verifier,
-        redirect_uri: redirect,
-      }),
-    });
-
-    if (workerRes.ok) {
-      const data = (await workerRes.json()) as {
-        access_token: string;
-        expires_in?: number;
-        refresh_token?: string;
-      };
-      if (data.access_token) {
-        saveSpotifyToken(data.access_token, data.expires_in || 3600, data.refresh_token);
-        clearSpotifyCodeVerifier();
-        return {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          expiresIn: data.expires_in || 3600,
-        };
-      }
+  let savedRedirect: string | null = null;
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      savedRedirect = sessionStorage.getItem('brus_spotify_redirect_uri');
+    } catch {
+      // Ignore
     }
-  } catch {
-    // Proceed to direct Spotify token endpoint fallback
   }
 
-  // Attempt 2: Direct exchange with Spotify Accounts API
-  try {
-    const body = new URLSearchParams({
-      client_id: SPOTIFY_CLIENT_ID,
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirect,
-      code_verifier: verifier,
-    });
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://brus-lyrics.pages.dev';
+  const candidateRedirects = Array.from(
+    new Set(
+      [
+        redirectUri,
+        savedRedirect,
+        `${origin}/auth/callback`,
+        `${origin}/`,
+        origin,
+        'https://brus-lyrics.pages.dev/auth/callback',
+        'https://brus-lyrics.pages.dev/',
+        'https://brus-lyrics.pages.dev',
+      ].filter(Boolean) as string[]
+    )
+  );
 
-    const directRes = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body.toString(),
-    });
+  const apiBase = getApiBaseUrl().replace(/\/+$/, '');
 
-    if (directRes.ok) {
-      const data = (await directRes.json()) as {
-        access_token: string;
-        expires_in?: number;
-        refresh_token?: string;
-      };
-      if (data.access_token) {
-        saveSpotifyToken(data.access_token, data.expires_in || 3600, data.refresh_token);
-        clearSpotifyCodeVerifier();
-        return {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          expiresIn: data.expires_in || 3600,
+  // Try candidate redirect URIs sequentially
+  for (const candidateUri of candidateRedirects) {
+    // Attempt 1: Worker API route POST /v1/spotify/exchange
+    try {
+      const workerRes = await fetch(`${apiBase}/v1/spotify/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grant_type: 'authorization_code',
+          code,
+          code_verifier: verifier,
+          redirect_uri: candidateUri,
+        }),
+      });
+
+      if (workerRes.ok) {
+        const data = (await workerRes.json()) as {
+          access_token: string;
+          expires_in?: number;
+          refresh_token?: string;
         };
+        if (data.access_token) {
+          saveSpotifyToken(data.access_token, data.expires_in || 3600, data.refresh_token);
+          clearSpotifyCodeVerifier();
+          return {
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            expiresIn: data.expires_in || 3600,
+          };
+        }
       }
+    } catch {
+      // Proceed to direct attempt
     }
-  } catch {
-    // Direct exchange also failed
+
+    // Attempt 2: Direct exchange with Spotify Accounts API
+    try {
+      const body = new URLSearchParams({
+        client_id: SPOTIFY_CLIENT_ID,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: candidateUri,
+        code_verifier: verifier,
+      });
+
+      const directRes = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: body.toString(),
+      });
+
+      if (directRes.ok) {
+        const data = (await directRes.json()) as {
+          access_token: string;
+          expires_in?: number;
+          refresh_token?: string;
+        };
+        if (data.access_token) {
+          saveSpotifyToken(data.access_token, data.expires_in || 3600, data.refresh_token);
+          clearSpotifyCodeVerifier();
+          return {
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            expiresIn: data.expires_in || 3600,
+          };
+        }
+      }
+    } catch {
+      // Continue to next candidate
+    }
   }
 
   return null;

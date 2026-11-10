@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { UnifiedSongItem } from '../lib/types.js';
 import { LogoIcon } from './LogoIcon.js';
+import { VerifiedSticker } from './VerifiedSticker.js';
 
 interface HeroIntroProps {
   onSearch: (query: string) => void;
@@ -9,6 +10,7 @@ interface HeroIntroProps {
   catalogSongs?: UnifiedSongItem[];
   onQuickPlay?: (song: UnifiedSongItem) => void;
   onQuickAdd?: (song: UnifiedSongItem) => void;
+  onOpenSongPage?: (song: UnifiedSongItem) => void;
 }
 
 export const HeroIntro: React.FC<HeroIntroProps> = ({
@@ -18,6 +20,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
   catalogSongs = [],
   onQuickPlay,
   onQuickAdd,
+  onOpenSongPage,
 }) => {
   const [searchValue, setSearchValue] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
@@ -191,7 +194,13 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
                   if (onQuickPlay) onQuickPlay(topMatch);
                   setIsDropdownOpen(false);
                 }}
-                title={`Play ${topMatch.title}`}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  if (onQuickPlay) onQuickPlay(topMatch);
+                  if (onOpenSongPage) onOpenSongPage(topMatch);
+                  setIsDropdownOpen(false);
+                }}
+                title={`Play ${topMatch.title} (Double-click to open song page)`}
               >
                 <img
                   src={topMatch.artworkUrl}
@@ -219,18 +228,17 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
                       {topMatch.title}
                     </span>
                     {topMatch.isSyllableSynced || topMatch.source === 'verified' ? (
-                      <span
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 700,
-                          padding: '1px 5px',
-                          borderRadius: 3,
-                          backgroundColor: '#14532d',
-                          color: '#4ade80',
-                        }}
-                      >
-                        VERIFIED
-                      </span>
+                      <VerifiedSticker
+                        size="sm"
+                        tier={
+                          topMatch.contributor &&
+                          (topMatch.contributor.toLowerCase() === 'heysoybruno09' ||
+                            topMatch.contributor.toLowerCase() === 'heysoybruno099' ||
+                            topMatch.contributor.toLowerCase() === 'bru')
+                            ? 'admin'
+                            : 'contributor'
+                        }
+                      />
                     ) : (
                       <span
                         style={{
@@ -317,6 +325,32 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                     <span>Add it</span>
+                  </button>
+                )}
+
+                {onOpenSongPage && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenSongPage(topMatch);
+                      setIsDropdownOpen(false);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '5px 12px',
+                      backgroundColor: '#09090b',
+                      color: '#38bdf8',
+                      border: '1px solid #0284c7',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span>Song Page</span>
                   </button>
                 )}
               </div>

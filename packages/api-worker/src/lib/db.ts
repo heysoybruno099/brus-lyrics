@@ -249,6 +249,17 @@ export async function queueSubmission(
       const query = `
         INSERT INTO submissions (id, spotify_id, ytm_id, isrc, title, artist, duration_ms, contributor, ttml_raw, status, created_at)
         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 'pending', ?10)
+        ON CONFLICT(id) DO UPDATE SET
+          spotify_id = COALESCE(excluded.spotify_id, submissions.spotify_id),
+          ytm_id = COALESCE(excluded.ytm_id, submissions.ytm_id),
+          isrc = COALESCE(excluded.isrc, submissions.isrc),
+          title = excluded.title,
+          artist = excluded.artist,
+          duration_ms = excluded.duration_ms,
+          contributor = excluded.contributor,
+          ttml_raw = excluded.ttml_raw,
+          status = 'pending',
+          created_at = excluded.created_at
       `;
       await env.DB.prepare(query)
         .bind(
@@ -355,15 +366,14 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
         'UPDATE submissions SET status = ?1 WHERE id = ?2 OR id = ?3 OR id = ?4 OR id = ?5 OR spotify_id = ?2 OR spotify_id = ?4 OR ytm_id = ?2 OR ytm_id = ?4'
       ).bind(newStatus, cleanId, prefixedId, unprefixedId, rawId).run();
 
-      const updatedSongs = await env.DB.prepare(
+      await env.DB.prepare(
         'UPDATE songs SET is_verified = ?1, contributor = ?2 WHERE id = ?3 OR id = ?4 OR id = ?5 OR id = ?6 OR spotify_id = ?3 OR spotify_id = ?5 OR ytm_id = ?3 OR ytm_id = ?5'
       ).bind(verifiedInt, verified ? 'Verified Catalog' : 'community', cleanId, prefixedId, unprefixedId, rawId).run();
 
-      // If song is not in songs table yet and is being verified, check submissions and promote
-      const changes = (updatedSongs as any)?.meta?.changes ?? (updatedSongs as any)?.changes ?? 0;
-      if (verified && changes === 0) {
+      // When verified, always check submissions to promote to catalog and commit to cloud
+      if (verified) {
         const sub = await env.DB.prepare(
-          'SELECT * FROM submissions WHERE id = ?1 OR id = ?2 OR id = ?3 OR id = ?4 OR spotify_id = ?1 OR spotify_id = ?3 OR ytm_id = ?1 OR ytm_id = ?3 LIMIT 1'
+          'SELECT * FROM submissions WHERE id = ?1 OR id = ?2 OR id = ?3 OR id = ?4 OR spotify_id = ?1 OR spotify_id = ?2 OR spotify_id = ?3 OR spotify_id = ?4 OR ytm_id = ?1 OR ytm_id = ?2 OR ytm_id = ?3 OR ytm_id = ?4 LIMIT 1'
         ).bind(cleanId, prefixedId, unprefixedId, rawId).first<SubmissionRecord>();
 
         if (sub) {
@@ -376,7 +386,19 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
           await env.DB.prepare(`
             INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1, ?12)
-            ON CONFLICT(id) DO UPDATE SET is_verified = 1, contributor = excluded.contributor, updated_at = excluded.updated_at
+            ON CONFLICT(id) DO UPDATE SET
+              spotify_id = COALESCE(excluded.spotify_id, songs.spotify_id),
+              ytm_id = COALESCE(excluded.ytm_id, songs.ytm_id),
+              isrc = COALESCE(excluded.isrc, songs.isrc),
+              title = excluded.title,
+              artist = excluded.artist,
+              title_norm = excluded.title_norm,
+              artist_norm = excluded.artist_norm,
+              duration_ms = excluded.duration_ms,
+              file_path = excluded.file_path,
+              contributor = excluded.contributor,
+              is_verified = 1,
+              updated_at = excluded.updated_at
           `).bind(
             sub.id,
             sub.spotify_id || null,
@@ -529,11 +551,11 @@ export async function getContributorProfile(env: Env, rawUsername: string): Prom
   const normUser = rawUsername.trim().toLowerCase().replace(/^@/, '');
   const user = await getUserByUsername(env, normUser);
 
-  const isAdmin = normUser === 'heysoybruno09';
+  const isAdmin = normUser === 'heysoybruno09' || normUser === 'heysoybruno099';
   const isCreator = isAdmin || normUser === 'bru' || user?.role === 'verified_creator' || user?.role === 'admin';
 
   const userRecord = {
-    id: user?.id || (isAdmin ? 'heysoybruno09' : normUser === 'bru' ? '1568826229006540882' : `user_${normUser}`),
+    id: user?.id || (isAdmin ? normUser : normUser === 'bru' ? '1568826229006540882' : `user_${normUser}`),
     username: user?.username || rawUsername.trim().replace(/^@/, ''),
     isVerified: isCreator || Boolean(user?.is_verified),
     role: isAdmin ? 'admin' : isCreator ? 'verified_creator' : user?.role || 'contributor',
@@ -649,8 +671,8 @@ export async function getContributorProfile(env: Env, rawUsername: string): Prom
     }
   }
 
-  // If user is Bru or heysoybruno09 and no songs registered yet, grant the featured tracks they authored
-  if (userSongs.length === 0 && (normUser === 'bru' || normUser === 'heysoybruno09')) {
+  // If user is Bru or heysoybruno09 / heysoybruno099 and no songs registered yet, grant the featured tracks they authored
+  if (userSongs.length === 0 && (normUser === 'bru' || normUser === 'heysoybruno09' || normUser === 'heysoybruno099')) {
     userSongs.push(
       {
         id: 'song_5wjiZSbxaLyLpGimpwqh1H',
@@ -753,6 +775,20 @@ const memoryUsers = new Map<string, UserRecord>([
       discriminator: '0000',
       avatar: null,
       email: 'heysoybruno09@bruslyrics.com',
+      role: 'admin',
+      is_verified: 1,
+      created_at: '2026-11-08T00:00:00.000Z',
+      updated_at: '2026-11-08T00:00:00.000Z',
+    },
+  ],
+  [
+    'heysoybruno099',
+    {
+      id: 'heysoybruno099',
+      username: 'heysoybruno099',
+      discriminator: '0000',
+      avatar: null,
+      email: 'heysoybruno099@bruslyrics.com',
       role: 'admin',
       is_verified: 1,
       created_at: '2026-11-08T00:00:00.000Z',

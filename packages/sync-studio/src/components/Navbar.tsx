@@ -18,7 +18,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuthModal,
   onSignOut,
 }) => {
-  const isAdmin = Boolean(user && user.username.toLowerCase() === 'heysoybruno09');
+  const isAdmin = Boolean(
+    user &&
+      (user.username.toLowerCase() === 'heysoybruno09' ||
+        user.username.toLowerCase() === 'heysoybruno099' ||
+        user.username.toLowerCase() === 'bru')
+  );
 
   return (
     <header className="site-header">

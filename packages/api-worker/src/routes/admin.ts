@@ -7,13 +7,18 @@ export const adminRoute = new Hono<{ Bindings: Env }>();
 export function checkAdminAccess(c: any): boolean {
   const adminHeader = c.req.header('X-Admin-User');
   const authHeader = c.req.header('Authorization');
-  const queryUser = c.req.query('adminUser');
+  const queryUser = c.req.query('adminUser') || c.req.query('admin_user');
 
   const normalize = (val?: string | null) => (val || '').trim().toLowerCase().replace(/^@/, '');
+  const adminUsers = ['heysoybruno09', 'heysoybruno099', 'bru'];
 
-  if (normalize(adminHeader) === 'heysoybruno09') return true;
-  if (normalize(queryUser) === 'heysoybruno09') return true;
-  if (authHeader && authHeader.toLowerCase().includes('heysoybruno09')) return true;
+  const normHeader = normalize(adminHeader);
+  const normQuery = normalize(queryUser);
+  const normAuth = authHeader ? authHeader.toLowerCase() : '';
+
+  if (adminUsers.includes(normHeader)) return true;
+  if (adminUsers.includes(normQuery)) return true;
+  if (adminUsers.some((u) => normAuth.includes(u))) return true;
 
   return false;
 }

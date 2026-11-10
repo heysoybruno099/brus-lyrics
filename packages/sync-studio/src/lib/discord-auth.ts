@@ -27,11 +27,8 @@ export function clearUser(): void {
 }
 
 export function buildDiscordOAuthUrl(redirectUri?: string): string {
-  const redirect =
-    redirectUri ||
-    (typeof window !== 'undefined'
-      ? `${window.location.origin}/callback`
-      : 'https://brus-lyrics.pages.dev/callback');
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://brus-lyrics.pages.dev';
+  const redirect = redirectUri || `${origin}/auth/callback`;
 
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,

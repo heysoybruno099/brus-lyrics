@@ -160,7 +160,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
   };
 
-  if (!targetUsername && !user) {
+  const safeTargetUsername = (targetUsername || user?.username || '').trim().replace(/^@/, '');
+
+  if (!safeTargetUsername && !user) {
     return (
       <div style={{ padding: '60px 20px', maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#f4f4f6', marginBottom: 12 }}>
@@ -181,22 +183,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     );
   }
 
+  const isHeysoybruno =
+    safeTargetUsername.toLowerCase() === 'heysoybruno09' ||
+    safeTargetUsername.toLowerCase() === 'heysoybruno099' ||
+    safeTargetUsername.toLowerCase() === 'bru';
+
   const effectiveUser = publicProfile || {
-    id: user?.id || `user_${targetUsername}`,
-    username: targetUsername,
-    isVerified: user?.isVerified || targetUsername.toLowerCase() === 'bru' || targetUsername.toLowerCase() === 'heysoybruno09',
-    role: targetUsername.toLowerCase() === 'heysoybruno09' ? 'admin' : user?.role || 'contributor',
+    id: user?.id || (isHeysoybruno ? safeTargetUsername : `user_${safeTargetUsername || 'contributor'}`),
+    username: safeTargetUsername || user?.username || 'contributor',
+    isVerified: Boolean(user?.isVerified) || safeTargetUsername.toLowerCase() === 'bru' || isHeysoybruno,
+    role: isHeysoybruno ? 'admin' : user?.role || 'contributor',
     avatar: user?.avatar || null,
     stats: {
-      lyricsAdded: 2,
-      lyricsSynced: 2,
-      lyricsWanted: 1,
+      lyricsAdded: 0,
+      lyricsSynced: 0,
+      lyricsWanted: 0,
     },
     songs: [],
   };
 
-  const isAdmin = effectiveUser.username.toLowerCase() === 'heysoybruno09';
-  const stats = effectiveUser.stats || { lyricsAdded: 0, lyricsSynced: 0, lyricsWanted: 0 };
+  const username = effectiveUser?.username || safeTargetUsername || user?.username || 'contributor';
+  const isAdmin =
+    username.toLowerCase() === 'heysoybruno09' ||
+    username.toLowerCase() === 'heysoybruno099' ||
+    username.toLowerCase() === 'bru';
+  const stats = effectiveUser?.stats || { lyricsAdded: 0, lyricsSynced: 0, lyricsWanted: 0 };
+  const userSongs = Array.isArray(effectiveUser?.songs) ? effectiveUser.songs : [];
 
   return (
     <div style={{ padding: '32px 20px 80px 20px', maxWidth: 840, margin: '0 auto' }}>
@@ -259,19 +271,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 fontWeight: 700,
               }}
             >
-              {effectiveUser.username.charAt(0).toUpperCase()}
+              {(username || 'C').charAt(0).toUpperCase()}
             </div>
           )}
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <h1 style={{ fontSize: 24, fontWeight: 800, color: '#f4f4f6', margin: 0 }}>
-                @{effectiveUser.username}
+                @{username}
               </h1>
               <VerifiedSticker tier={isAdmin ? 'admin' : 'contributor'} size="md" />
             </div>
             <div style={{ fontSize: 12, color: '#71717a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
-              User ID: {effectiveUser.id} • {isAdmin ? 'System Administrator' : 'Verified Community Contributor'}
+              User ID: {effectiveUser?.id || `user_${username}`} • {isAdmin ? 'System Administrator' : 'Verified Community Contributor'}
             </div>
           </div>
         </div>
@@ -370,10 +382,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* Contributed Songs Section */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f4f4f6', marginBottom: 14 }}>
-          Contributed Lyrics by @{effectiveUser.username}
+          Contributed Lyrics by @{username}
         </h2>
 
-        {effectiveUser.songs.length === 0 ? (
+        {userSongs.length === 0 ? (
           <div
             style={{
               padding: 32,
@@ -385,13 +397,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               fontSize: 13,
             }}
           >
-            No publicly published lyrics found for @{effectiveUser.username}.
+            No publicly published lyrics found for @{username}.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {effectiveUser.songs.map((song) => (
+            {userSongs.map((song) => {
+              const songItem: UnifiedSongItem = {
+                id: song.id,
+                spotifyId: song.spotifyId,
+                ytmId: song.ytmId,
+                title: song.title,
+                artist: song.artist,
+                album: song.album,
+                artworkUrl: song.artworkUrl,
+                durationMs: song.durationMs,
+                source: 'verified',
+                isSyllableSynced: song.isSyllableSynced,
+                contributor: username,
+              };
+
+              return (
               <div
                 key={song.id}
+                onDoubleClick={() => {
+                  onSelectAndPlaySong?.(songItem);
+                  onOpenSongPage?.(songItem);
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -402,6 +433,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   borderRadius: 8,
                   gap: 16,
                   flexWrap: 'wrap',
+                  cursor: 'pointer',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 200, flex: 1 }}>
@@ -515,7 +547,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   )}
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>

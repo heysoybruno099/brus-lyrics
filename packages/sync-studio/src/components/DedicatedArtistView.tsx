@@ -36,9 +36,11 @@ export const DedicatedArtistView: React.FC<DedicatedArtistViewProps> = ({
     return sNorm === normArtist || sNorm.includes(normArtist) || normArtist.includes(sNorm);
   });
 
-  // Unique Artist ID depending on lyrics they did
+  // Unique Artist ID depending on what lyrics they did (ID is derived from the first lyrics created)
   const cleanSlug = normArtist.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-  const artistId = `art_${cleanSlug || 'unknown'}`;
+  const firstSong = artistSongs[0];
+  const firstLyricsId = firstSong ? (firstSong.spotifyId || firstSong.id).replace(/^song_/, '').slice(0, 10) : '';
+  const artistId = firstLyricsId ? `art_${firstLyricsId}_${cleanSlug || 'artist'}` : `art_${cleanSlug || 'unknown'}`;
 
   const handleShare = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://brus-lyrics.pages.dev';
@@ -172,7 +174,10 @@ export const DedicatedArtistView: React.FC<DedicatedArtistViewProps> = ({
             {artistSongs.map((song) => (
               <div
                 key={song.id}
-                onDoubleClick={() => onOpenSongPage(song)}
+                onDoubleClick={() => {
+                  onSelectAndPlaySong(song);
+                  onOpenSongPage(song);
+                }}
                 onClick={() => onSelectAndPlaySong(song)}
                 style={{
                   backgroundColor: '#141418',

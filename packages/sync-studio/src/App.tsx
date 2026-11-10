@@ -375,7 +375,7 @@ export const App: React.FC = () => {
           }
         });
       }
-      window.history.replaceState(null, '', window.location.pathname);
+      window.history.replaceState(null, '', '/');
     }
 
     // Automatic Spotify Session Renewal for Returning Sessions
@@ -394,8 +394,8 @@ export const App: React.FC = () => {
     const path = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
 
-    // Clean callback URL cleanly so user does not 404 or get stuck on /callback
-    if (path.includes('/callback')) {
+    // Clean callback URL cleanly so user does not 404 or get stuck on /callback or /auth/callback
+    if (path.includes('/callback') || path.includes('/auth/callback')) {
       window.history.replaceState(null, '', '/');
     }
 
@@ -407,9 +407,9 @@ export const App: React.FC = () => {
       const artistParam = currentParams.get('artist');
       const userParam = currentParams.get('user');
 
-      // Check /song/:id or ?song=:id
-      const songMatch = currentPath.match(/^\/song\/([^\/?#]+)/i);
-      const songId = songMatch ? decodeURIComponent(songMatch[1]) : songParam;
+      // Check /song/:id or /song/:slug/:id or ?song=:id
+      const songMatch = currentPath.match(/^\/song\/(?:([^\/?#]+)\/)?([^\/?#]+)/i);
+      const songId = songMatch ? decodeURIComponent(songMatch[2] || songMatch[1]) : songParam;
       if (songId) {
         const cleanId = songId.replace(/^song_/, '').replace(/^spotify:/i, '');
         const matched = VERIFIED_FEATURED_TRACKS.find(
@@ -1028,6 +1028,7 @@ export const App: React.FC = () => {
               catalogSongs={songs}
               onQuickPlay={handlePlaySongCard}
               onQuickAdd={handleOpenStudioWithTrack}
+              onOpenSongPage={navigateToSongPage}
             />
 
             <SongCardGrid

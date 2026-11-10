@@ -1,5 +1,6 @@
 import React from 'react';
 import type { UnifiedSongItem } from '../lib/types.js';
+import { VerifiedSticker } from './VerifiedSticker.js';
 
 interface SongCardGridProps {
   songs: UnifiedSongItem[];
@@ -67,6 +68,7 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
               onClick={() => onSelectAndPlay(song)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
+                onSelectAndPlay(song);
                 onOpenSongPage?.(song);
               }}
               role="button"
@@ -111,9 +113,10 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
                 <div className="card-meta-top">
                   <h3
                     className="card-title"
-                    title={`${song.title} (Double-click to open song page)`}
+                    title={`${song.title} (Double-click to play and open song page)`}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
+                      onSelectAndPlay(song);
                       onOpenSongPage?.(song);
                     }}
                   >
@@ -229,19 +232,30 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
 
                 <div className="card-footer-row">
                   <span className="card-duration">{formatDuration(song.durationMs)}</span>
-                  {song.isSyllableSynced ? (
-                    <span className="card-badge-syllable">TTML SYLLABLE</span>
-                  ) : song.source === 'verified' ? (
-                    <span className="card-badge-standard" style={{ color: '#4ade80', borderColor: '#22c55e' }}>
-                      VERIFIED
-                    </span>
-                  ) : song.ytmId ? (
-                    <span className="card-badge-standard" style={{ color: '#60a5fa', borderColor: '#3b82f6' }}>
-                      YTM AUDIO
-                    </span>
-                  ) : (
-                    <span className="card-badge-standard">{song.source.toUpperCase()}</span>
-                  )}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    {song.isSyllableSynced && (
+                      <span className="card-badge-syllable">TTML SYLLABLE</span>
+                    )}
+                    {song.source === 'verified' ? (
+                      <VerifiedSticker
+                        size="sm"
+                        tier={
+                          song.contributor &&
+                          (song.contributor.toLowerCase() === 'heysoybruno09' ||
+                            song.contributor.toLowerCase() === 'heysoybruno099' ||
+                            song.contributor.toLowerCase() === 'bru')
+                            ? 'admin'
+                            : 'contributor'
+                        }
+                      />
+                    ) : song.ytmId ? (
+                      <span className="card-badge-standard" style={{ color: '#60a5fa', borderColor: '#3b82f6' }}>
+                        YTM AUDIO
+                      </span>
+                    ) : (
+                      <span className="card-badge-standard">{song.source.toUpperCase()}</span>
+                    )}
+                  </div>
                 </div>
 
                 {!song.isSyllableSynced && song.source !== 'verified' && (

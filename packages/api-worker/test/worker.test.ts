@@ -331,13 +331,26 @@ describe('Cloudflare Worker API Routes', () => {
     }
   });
 
-  it('GET /v1/auth/users/Bru returns verified creator profile', async () => {
+  it('GET /v1/auth/users/Bru returns verified creator profile with stats and songs', async () => {
     const res = await app.request('/v1/auth/users/Bru');
     assert.equal(res.status, 200);
-    const body = (await res.json()) as { username: string; isVerified: boolean; role: string; id: string };
+    const body = (await res.json()) as { username: string; isVerified: boolean; role: string; id: string; stats: any; songs: any[] };
     assert.equal(body.username, 'Bru');
     assert.equal(body.isVerified, true);
     assert.equal(body.role, 'verified_creator');
+    assert.ok(body.stats && typeof body.stats.lyricsAdded === 'number');
+    assert.ok(Array.isArray(body.songs));
+  });
+
+  it('GET /v1/auth/users/heysoybruno099 returns admin profile with stats and songs', async () => {
+    const res = await app.request('/v1/auth/users/heysoybruno099');
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { username: string; isVerified: boolean; role: string; stats: any; songs: any[] };
+    assert.equal(body.username, 'heysoybruno099');
+    assert.equal(body.isVerified, true);
+    assert.equal(body.role, 'admin');
+    assert.ok(body.stats && typeof body.stats.lyricsAdded === 'number');
+    assert.ok(Array.isArray(body.songs));
   });
 
   it('POST /v1/auth/users and GET /v1/auth/users/:username persists contributor with verification', async () => {
@@ -358,9 +371,11 @@ describe('Cloudflare Worker API Routes', () => {
 
     const getRes = await app.request('/v1/auth/users/TestContributor');
     assert.equal(getRes.status, 200);
-    const getBody = (await getRes.json()) as { username: string; isVerified: boolean; role: string };
+    const getBody = (await getRes.json()) as { username: string; isVerified: boolean; role: string; stats: any; songs: any[] };
     assert.equal(getBody.username, 'TestContributor');
     assert.equal(getBody.isVerified, true);
+    assert.ok(getBody.stats && typeof getBody.stats.lyricsAdded === 'number');
+    assert.ok(Array.isArray(getBody.songs));
   });
 
   it('DELETE /v1/songs/:id: rejects unauthorized non-admin access with 403', async () => {
@@ -424,6 +439,20 @@ describe('Cloudflare Worker API Routes', () => {
       headers: {
         'Content-Type': 'application/json',
         'X-Admin-User': 'heysoybruno09',
+      },
+      body: JSON.stringify({ songId: '4cOdK2wGLETKBW3PvgPWqT', verified: true }),
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { success: boolean; verified: boolean };
+    assert.equal(body.success, true);
+    assert.equal(body.verified, true);
+  });
+
+  it('POST /v1/admin/verify: approves and verifies lyrics for heysoybruno099 via query param', async () => {
+    const res = await app.request('/v1/admin/verify?adminUser=heysoybruno099', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({ songId: '4cOdK2wGLETKBW3PvgPWqT', verified: true }),
     });

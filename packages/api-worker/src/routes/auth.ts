@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../types.js';
-import { upsertUser, getUserByUsername, getContributorProfile } from '../lib/db.js';
+import { upsertUser, getContributorProfile } from '../lib/db.js';
 
 export const authRoute = new Hono<{ Bindings: Env }>();
 
@@ -85,6 +85,7 @@ authRoute.get('/auth/discord/user', async (c) => {
     const isCreator =
       u.id === '1568826229006540882' ||
       u.username?.toLowerCase() === 'heysoybruno09' ||
+      u.username?.toLowerCase() === 'heysoybruno099' ||
       u.username?.toLowerCase() === 'bru';
 
     const savedUser = await upsertUser(c.env, {

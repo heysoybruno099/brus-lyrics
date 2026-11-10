@@ -208,17 +208,17 @@ export class BrusLyricsRenderer {
     // Prominently render contributor attribution at bottom of lyrics linking to user profile
     const contributor = doc.metadata?.contributor || 'Community';
     const cleanContributor = contributor.replace(/[&<>"']/g, '').trim();
-    const isAdmin = cleanContributor.toLowerCase() === 'heysoybruno09';
+    const isAdmin = ['heysoybruno09', 'heysoybruno099', 'bru'].includes(cleanContributor.toLowerCase());
     const profileUrl = `https://brus-lyrics.pages.dev/user/${encodeURIComponent(cleanContributor)}`;
 
     const attributionEl = document.createElement('div');
     attributionEl.className = 'brus-lyrics-attribution';
     attributionEl.innerHTML = `
       <div class="brus-attribution-card">
-        <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" class="brus-attribution-link" title="View @${cleanContributor} contributor profile">
+        <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" class="brus-attribution-link" title="View @${cleanContributor} contributor profile" onclick="event.stopPropagation(); window.open('${profileUrl}', '_blank'); return false;">
           Created by @${cleanContributor}
         </a>
-        <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" class="brus-verified-badge ${isAdmin ? 'brus-admin-badge' : 'brus-contributor-badge'}" title="${isAdmin ? 'Admin' : 'Verified Contributor'}">
+        <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" class="brus-verified-badge ${isAdmin ? 'brus-admin-badge' : 'brus-contributor-badge'}" title="${isAdmin ? 'Admin' : 'Verified Contributor'}" onclick="event.stopPropagation(); window.open('${profileUrl}', '_blank'); return false;">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
           </svg>

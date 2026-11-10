@@ -571,13 +571,16 @@ describe('Sync Studio Export & Persistence Features', () => {
     assert.equal(parsed.lines[0].syllables.length, 2);
   });
 
-  it('builds Discord OAuth URL with /callback redirect URI matching developer portal', async () => {
+  it('builds Discord OAuth URL with /auth/callback redirect URI matching developer portal', async () => {
     const { buildDiscordOAuthUrl } = await import('../../sync-studio/src/lib/discord-auth.js');
 
-    const url = buildDiscordOAuthUrl('https://brus-lyrics.pages.dev/callback');
-    assert.ok(url.startsWith('https://discord.com/api/oauth2/authorize?'));
-    assert.ok(url.includes('redirect_uri=https%3A%2F%2Fbrus-lyrics.pages.dev%2Fcallback'));
-    assert.ok(url.includes('response_type=token'));
+    const defaultUrl = buildDiscordOAuthUrl();
+    assert.ok(defaultUrl.startsWith('https://discord.com/api/oauth2/authorize?'));
+    assert.ok(defaultUrl.includes('redirect_uri=https%3A%2F%2Fbrus-lyrics.pages.dev%2Fauth%2Fcallback'));
+    assert.ok(defaultUrl.includes('response_type=token'));
+
+    const customUrl = buildDiscordOAuthUrl('https://brus-lyrics.pages.dev/callback');
+    assert.ok(customUrl.includes('redirect_uri=https%3A%2F%2Fbrus-lyrics.pages.dev%2Fcallback'));
   });
 
   it('verifies logo.svg vector path exists and contains closed boundary geometry', async () => {

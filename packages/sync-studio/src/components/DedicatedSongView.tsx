@@ -43,9 +43,13 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const cleanSongId = (song.spotifyId || song.id).replace(/^song_/, '').replace(/^spotify:/i, '');
+  const connectedLyricsId = song.spotifyId || song.id;
   const lyricsEditId = `edit_${cleanSongId.slice(0, 12)}_v1`;
   const contributor = song.contributor || 'Bru';
-  const isContributorAdmin = contributor.toLowerCase() === 'heysoybruno09';
+  const isContributorAdmin =
+    contributor.toLowerCase() === 'heysoybruno09' ||
+    contributor.toLowerCase() === 'heysoybruno099' ||
+    contributor.toLowerCase() === 'bru';
 
   const copyToClipboard = (text: string, fieldName: string) => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -283,6 +287,32 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
                   title="Copy Lyrics Edit ID"
                 >
                   {copiedField === 'editId' ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  backgroundColor: '#09090b',
+                  border: '1px solid #27272a',
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono, monospace)',
+                  color: '#a1a1aa',
+                }}
+              >
+                <span>Connected Lyrics ID:</span>
+                <strong style={{ color: '#38bdf8' }}>{connectedLyricsId}</strong>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(connectedLyricsId, 'lyricsId')}
+                  style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer', padding: 0 }}
+                  title="Copy Connected Lyrics ID"
+                >
+                  {copiedField === 'lyricsId' ? 'Copied' : 'Copy'}
                 </button>
               </div>
             </div>
