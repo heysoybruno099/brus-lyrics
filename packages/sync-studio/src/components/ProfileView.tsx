@@ -58,7 +58,6 @@ function formatDuration(ms: number): string {
 export const ProfileView: React.FC<ProfileViewProps> = ({
   user,
   profileUsername,
-  onUpdateUser,
   onSignOut,
   onOpenAuthModal,
   onViewTerms,
@@ -76,9 +75,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const [publicProfile, setPublicProfile] = useState<PublicContributorProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
-  const [newUsername, setNewUsername] = useState<string>(user?.username || '');
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const fetchPublicProfile = useCallback(async (username: string) => {
     if (!username) return;
@@ -103,62 +99,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
   }, [targetUsername, fetchPublicProfile]);
 
-  useEffect(() => {
-    if (user?.username) {
-      setNewUsername(user.username);
-    }
-  }, [user?.username]);
-
-  const handleSaveUsername = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanName = newUsername.trim().replace(/^@/, '');
-    if (!cleanName || !user) {
-      setNotice({ type: 'error', message: 'Username cannot be empty.' });
-      return;
-    }
-
-    setIsSaving(true);
-    setNotice(null);
-
-    try {
-      const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/v1/auth/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: user.id,
-          username: cleanName,
-          role: user.role,
-          isVerified: user.isVerified,
-        }),
-      });
-
-      const updated: DiscordUser = {
-        ...user,
-        username: cleanName,
-      };
-
-      saveUser(updated);
-      onUpdateUser(updated);
-
-      if (res.ok) {
-        setNotice({ type: 'success', message: `Website username successfully updated to @${cleanName}!` });
-        fetchPublicProfile(cleanName);
-      } else {
-        setNotice({ type: 'success', message: `Website username updated to @${cleanName} (locally saved).` });
-      }
-    } catch {
-      const updated: DiscordUser = {
-        ...user,
-        username: cleanName,
-      };
-      saveUser(updated);
-      onUpdateUser(updated);
-      setNotice({ type: 'success', message: `Website username updated to @${cleanName}.` });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const safeTargetUsername = (targetUsername || user?.username || '').trim().replace(/^@/, '');
 
@@ -328,55 +268,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         </div>
 
-        {/* Change Display Username Form (Only on own profile) */}
-        {isOwnProfile && (
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #27272a' }}>
-            {notice && (
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  marginBottom: 16,
-                  fontSize: 13,
-                  backgroundColor: notice.type === 'success' ? '#14532d' : '#7f1d1d',
-                  color: notice.type === 'success' ? '#86efac' : '#fca5a5',
-                  border: `1px solid ${notice.type === 'success' ? '#22c55e' : '#ef4444'}`,
-                }}
-              >
-                {notice.message}
-              </div>
-            )}
 
-            <form onSubmit={handleSaveUsername}>
-              <div className="form-field" style={{ marginBottom: 14 }}>
-                <label className="form-label" style={{ fontSize: 13, fontWeight: 600, color: '#f4f4f6' }}>
-                  Website Display Username
-                </label>
-                <p style={{ fontSize: 12, color: '#8e8e98', margin: '4px 0 10px 0' }}>
-                  Change how your name appears on your public profile and on synchronized lyrics.
-                </p>
-                <input
-                  type="text"
-                  className="text-input"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder="Enter new display username..."
-                  required
-                  style={{ padding: '9px 12px', fontSize: 14 }}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isSaving || !newUsername.trim()}
-                style={{ padding: '8px 16px', fontSize: 13, fontWeight: 600 }}
-              >
-                {isSaving ? 'Saving...' : 'Save Display Username'}
-              </button>
-            </form>
-          </div>
-        )}
       </div>
 
       {/* Contributed Songs Section */}

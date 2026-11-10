@@ -138,10 +138,20 @@ authRoute.post('/auth/users', async (c) => {
       return c.json({ error: 'Username is required' }, 400);
     }
 
+    const clean = body.username.trim();
+    const lower = clean.toLowerCase();
+    // Anti-spoofing security: Protect administrative accounts and roles from unauthenticated takeover
+    if (lower === 'heysoybruno09' || lower === 'heysoybruno099' || lower === 'bru' || body.role === 'admin') {
+      const adminHeader = c.req.header('X-Admin-User') || '';
+      if (!['heysoybruno09', 'heysoybruno099', 'bru'].includes(adminHeader.toLowerCase())) {
+        return c.json({ error: 'Forbidden: Cannot claim protected administrative account' }, 403);
+      }
+    }
+
     const userId = body.id || `user_${Date.now()}`;
     const user = await upsertUser(c.env, {
       id: userId,
-      username: body.username.trim(),
+      username: clean,
       role: body.role || 'contributor',
       is_verified: body.isVerified !== false ? 1 : 0,
     });
