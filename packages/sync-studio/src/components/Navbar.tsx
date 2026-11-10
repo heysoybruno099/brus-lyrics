@@ -20,15 +20,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const isAdmin = Boolean(
     user &&
-      (user.username.toLowerCase() === 'heysoybruno09' ||
+      (user.id === '1568826229006540882' ||
+        user.username.toLowerCase() === 'heysoybruno09' ||
         user.username.toLowerCase() === 'heysoybruno099' ||
-        user.username.toLowerCase() === 'bru')
+        user.username.toLowerCase() === 'bru' ||
+        user.role === 'admin')
   );
 
   return (
     <header className="site-header">
       <div className="header-inner">
-        {/* Brand with lowercase geometric 'b' logo and clean Lyrics title */}
+        {/* Brand with lowercase geometric 'b' logo and clean BruLyrics title */}
         <div className="brand-group" onClick={() => onSelectView('discover')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
             className="brand-logo-badge"
@@ -46,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <LogoIcon size={20} color="#ffffff" />
           </div>
           <div className="brand-text">
-            <span className="brand-name" style={{ letterSpacing: '-0.02em', fontWeight: 700 }}>Lyrics</span>
+            <span className="brand-name" style={{ letterSpacing: '-0.02em', fontWeight: 700 }}>BruLyrics</span>
             <span className="brand-sub">Syllable Sync</span>
           </div>
         </div>

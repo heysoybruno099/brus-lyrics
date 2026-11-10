@@ -52,9 +52,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const isAdmin = Boolean(
     user &&
-      (user.username.toLowerCase() === 'heysoybruno09' ||
+      (user.id === '1568826229006540882' ||
+        user.username.toLowerCase() === 'heysoybruno09' ||
         user.username.toLowerCase() === 'heysoybruno099' ||
-        user.username.toLowerCase() === 'bru')
+        user.username.toLowerCase() === 'bru' ||
+        user.role === 'admin')
   );
 
   const [catalog, setCatalog] = useState<SongRecord[]>([]);
@@ -65,17 +67,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const apiBase = getApiBaseUrl();
-  const adminUsername = user?.username || 'heysoybruno099';
+  const adminUsername = user?.username || 'heysoybruno09';
+  const adminId = user?.id || '1568826229006540882';
+  const adminHeaders = {
+    'X-Admin-User': adminUsername,
+    'X-Admin-Id': adminId,
+  };
 
-  const fetchAdminData = useCallback(async () => {
+  const fetchAdminData = useCallback(async (silent: boolean = false) => {
     if (!isAdmin) return;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     try {
-      const res = await fetch(`${apiBase}/v1/admin/songs?adminUser=${encodeURIComponent(adminUsername)}`, {
-        headers: {
-          'X-Admin-User': adminUsername,
-        },
-      });
+      const res = await fetch(
+        `${apiBase}/v1/admin/songs?adminUser=${encodeURIComponent(adminUsername)}&adminId=${encodeURIComponent(adminId)}`,
+        {
+          headers: adminHeaders,
+        }
+      );
       if (res.ok) {
         const data = await res.json();
         setCatalog(data.catalog || []);
@@ -84,20 +92,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     } catch {
       // Fallback
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
-  }, [apiBase, isAdmin, adminUsername]);
+  }, [apiBase, isAdmin, adminUsername, adminId]);
 
+  // Initial fetch and real-time polling every 6 seconds
   useEffect(() => {
     fetchAdminData();
-  }, [fetchAdminData]);
+    if (!isAdmin) return;
+    const interval = setInterval(() => {
+      fetchAdminData(true);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [fetchAdminData, isAdmin]);
 
   if (!isAdmin) {
     return (
       <div className="admin-restricted-container" style={{ padding: 60, textAlign: 'center', color: '#f87171' }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>Access Restricted</h2>
         <p style={{ color: '#a1a1aa', fontSize: 14 }}>
-          This dedicated administration console is strictly restricted to user <strong>heysoybruno099</strong>.
+          This dedicated administration console is strictly restricted to user <strong>heysoybruno09</strong> (Discord ID: 1568826229006540882).
         </p>
       </div>
     );
@@ -110,18 +124,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     try {
-      const res = await fetch(`${apiBase}/v1/songs/${encodeURIComponent(songId)}?adminUser=${encodeURIComponent(adminUsername)}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Admin-User': adminUsername,
-        },
-      });
+      const res = await fetch(
+        `${apiBase}/v1/songs/${encodeURIComponent(songId)}?adminUser=${encodeURIComponent(adminUsername)}&adminId=${encodeURIComponent(adminId)}`,
+        {
+          method: 'DELETE',
+          headers: adminHeaders,
+        }
+      );
 
       if (res.ok) {
         setNotice({ type: 'success', message: `"${songTitle}" was deleted successfully.` });
         setCatalog((prev) => prev.filter((s) => s.id !== songId && s.spotify_id !== songId && s.ytm_id !== songId));
         setSubmissions((prev) => prev.filter((s) => s.id !== songId && s.spotify_id !== songId));
-        await fetchAdminData();
+        await fetchAdminData(true);
       } else {
         const err = await res.json();
         setNotice({ type: 'error', message: err.error || 'Failed to delete song' });
@@ -188,26 +203,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
 
     try {
-      const res = await fetch(`${apiBase}/v1/admin/verify?adminUser=${encodeURIComponent(adminUsername)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Admin-User': adminUsername,
-        },
-        body: JSON.stringify({ songId, verified: true }),
-      });
+      const res = await fetch(
+        `${apiBase}/v1/admin/verify?adminUser=${encodeURIComponent(adminUsername)}&adminId=${encodeURIComponent(adminId)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...adminHeaders,
+          },
+          body: JSON.stringify({ songId, verified: true }),
+        }
+      );
 
       if (res.ok) {
         setNotice({ type: 'success', message: `Lyrics for "${songTitle}" verified and approved!` });
-        await fetchAdminData();
+        await fetchAdminData(true);
       } else {
         const err = await res.json();
         setNotice({ type: 'error', message: err.error || 'Failed to verify song' });
-        await fetchAdminData();
+        await fetchAdminData(true);
       }
     } catch (err: any) {
       setNotice({ type: 'error', message: `Verification error: ${err.message}` });
-      await fetchAdminData();
+      await fetchAdminData(true);
     }
   };
 
@@ -250,7 +268,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={fetchAdminData}
+          onClick={() => { fetchAdminData(); }}
           disabled={isLoading}
           style={{ padding: '8px 14px', fontSize: 12 }}
         >

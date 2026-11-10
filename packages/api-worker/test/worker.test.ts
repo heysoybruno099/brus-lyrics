@@ -574,5 +574,62 @@ describe('Cloudflare Worker API Routes', () => {
     assert.equal(resYtm.status, 200);
     assert.equal(resYtm.headers.get('X-Lyrics-Source'), 'brus-lyrics-verified');
   });
+
+  it('POST /v1/submit: auto-approves immediately for heysoybruno09 with zero pending verification', async () => {
+    const autoApproveTtml = `<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="en">
+  <head><metadata><ttm:title>Auto Approve Song</ttm:title><ttm:agent type="person" xml:id="v1">Bruno Artist</ttm:agent></metadata></head>
+  <body><div><p begin="00:00:01.000" end="00:00:03.000" ttm:agent="v1"><span begin="00:00:01.000" end="00:00:03.000">Auto verified text</span></p></div></body>
+</tt>`;
+
+    const res = await app.request('/v1/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Id': '1568826229006540882',
+      },
+      body: JSON.stringify({
+        metadata: {
+          spotifyId: 'spotify_auto_approve_test',
+          title: 'Auto Approve Song',
+          artist: 'Bruno Artist',
+          durationMs: 180000,
+        },
+        ttmlRaw: autoApproveTtml,
+        contributor: 'heysoybruno09',
+      }),
+    });
+    assert.equal(res.status, 201);
+
+    // Verify it is instantly in the catalog without manual approval
+    const catalogRes = await app.request('/v1/catalog?q=Auto%20Approve%20Song');
+    assert.equal(catalogRes.status, 200);
+    const catalogBody = (await catalogRes.json()) as any;
+    assert.ok(catalogBody.songs.length > 0);
+    assert.equal(catalogBody.songs[0].spotify_id, 'spotify_auto_approve_test');
+    assert.equal(catalogBody.songs[0].is_verified, 1);
+    assert.equal(catalogBody.songs[0].contributor, 'heysoybruno09');
+
+    // Verify lyrics can be immediately queried
+    const lyricsRes = await app.request('/v1/lyrics?trackId=spotify_auto_approve_test');
+    assert.equal(lyricsRes.status, 200);
+    const lyricsText = await lyricsRes.text();
+    assert.ok(lyricsText.includes('Auto verified text'));
+
+    // Now delete it using Discord ID header
+    const deleteRes = await app.request('/v1/songs/spotify_auto_approve_test', {
+      method: 'DELETE',
+      headers: {
+        'X-Admin-Id': '1568826229006540882',
+      },
+    });
+    assert.equal(deleteRes.status, 200);
+
+    // Verify it is immediately gone from the catalog
+    const catalogAfterDelete = await app.request('/v1/catalog?q=Auto%20Approve%20Song');
+    const afterBody = (await catalogAfterDelete.json()) as any;
+    const match = afterBody.songs.find((s: any) => s.spotify_id === 'spotify_auto_approve_test');
+    assert.equal(match, undefined);
+  });
 });
 

@@ -126,10 +126,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const isHeysoybruno =
     safeTargetUsername.toLowerCase() === 'heysoybruno09' ||
     safeTargetUsername.toLowerCase() === 'heysoybruno099' ||
+    safeTargetUsername === '1568826229006540882' ||
+    user?.id === '1568826229006540882' ||
     safeTargetUsername.toLowerCase() === 'bru';
 
   const effectiveUser = publicProfile || {
-    id: user?.id || (isHeysoybruno ? safeTargetUsername : `user_${safeTargetUsername || 'contributor'}`),
+    id: user?.id || (isHeysoybruno ? '1568826229006540882' : `user_${safeTargetUsername || 'contributor'}`),
     username: safeTargetUsername || user?.username || 'contributor',
     isVerified: Boolean(user?.isVerified) || safeTargetUsername.toLowerCase() === 'bru' || isHeysoybruno,
     role: isHeysoybruno ? 'admin' : user?.role || 'contributor',
@@ -144,6 +146,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const username = effectiveUser?.username || safeTargetUsername || user?.username || 'contributor';
   const isAdmin =
+    isHeysoybruno ||
+    effectiveUser?.id === '1568826229006540882' ||
+    effectiveUser?.role === 'admin' ||
     username.toLowerCase() === 'heysoybruno09' ||
     username.toLowerCase() === 'heysoybruno099' ||
     username.toLowerCase() === 'bru';

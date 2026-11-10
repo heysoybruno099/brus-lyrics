@@ -78,6 +78,21 @@ submitRoute.post('/submit', async (c) => {
       contributorName
     );
 
+    const adminHeader = (c.req.header('X-Admin-User') || '').trim().toLowerCase().replace(/^@/, '');
+    const adminIdHeader = (c.req.header('X-Admin-Id') || '').trim();
+    const queryAdmin = (c.req.query('adminUser') || c.req.query('admin_user') || '').trim().toLowerCase().replace(/^@/, '');
+    const queryAdminId = (c.req.query('adminId') || c.req.query('admin_id') || '').trim();
+    const normContributor = contributorName.toLowerCase().replace(/^@/, '');
+
+    const adminUsers = ['heysoybruno09', 'heysoybruno099', 'bru', '1568826229006540882'];
+    const isAutoApproved =
+      adminUsers.includes(normContributor) ||
+      adminUsers.includes(adminHeader) ||
+      adminHeader === '1568826229006540882' ||
+      adminIdHeader === '1568826229006540882' ||
+      adminUsers.includes(queryAdmin) ||
+      queryAdminId === '1568826229006540882';
+
     // 2. Queue or record in D1 if available
     await queueSubmission(c.env, {
       id: songId,
@@ -90,6 +105,7 @@ submitRoute.post('/submit', async (c) => {
       contributor: contributorName,
       ttml_raw: ttmlRaw,
       platform_target: effectiveTarget,
+      autoApprove: isAutoApproved,
     });
 
     const response: SubmitLyricsResponse = {

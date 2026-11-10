@@ -535,8 +535,58 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  const activeSearchQueryRef = useRef<string>('');
+
+  const fetchLiveCatalog = useCallback(async () => {
+    if (activeSearchQueryRef.current) return;
+    try {
+      const apiBase = getApiBaseUrl().replace(/\/+$/, '');
+      const res = await fetch(`${apiBase}/v1/catalog?limit=50`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.songs)) {
+          const remoteSongs: UnifiedSongItem[] = data.songs.map((s: any) => ({
+            id: s.id || (s.spotify_id ? `song_${s.spotify_id}` : `song_${s.ytm_id}`),
+            spotifyId: s.spotify_id || undefined,
+            ytmId: s.ytm_id || undefined,
+            title: s.title,
+            artist: s.artist,
+            album: 'Catalog',
+            artworkUrl: resolveTrackArtwork({
+              spotifyId: s.spotify_id || undefined,
+              ytmId: s.ytm_id || undefined,
+            }),
+            durationMs: s.duration_ms,
+            previewUrl: null,
+            source: 'verified' as const,
+            isSyllableSynced: true,
+            contributor: s.contributor || 'Bru',
+          }));
+
+          if (remoteSongs.length > 0 && !activeSearchQueryRef.current) {
+            setSongs(remoteSongs);
+          }
+        }
+      }
+    } catch {
+      // Fallback to existing songs
+    }
+  }, []);
+
+  // Real-time catalog polling every 6 seconds
+  useEffect(() => {
+    fetchLiveCatalog();
+    const interval = setInterval(fetchLiveCatalog, 6000);
+    return () => clearInterval(interval);
+  }, [fetchLiveCatalog]);
+
   // Search handler
   const handleSearch = useCallback(async (query: string) => {
+    activeSearchQueryRef.current = query.trim();
+    if (!query.trim()) {
+      fetchLiveCatalog();
+      return;
+    }
     setIsSearching(true);
     try {
       const results = await searchSongs(query);
@@ -546,7 +596,7 @@ export const App: React.FC = () => {
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [fetchLiveCatalog]);
 
   // Deep-linking navigation functions
   const navigateToSongPage = useCallback((song: UnifiedSongItem) => {
@@ -940,11 +990,18 @@ export const App: React.FC = () => {
     };
 
     const targetUrl = `${getApiBaseUrl().replace(/\/+$/, '')}/v1/submit`;
+    const submitHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (user) {
+      submitHeaders['X-Admin-User'] = user.username;
+      submitHeaders['X-Admin-Id'] = user.id;
+    }
 
     try {
       let response = await fetch(targetUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: submitHeaders,
         body: JSON.stringify(payload),
       });
 
@@ -952,7 +1009,7 @@ export const App: React.FC = () => {
         try {
           const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: submitHeaders,
             body: JSON.stringify(payload),
           });
           if (fallbackRes.ok) response = fallbackRes;
@@ -968,6 +1025,7 @@ export const App: React.FC = () => {
           type: 'success',
           message: `Saved locally and published as @${effectiveContributor}: ${data.message} (${data.action})`,
         });
+        fetchLiveCatalog();
       } else {
         setSaveStatus({
           type: 'warning',
@@ -1051,7 +1109,7 @@ export const App: React.FC = () => {
               <header className="workstation-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div className="brand-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <LogoIcon size={22} color="#ffffff" />
-                  <span>Lyrics Studio</span>
+                  <span>BruLyrics Studio</span>
                   <span className="brand-badge">Syllable Workstation</span>
                 </div>
 
@@ -1381,7 +1439,7 @@ export const App: React.FC = () => {
         <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
             <LogoIcon size={18} color="#ffffff" />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#f4f4f6' }}>Lyrics</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#f4f4f6' }}>BruLyrics</span>
           </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 13, color: '#a1a1aa', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button

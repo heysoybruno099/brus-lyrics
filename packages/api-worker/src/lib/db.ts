@@ -235,20 +235,31 @@ export async function queueSubmission(
     contributor: string;
     ttml_raw: string;
     platform_target?: string | null;
+    autoApprove?: boolean;
   }
 ): Promise<void> {
+  const isAuto = Boolean(submission.autoApprove);
+  const status = isAuto ? 'verified' : 'pending';
+  const isVerifiedInt = isAuto ? 1 : 0;
+  const now = new Date().toISOString();
+
   const record: SubmissionRecord = {
     ...submission,
-    status: 'pending',
-    created_at: new Date().toISOString(),
+    status,
+    created_at: now,
   };
   memorySubmissions.set(submission.id, record);
+
+  const titleNorm = normalizeString(submission.title);
+  const artistNorm = normalizeString(submission.artist);
+  const baseName = submission.spotify_id || submission.ytm_id || submission.id.replace(/^song_/, '');
+  const filePath = `database/ttml/${baseName}.ttml`;
 
   if (env.DB) {
     try {
       const query = `
         INSERT INTO submissions (id, spotify_id, ytm_id, isrc, title, artist, duration_ms, contributor, ttml_raw, status, created_at)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 'pending', ?10)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
         ON CONFLICT(id) DO UPDATE SET
           spotify_id = COALESCE(excluded.spotify_id, submissions.spotify_id),
           ytm_id = COALESCE(excluded.ytm_id, submissions.ytm_id),
@@ -258,7 +269,7 @@ export async function queueSubmission(
           duration_ms = excluded.duration_ms,
           contributor = excluded.contributor,
           ttml_raw = excluded.ttml_raw,
-          status = 'pending',
+          status = excluded.status,
           created_at = excluded.created_at
       `;
       await env.DB.prepare(query)
@@ -272,9 +283,43 @@ export async function queueSubmission(
           submission.duration_ms,
           submission.contributor,
           submission.ttml_raw,
-          record.created_at
+          status,
+          now
         )
         .run();
+
+      if (isAuto) {
+        await env.DB.prepare(`
+          INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
+          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1, ?12)
+          ON CONFLICT(id) DO UPDATE SET
+            spotify_id = COALESCE(excluded.spotify_id, songs.spotify_id),
+            ytm_id = COALESCE(excluded.ytm_id, songs.ytm_id),
+            isrc = COALESCE(excluded.isrc, songs.isrc),
+            title = excluded.title,
+            artist = excluded.artist,
+            title_norm = excluded.title_norm,
+            artist_norm = excluded.artist_norm,
+            duration_ms = excluded.duration_ms,
+            file_path = excluded.file_path,
+            contributor = excluded.contributor,
+            is_verified = 1,
+            updated_at = excluded.updated_at
+        `).bind(
+          submission.id,
+          submission.spotify_id || null,
+          submission.ytm_id || null,
+          submission.isrc || null,
+          submission.title,
+          submission.artist,
+          titleNorm,
+          artistNorm,
+          submission.duration_ms,
+          filePath,
+          submission.contributor,
+          now
+        ).run();
+      }
     } catch {
       // Fallback to memorySubmissions
     }
@@ -282,66 +327,124 @@ export async function queueSubmission(
 
   // Populate local catalog and ttml map for in-memory and local runtimes
   if (env.LOCAL_CATALOG) {
-    const filePath = `database/ttml/${submission.spotify_id || submission.ytm_id || submission.id}.ttml`;
-    env.LOCAL_CATALOG.push({
+    for (let i = env.LOCAL_CATALOG.length - 1; i >= 0; i--) {
+      const s = env.LOCAL_CATALOG[i];
+      if (!s) continue;
+      if (s.id === submission.id || (submission.spotify_id && s.spotify_id === submission.spotify_id)) {
+        env.LOCAL_CATALOG.splice(i, 1);
+      }
+    }
+    env.LOCAL_CATALOG.unshift({
       id: submission.id,
       spotify_id: submission.spotify_id || null,
       ytm_id: submission.ytm_id || null,
       isrc: submission.isrc || null,
       title: submission.title,
       artist: submission.artist,
-      title_norm: normalizeString(submission.title),
-      artist_norm: normalizeString(submission.artist),
+      title_norm: titleNorm,
+      artist_norm: artistNorm,
       duration_ms: submission.duration_ms,
       file_path: filePath,
       contributor: submission.contributor,
-      updated_at: record.created_at,
-      is_verified: 0,
+      updated_at: now,
+      is_verified: isVerifiedInt,
       platform_target: (submission.platform_target as any) || null,
     });
   }
 
   if (env.LOCAL_TTML_MAP) {
-    const filePath = `database/ttml/${submission.spotify_id || submission.ytm_id || submission.id}.ttml`;
     env.LOCAL_TTML_MAP[filePath] = submission.ttml_raw;
-    const baseName = `${submission.spotify_id || submission.ytm_id || submission.id}.ttml`;
-    env.LOCAL_TTML_MAP[baseName] = submission.ttml_raw;
+    env.LOCAL_TTML_MAP[`${baseName}.ttml`] = submission.ttml_raw;
+    env.LOCAL_TTML_MAP[submission.id] = submission.ttml_raw;
+    if (submission.spotify_id) env.LOCAL_TTML_MAP[submission.spotify_id] = submission.ttml_raw;
+    if (submission.ytm_id) env.LOCAL_TTML_MAP[submission.ytm_id] = submission.ttml_raw;
   }
+}
+
+export function getMemoryTTML(identifier: string): string | null {
+  const clean = identifier.replace(/\.ttml$/i, '').replace(/^song_/, '');
+  for (const s of memorySubmissions.values()) {
+    if (
+      s.id === identifier ||
+      s.id === `song_${clean}` ||
+      s.id === clean ||
+      s.spotify_id === clean ||
+      s.ytm_id === clean
+    ) {
+      return s.ttml_raw;
+    }
+  }
+  return null;
 }
 
 export async function deleteSong(env: Env, songId: string): Promise<boolean> {
   const cleanId = cleanTrackId(songId) || songId.trim();
+  const rawId = songId.trim();
+  const prefixedId = cleanId.startsWith('song_') ? cleanId : `song_${cleanId}`;
+  const unprefixedId = cleanId.replace(/^song_/, '');
+  const idsToDelete = [cleanId, rawId, prefixedId, unprefixedId];
 
   // 1. Remove from D1 database
   if (env.DB) {
     try {
-      await env.DB.prepare('DELETE FROM songs WHERE id = ?1 OR spotify_id = ?1 OR ytm_id = ?1').bind(cleanId).run();
-      await env.DB.prepare('DELETE FROM submissions WHERE id = ?1 OR spotify_id = ?1 OR ytm_id = ?1').bind(cleanId).run();
+      const q = `
+        DELETE FROM songs
+        WHERE id = ?1 OR id = ?2 OR id = ?3 OR id = ?4
+           OR spotify_id = ?1 OR spotify_id = ?3 OR spotify_id = ?4
+           OR ytm_id = ?1 OR ytm_id = ?3 OR ytm_id = ?4
+      `;
+      await env.DB.prepare(q).bind(cleanId, rawId, prefixedId, unprefixedId).run();
+
+      const qSub = `
+        DELETE FROM submissions
+        WHERE id = ?1 OR id = ?2 OR id = ?3 OR id = ?4
+           OR spotify_id = ?1 OR spotify_id = ?3 OR spotify_id = ?4
+           OR ytm_id = ?1 OR ytm_id = ?3 OR ytm_id = ?4
+      `;
+      await env.DB.prepare(qSub).bind(cleanId, rawId, prefixedId, unprefixedId).run();
     } catch {
       // Fallback
     }
   }
 
-  // 2. Remove from LOCAL_CATALOG
+  // 2. Remove from LOCAL_CATALOG in-place
   if (env.LOCAL_CATALOG) {
-    env.LOCAL_CATALOG = env.LOCAL_CATALOG.filter(
-      (s) => s.id !== cleanId && s.spotify_id !== cleanId && s.ytm_id !== cleanId && !s.id.includes(cleanId)
-    );
+    for (let i = env.LOCAL_CATALOG.length - 1; i >= 0; i--) {
+      const s = env.LOCAL_CATALOG[i];
+      if (!s) continue;
+      if (
+        idsToDelete.includes(s.id) ||
+        (s.spotify_id && idsToDelete.includes(s.spotify_id)) ||
+        (s.ytm_id && idsToDelete.includes(s.ytm_id))
+      ) {
+        env.LOCAL_CATALOG.splice(i, 1);
+      }
+    }
   }
 
   // 3. Remove from LOCAL_TTML_MAP
   if (env.LOCAL_TTML_MAP) {
     for (const key of Object.keys(env.LOCAL_TTML_MAP)) {
-      if (key.includes(cleanId) || key === cleanId) {
+      if (
+        key.includes(cleanId) ||
+        key.includes(unprefixedId) ||
+        idsToDelete.includes(key)
+      ) {
         delete env.LOCAL_TTML_MAP[key];
       }
     }
   }
 
   // 4. Remove from memorySubmissions
-  memorySubmissions.delete(cleanId);
+  for (const id of idsToDelete) {
+    memorySubmissions.delete(id);
+  }
   for (const [k, v] of memorySubmissions.entries()) {
-    if (v.id === cleanId || v.spotify_id === cleanId || v.ytm_id === cleanId) {
+    if (
+      idsToDelete.includes(v.id) ||
+      (v.spotify_id && idsToDelete.includes(v.spotify_id)) ||
+      (v.ytm_id && idsToDelete.includes(v.ytm_id))
+    ) {
       memorySubmissions.delete(k);
     }
   }
@@ -367,8 +470,8 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
       ).bind(newStatus, cleanId, prefixedId, unprefixedId, rawId).run();
 
       await env.DB.prepare(
-        'UPDATE songs SET is_verified = ?1, contributor = ?2 WHERE id = ?3 OR id = ?4 OR id = ?5 OR id = ?6 OR spotify_id = ?3 OR spotify_id = ?5 OR ytm_id = ?3 OR ytm_id = ?5'
-      ).bind(verifiedInt, verified ? 'Verified Catalog' : 'community', cleanId, prefixedId, unprefixedId, rawId).run();
+        'UPDATE songs SET is_verified = ?1 WHERE id = ?2 OR id = ?3 OR id = ?4 OR id = ?5 OR spotify_id = ?2 OR spotify_id = ?4 OR ytm_id = ?2 OR ytm_id = ?4'
+      ).bind(verifiedInt, cleanId, prefixedId, unprefixedId, rawId).run();
 
       // When verified, always check submissions to promote to catalog and commit to cloud
       if (verified) {
@@ -410,7 +513,7 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
             artistNorm,
             sub.duration_ms,
             filePath,
-            'Verified Catalog',
+            sub.contributor || 'Verified Catalog',
             now
           ).run();
         }
@@ -482,8 +585,10 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
         s.id.includes(cleanId)
     );
     if (item) {
-      item.contributor = verified ? 'Verified Catalog' : 'community';
       item.is_verified = verifiedInt;
+      if (!item.contributor || item.contributor === 'community') {
+        item.contributor = verified ? 'Verified Catalog' : 'community';
+      }
     } else if (verified && verifiedSubmission) {
       env.LOCAL_CATALOG.unshift({
         id: verifiedSubmission.id,
@@ -496,7 +601,7 @@ export async function verifySong(env: Env, songId: string, verified: boolean = t
         artist_norm: normalizeString(verifiedSubmission.artist),
         duration_ms: verifiedSubmission.duration_ms,
         file_path: `database/ttml/${verifiedSubmission.spotify_id || verifiedSubmission.ytm_id || verifiedSubmission.id.replace(/^song_/, '')}.ttml`,
-        contributor: 'Verified Catalog',
+        contributor: verifiedSubmission.contributor || 'Verified Catalog',
         is_verified: 1,
         updated_at: new Date().toISOString(),
       });
@@ -551,12 +656,15 @@ export async function getContributorProfile(env: Env, rawUsername: string): Prom
   const normUser = rawUsername.trim().toLowerCase().replace(/^@/, '');
   const user = await getUserByUsername(env, normUser);
 
-  const isAdmin = normUser === 'heysoybruno09' || normUser === 'heysoybruno099';
+  const isAdmin =
+    normUser === 'heysoybruno09' ||
+    normUser === 'heysoybruno099' ||
+    normUser === '1568826229006540882';
   const isCreator = isAdmin || normUser === 'bru' || user?.role === 'verified_creator' || user?.role === 'admin';
 
   const userRecord = {
-    id: user?.id || (isAdmin ? normUser : normUser === 'bru' ? '1568826229006540882' : `user_${normUser}`),
-    username: user?.username || rawUsername.trim().replace(/^@/, ''),
+    id: isAdmin ? '1568826229006540882' : (user?.id || (normUser === 'bru' ? '1568826229006540882' : `user_${normUser}`)),
+    username: user?.username || (isAdmin ? 'heysoybruno09' : rawUsername.trim().replace(/^@/, '')),
     isVerified: isCreator || Boolean(user?.is_verified),
     role: isAdmin ? 'admin' : isCreator ? 'verified_creator' : user?.role || 'contributor',
     avatar: user?.avatar || null,
@@ -770,9 +878,9 @@ const memoryUsers = new Map<string, UserRecord>([
   [
     'heysoybruno09',
     {
-      id: 'heysoybruno09',
+      id: '1568826229006540882',
       username: 'heysoybruno09',
-      discriminator: '0000',
+      discriminator: '8903',
       avatar: null,
       email: 'heysoybruno09@bruslyrics.com',
       role: 'admin',
@@ -784,9 +892,9 @@ const memoryUsers = new Map<string, UserRecord>([
   [
     'heysoybruno099',
     {
-      id: 'heysoybruno099',
+      id: '1568826229006540882',
       username: 'heysoybruno099',
-      discriminator: '0000',
+      discriminator: '8903',
       avatar: null,
       email: 'heysoybruno099@bruslyrics.com',
       role: 'admin',
@@ -797,6 +905,20 @@ const memoryUsers = new Map<string, UserRecord>([
   ],
   [
     '1568826229006540882',
+    {
+      id: '1568826229006540882',
+      username: 'heysoybruno09',
+      discriminator: '8903',
+      avatar: null,
+      email: 'heysoybruno09@bruslyrics.com',
+      role: 'admin',
+      is_verified: 1,
+      created_at: '2026-11-08T00:00:00.000Z',
+      updated_at: '2026-11-08T00:00:00.000Z',
+    },
+  ],
+  [
+    'bru',
     {
       id: '1568826229006540882',
       username: 'Bru',
@@ -824,12 +946,12 @@ export async function upsertUser(
   }
 ): Promise<UserRecord> {
   const now = new Date().toISOString();
-  const isCreator =
+  const isAdmin =
     user.id === '1568826229006540882' ||
     user.username.toLowerCase() === 'heysoybruno09' ||
-    user.username.toLowerCase() === 'bru' ||
-    user.role === 'verified_creator' ||
+    user.username.toLowerCase() === 'heysoybruno099' ||
     user.role === 'admin';
+  const isCreator = isAdmin || user.username.toLowerCase() === 'bru' || user.role === 'verified_creator';
 
   const record: UserRecord = {
     id: user.id.trim(),
@@ -837,8 +959,8 @@ export async function upsertUser(
     discriminator: user.discriminator || '0',
     avatar: user.avatar || null,
     email: user.email || null,
-    role: isCreator ? 'verified_creator' : (user.role || 'contributor'),
-    is_verified: isCreator ? 1 : (user.is_verified ?? 1),
+    role: isAdmin ? 'admin' : isCreator ? 'verified_creator' : (user.role || 'contributor'),
+    is_verified: (isAdmin || isCreator) ? 1 : (user.is_verified ?? 1),
     created_at: now,
     updated_at: now,
   };
@@ -880,6 +1002,19 @@ export async function upsertUser(
 
 export async function getUserByUsername(env: Env, username: string): Promise<UserRecord | null> {
   const normUser = username.trim().toLowerCase().replace(/^@/, '');
+  if (normUser === 'heysoybruno09') {
+    return memoryUsers.get('heysoybruno09') || null;
+  }
+  if (normUser === 'heysoybruno099') {
+    return memoryUsers.get('heysoybruno099') || null;
+  }
+  if (normUser === '1568826229006540882') {
+    return memoryUsers.get('1568826229006540882') || null;
+  }
+  if (normUser === 'bru') {
+    return memoryUsers.get('bru') || null;
+  }
+
   if (env.DB) {
     try {
       const query = 'SELECT * FROM users WHERE LOWER(username) = ?1 LIMIT 1';
@@ -896,15 +1031,16 @@ export async function getUserByUsername(env: Env, username: string): Promise<Use
     }
   }
 
-  if (normUser === 'bru') {
-    return memoryUsers.get('1568826229006540882') || null;
-  }
-
   return null;
 }
 
 export async function getUserById(env: Env, id: string): Promise<UserRecord | null> {
   const cleanId = id.trim();
+  if (cleanId === '1568826229006540882') return memoryUsers.get('1568826229006540882') || null;
+  if (cleanId === 'heysoybruno09') return memoryUsers.get('heysoybruno09') || null;
+  if (cleanId === 'heysoybruno099') return memoryUsers.get('heysoybruno099') || null;
+  if (cleanId === 'bru') return memoryUsers.get('bru') || null;
+
   if (env.DB) {
     try {
       const query = 'SELECT * FROM users WHERE id = ?1 LIMIT 1';

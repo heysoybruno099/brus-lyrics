@@ -112,13 +112,18 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
     };
 
     const targetUrl = `${apiBaseUrl.replace(/\/+$/, '')}/v1/submit`;
+    const submitHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (user) {
+      submitHeaders['X-Admin-User'] = user.username;
+      submitHeaders['X-Admin-Id'] = user.id;
+    }
 
     try {
       let response = await fetch(targetUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: submitHeaders,
         body: JSON.stringify(payload),
       });
 
@@ -127,9 +132,7 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
         try {
           const fallbackResponse = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: submitHeaders,
             body: JSON.stringify(payload),
           });
           if (fallbackResponse.ok) {

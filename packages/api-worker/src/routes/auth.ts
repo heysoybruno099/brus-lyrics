@@ -82,11 +82,11 @@ authRoute.get('/auth/discord/user', async (c) => {
       ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=128`
       : `https://cdn.discordapp.com/embed/avatars/${parseInt(u.discriminator || '0', 10) % 5}.png`;
 
-    const isCreator =
+    const isAdmin =
       u.id === '1568826229006540882' ||
       u.username?.toLowerCase() === 'heysoybruno09' ||
-      u.username?.toLowerCase() === 'heysoybruno099' ||
-      u.username?.toLowerCase() === 'bru';
+      u.username?.toLowerCase() === 'heysoybruno099';
+    const isCreator = isAdmin || u.username?.toLowerCase() === 'bru';
 
     const savedUser = await upsertUser(c.env, {
       id: u.id,
@@ -94,8 +94,8 @@ authRoute.get('/auth/discord/user', async (c) => {
       discriminator: u.discriminator || '0',
       avatar: avatarUrl,
       email: u.email || null,
-      role: isCreator ? 'verified_creator' : 'contributor',
-      is_verified: isCreator ? 1 : 1,
+      role: isAdmin ? 'admin' : (isCreator ? 'verified_creator' : 'contributor'),
+      is_verified: (isAdmin || isCreator) ? 1 : 1,
     });
 
     return c.json({
@@ -143,7 +143,11 @@ authRoute.post('/auth/users', async (c) => {
     // Anti-spoofing security: Protect administrative accounts and roles from unauthenticated takeover
     if (lower === 'heysoybruno09' || lower === 'heysoybruno099' || lower === 'bru' || body.role === 'admin') {
       const adminHeader = c.req.header('X-Admin-User') || '';
-      if (!['heysoybruno09', 'heysoybruno099', 'bru'].includes(adminHeader.toLowerCase())) {
+      const adminIdHeader = c.req.header('X-Admin-Id') || '';
+      const isAdminCaller =
+        ['heysoybruno09', 'heysoybruno099', 'bru', '1568826229006540882'].includes(adminHeader.toLowerCase()) ||
+        adminIdHeader === '1568826229006540882';
+      if (!isAdminCaller) {
         return c.json({ error: 'Forbidden: Cannot claim protected administrative account' }, 403);
       }
     }

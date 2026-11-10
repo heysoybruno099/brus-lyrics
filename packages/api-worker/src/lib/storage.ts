@@ -1,4 +1,5 @@
 import type { Env } from '../types.js';
+import { getMemoryTTML } from './db.js';
 
 async function resolveWorkspacePath(relativeFilePath: string): Promise<string> {
   const path = await import('node:path');
@@ -27,12 +28,15 @@ export async function fetchTTML(env: Env, filePath: string): Promise<string | nu
   const normPath = filePath.replace(/\\/g, '/');
   const baseName = normPath.split('/').pop() || '';
 
-  // 1. Check in-memory map
+  // 1. Check in-memory map and memory submissions
   if (env.LOCAL_TTML_MAP) {
     if (env.LOCAL_TTML_MAP[normPath]) return env.LOCAL_TTML_MAP[normPath];
     if (env.LOCAL_TTML_MAP[filePath]) return env.LOCAL_TTML_MAP[filePath];
     if (env.LOCAL_TTML_MAP[baseName]) return env.LOCAL_TTML_MAP[baseName];
   }
+
+  const memTtml = getMemoryTTML(baseName);
+  if (memTtml) return memTtml;
 
   // 2. Check D1 database if submissions table has ttml_raw
   if (env.DB) {

@@ -6,18 +6,25 @@ export const adminRoute = new Hono<{ Bindings: Env }>();
 
 export function checkAdminAccess(c: any): boolean {
   const adminHeader = c.req.header('X-Admin-User');
+  const adminIdHeader = c.req.header('X-Admin-Id');
   const authHeader = c.req.header('Authorization');
   const queryUser = c.req.query('adminUser') || c.req.query('admin_user');
+  const queryId = c.req.query('adminId') || c.req.query('admin_id');
 
   const normalize = (val?: string | null) => (val || '').trim().toLowerCase().replace(/^@/, '');
-  const adminUsers = ['heysoybruno09', 'heysoybruno099', 'bru'];
+  const adminUsers = ['heysoybruno09', 'heysoybruno099', 'bru', '1568826229006540882'];
+  const adminIds = ['1568826229006540882'];
 
   const normHeader = normalize(adminHeader);
+  const normId = normalize(adminIdHeader);
   const normQuery = normalize(queryUser);
+  const normQueryId = normalize(queryId);
   const normAuth = authHeader ? authHeader.toLowerCase() : '';
 
   if (adminUsers.includes(normHeader)) return true;
+  if (adminIds.includes(normId) || adminUsers.includes(normId)) return true;
   if (adminUsers.includes(normQuery)) return true;
+  if (adminIds.includes(normQueryId) || adminUsers.includes(normQueryId)) return true;
   if (adminUsers.some((u) => normAuth.includes(u))) return true;
 
   return false;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { TTMLDocument, TTMLLine, TTMLSyllable } from '@brus-lyrics/shared-types';
 import type { UnifiedSongItem } from '../lib/types.js';
 import { VerifiedSticker } from './VerifiedSticker.js';
@@ -68,6 +68,22 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
   const activeLineIndex = document?.lines?.findIndex(
     (line: TTMLLine) => currentTimeMs >= line.begin && currentTimeMs <= line.end
   ) ?? -1;
+
+  const previewLyricLine = document?.lines?.[0]?.text?.trim() || '';
+  const activeLineText = activeLineIndex >= 0 ? document?.lines?.[activeLineIndex]?.text?.trim() : '';
+  const currentLyricLine = activeLineText || previewLyricLine || song.artist;
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.document) {
+      const lyricSuffix = currentLyricLine || song.artist;
+      window.document.title = `${song.title} - ${lyricSuffix} | BruLyrics`;
+    }
+    return () => {
+      if (typeof window !== 'undefined' && window.document) {
+        window.document.title = 'BruLyrics - Syllable-Synchronized Lyrics & Player';
+      }
+    };
+  }, [song.title, song.artist, currentLyricLine]);
 
   return (
     <div className="dedicated-song-container" style={{ maxWidth: 1040, margin: '0 auto', padding: '32px 20px 80px 20px' }}>
