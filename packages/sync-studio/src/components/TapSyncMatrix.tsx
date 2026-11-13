@@ -19,7 +19,7 @@ interface TapSyncMatrixProps {
   currentTimeMs: number;
   durationMs: number;
   onSeek: (ms: number) => void;
-  onChangeMetadata?: (meta: Partial<TTMLMetadata>, newLines?: TTMLLine[]) => void;
+  onChangeMetadata?: (meta: Partial<TTMLMetadata>, newLines?: TTMLLine[], rawXml?: string) => void;
 }
 
 export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
@@ -315,8 +315,9 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
           meta.durationMs = parsed.lines[parsed.lines.length - 1]!.end;
         }
 
+        const rawXml = (fmt === 'ttml' || text.includes('<tt')) ? text : undefined;
         onChangeLines(parsed.lines);
-        onChangeMetadata?.(meta, parsed.lines);
+        onChangeMetadata?.(meta, parsed.lines, rawXml);
         setSyncFidelity(parsed.mode);
         setSelectedLineIdx(0);
         setSelectedSylIdx(0);
@@ -358,8 +359,9 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
           meta.durationMs = finalLines[finalLines.length - 1]!.end;
         }
 
+        const rawXml = (fmt === 'ttml' || uploadContent.includes('<tt')) ? uploadContent : undefined;
         onChangeLines(finalLines);
-        onChangeMetadata?.(meta, finalLines);
+        onChangeMetadata?.(meta, finalLines, rawXml);
         setSelectedLineIdx(0);
         setSelectedSylIdx(0);
         setUploadStatus(`Successfully imported ${finalLines.length} lines into matrix!`);

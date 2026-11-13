@@ -49,7 +49,7 @@ export function serializeStudioToTTML(
         }
       }
 
-      const spansXml = leadSyllables
+      let spansXml = leadSyllables
         .map((syl) => {
           const sbStr = formatTimestampTTML(syl.begin);
           const seStr = formatTimestampTTML(syl.end);
@@ -57,8 +57,28 @@ export function serializeStudioToTTML(
         })
         .join('\n');
 
+      if (!spansXml && line.text) {
+        spansXml = `        <span begin="${bStr}" end="${eStr}">${escapeXml(line.text)}</span>`;
+      }
+
       let bgXml = '';
-      if (bgSyllables.length > 0) {
+      if (line.backgroundVocals && line.backgroundVocals.length > 0) {
+        for (const bg of line.backgroundVocals) {
+          const bgBegin = formatTimestampTTML(bg.begin);
+          const bgEnd = formatTimestampTTML(bg.end);
+          const childSpans =
+            bg.syllables && bg.syllables.length > 0
+              ? bg.syllables
+                  .map((syl) => {
+                    const sbStr = formatTimestampTTML(syl.begin);
+                    const seStr = formatTimestampTTML(syl.end);
+                    return `          <span begin="${sbStr}" end="${seStr}">${escapeXml(syl.text)}</span>`;
+                  })
+                  .join('\n')
+              : `          <span begin="${bgBegin}" end="${bgEnd}">${escapeXml(bg.text)}</span>`;
+          bgXml += `\n        <span begin="${bgBegin}" end="${bgEnd}" ttm:role="x-bg">\n${childSpans}\n        </span>`;
+        }
+      } else if (bgSyllables.length > 0) {
         const bgBegin = formatTimestampTTML(bgSyllables[0]!.begin);
         const bgEnd = formatTimestampTTML(bgSyllables[bgSyllables.length - 1]!.end);
         const childSpans = bgSyllables
@@ -160,19 +180,50 @@ export function serializeLinesToJSON(metadata: TTMLMetadata, lines: TTMLLine[]):
         ytmId: metadata.ytmId || null,
         contributor: metadata.contributor || 'Community',
       },
-      lines: lines.map((line) => ({
-        id: line.id,
-        begin: line.begin,
-        end: line.end,
-        text: line.text,
-        agent: line.agent || 'v1',
-        syllables: line.syllables?.map((s) => ({
-          begin: s.begin,
-          end: s.end,
-          text: s.text,
-          role: s.role || 'lead',
-        })) || [],
-      })),
+      lines: lines.map((line) => {
+        const bgVocals =
+          line.backgroundVocals && line.backgroundVocals.length > 0
+            ? line.backgroundVocals.map((bg) => ({
+                begin: bg.begin,
+                end: bg.end,
+                text: bg.text,
+                agent: bg.agent || 'v1',
+                role: 'x-bg',
+                syllables:
+                  bg.syllables && bg.syllables.length > 0
+                    ? bg.syllables.map((s) => ({
+                        begin: s.begin,
+                        end: s.end,
+                        text: s.text,
+                        role: 'x-bg',
+                      }))
+                    : [{ begin: bg.begin, end: bg.end, text: bg.text, role: 'x-bg' }],
+              }))
+            : undefined;
+
+        const subtext =
+          line.backgroundVocals && line.backgroundVocals.length > 0
+            ? line.backgroundVocals.map((bg) => bg.text).join(' / ')
+            : undefined;
+
+        return {
+          id: line.id,
+          begin: line.begin,
+          end: line.end,
+          text: line.text,
+          agent: line.agent || 'v1',
+          role: line.role || 'lead',
+          ...(subtext ? { subtext } : {}),
+          ...(bgVocals ? { backgroundVocals: bgVocals } : {}),
+          syllables:
+            line.syllables?.map((s) => ({
+              begin: s.begin,
+              end: s.end,
+              text: s.text,
+              role: s.role || 'lead',
+            })) || [],
+        };
+      }),
     },
     null,
     2

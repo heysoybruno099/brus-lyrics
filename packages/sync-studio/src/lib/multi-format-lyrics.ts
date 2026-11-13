@@ -128,26 +128,13 @@ export function parseLrcLyrics(content: string, totalDurationMs?: number): { lin
       }
       textOnly = cur.rawText.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
     } else {
-      // Line-level: split into words and distribute or create single-line syllable
-      const words = cur.rawText.split(/\s+/).filter(Boolean);
-      if (words.length > 0) {
-        const wordDuration = Math.max(100, Math.floor((lineEnd - lineBegin) / words.length));
-        for (let w = 0; w < words.length; w++) {
-          const wBegin = lineBegin + w * wordDuration;
-          const wEnd = w === words.length - 1 ? lineEnd : wBegin + wordDuration;
-          syllables.push({
-            begin: wBegin,
-            end: wEnd,
-            text: w < words.length - 1 ? `${words[w]} ` : words[w]!,
-          });
-        }
-      } else {
-        syllables.push({
-          begin: lineBegin,
-          end: lineEnd,
-          text: cur.rawText,
-        });
-      }
+      // One line per sync: preserve as a single line, do not synthesize fake word syncs
+      syllables.push({
+        begin: lineBegin,
+        end: lineEnd,
+        text: cur.rawText,
+      });
+      textOnly = cur.rawText;
     }
 
     lines.push({

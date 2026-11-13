@@ -111,51 +111,24 @@ export const App: React.FC = () => {
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
 
   // Studio Workstation state
+  const [studioRawTtml, setStudioRawTtml] = useState<string | null>(null);
+
+  // Studio Workstation state - clean slate starting from zero
   const [studioMetadata, setStudioMetadata] = useState<TTMLMetadata>(() => {
     const draft = getStoredStudioDraft();
     if (draft?.metadata) return draft.metadata;
     return {
-      title: 'Ella Baila Sola',
-      artist: 'Eslabon Armado, Peso Pluma',
-      spotifyId: '3qhlB30KknSeipLHZaYeKc',
-      ytmId: '1TVyEcR5pcw',
+      title: '',
+      artist: '',
       contributor: 'Community',
-      durationMs: 165600,
+      durationMs: 0,
     };
   });
 
   const [studioLines, setStudioLines] = useState<TTMLLine[]>(() => {
     const draft = getStoredStudioDraft();
     if (draft?.lines && draft.lines.length > 0) return draft.lines;
-    return [
-      {
-        id: 'line_1',
-        begin: 15500,
-        end: 18200,
-        agent: 'v1',
-        text: 'Compa que le parece esa morra',
-        syllables: [
-          { begin: 15500, end: 16100, text: 'Compa ' },
-          { begin: 16100, end: 16900, text: 'que ' },
-          { begin: 16900, end: 17500, text: 'le ' },
-          { begin: 17500, end: 18200, text: 'parece ' },
-        ],
-      },
-      {
-        id: 'line_2',
-        begin: 18500,
-        end: 22000,
-        agent: 'v2',
-        text: 'La que anda bailando sola',
-        syllables: [
-          { begin: 18500, end: 19200, text: 'La ' },
-          { begin: 19200, end: 20000, text: 'que ' },
-          { begin: 20000, end: 20800, text: 'anda ' },
-          { begin: 20800, end: 21500, text: 'bailando ' },
-          { begin: 21500, end: 22000, text: 'sola' },
-        ],
-      },
-    ];
+    return [];
   });
 
   // Sync Editor Workstation Save & Export State
@@ -366,6 +339,17 @@ export const App: React.FC = () => {
     }
     // 2. Discord OAuth redirect check
     else if (hash.includes('access_token')) {
+      // Check for local dev relay state
+      const hashParams = new URLSearchParams(hash);
+      const stateParam = hashParams.get('state');
+      if (stateParam && stateParam.startsWith('relay=')) {
+        const relayOrigin = decodeURIComponent(stateParam.replace('relay=', ''));
+        if (relayOrigin.startsWith('http://localhost:') || relayOrigin.startsWith('http://127.0.0.1:')) {
+          window.location.href = `${relayOrigin}/#${hash}`;
+          return;
+        }
+      }
+
       const redirectToken = parseOAuthRedirectToken();
       if (redirectToken) {
         fetchDiscordUserProfile(redirectToken).then((u) => {
@@ -729,7 +713,10 @@ export const App: React.FC = () => {
 
   // Studio metadata & song change handler (triggered by TTML/LRC/JSON upload or editor edits)
   const handleStudioMetadataChange = useCallback(
-    (meta: Partial<TTMLMetadata>, newLines?: TTMLLine[]) => {
+    (meta: Partial<TTMLMetadata>, newLines?: TTMLLine[], rawXml?: string) => {
+      if (rawXml !== undefined) {
+        setStudioRawTtml(rawXml || null);
+      }
       setStudioMetadata((prev) => {
         const merged: TTMLMetadata = { ...prev, ...meta };
         const dur =
@@ -958,7 +945,7 @@ export const App: React.FC = () => {
   };
 
   const handleExportTTML = () => {
-    const xml = serializeStudioToTTML(studioMetadata, studioLines);
+    const xml = studioRawTtml || serializeStudioToTTML(studioMetadata, studioLines);
     downloadFile(xml, `${getExportBaseName()}.ttml`, 'application/xml');
   };
 
@@ -996,7 +983,7 @@ export const App: React.FC = () => {
       message: 'Submitting synchronized lyrics to catalog...',
     });
 
-    const xml = serializeStudioToTTML(studioMetadata, studioLines);
+    const xml = studioRawTtml || serializeStudioToTTML(studioMetadata, studioLines);
     const duration =
       studioMetadata.durationMs ||
       (studioLines.length > 0 ? studioLines[studioLines.length - 1]!.end : (activeSong?.durationMs || 180000));
@@ -1032,13 +1019,26 @@ export const App: React.FC = () => {
     }
 
     try {
-      let response = await fetch(targetUrl, {
-        method: 'POST',
-        headers: submitHeaders,
-        body: JSON.stringify(payload),
-      });
+      let response: Response;
+      try {
+        response = await fetch(targetUrl, {
+          method: 'POST',
+          headers: submitHeaders,
+          body: JSON.stringify(payload),
+        });
+      } catch (networkErr: any) {
+        if (!targetUrl.startsWith(DEFAULT_PRODUCTION_API)) {
+          response = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit${adminQuery}`, {
+            method: 'POST',
+            headers: submitHeaders,
+            body: JSON.stringify(payload),
+          });
+        } else {
+          throw networkErr;
+        }
+      }
 
-      if (!response.ok && !targetUrl.includes('heysoybruno09')) {
+      if (!response.ok && !targetUrl.startsWith(DEFAULT_PRODUCTION_API)) {
         try {
           const fallbackRes = await fetch(`${DEFAULT_PRODUCTION_API}/v1/submit${adminQuery}`, {
             method: 'POST',
@@ -1377,6 +1377,7 @@ export const App: React.FC = () => {
               <LivePreviewDeck
                 metadata={studioMetadata}
                 lines={studioLines}
+                rawTtml={studioRawTtml}
                 currentTimeMs={currentTimeMs}
                 onSeek={handleSeek}
                 user={user}

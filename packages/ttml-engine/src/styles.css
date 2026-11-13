@@ -114,6 +114,10 @@
   filter: blur(0.5px);
 }
 
+.brus-line.is-past .brus-word-fill {
+  --word-progress: 1;
+}
+
 /* Words / Syllable Spans */
 .brus-line-content {
   display: inline;

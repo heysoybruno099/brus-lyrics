@@ -130,6 +130,19 @@ export function parseJsonLyrics(
 
       // Extract Background vocals if present in item.Background
       const bgLines: TTMLLine[] = [];
+      const rawSub1 = item.subtext ?? item.subText ?? item.sub_text ?? item.translation ?? lead.subtext ?? lead.subText;
+      if (rawSub1 && typeof rawSub1 === 'string' && rawSub1.trim()) {
+        const subClean = sanitizeText(rawSub1).trim();
+        bgLines.push({
+          id: `line_${i + 1}_sub`,
+          begin: beginMs,
+          end: endMs,
+          agent: 'v1',
+          role: 'x-bg',
+          text: subClean,
+          syllables: [{ begin: beginMs, end: endMs, text: subClean, role: 'x-bg' }],
+        });
+      }
       const rawBackground = item.Background || item.background || item.backgrounds;
       if (Array.isArray(rawBackground) && rawBackground.length > 0) {
         for (let b = 0; b < rawBackground.length; b++) {
@@ -247,6 +260,19 @@ export function parseJsonLyrics(
 
       // Extract Background vocals in draft.lines (item.backgrounds)
       const bgLines: TTMLLine[] = [];
+      const rawSub2 = item.subtext ?? item.subText ?? item.sub_text ?? item.translation;
+      if (rawSub2 && typeof rawSub2 === 'string' && rawSub2.trim()) {
+        const subClean = sanitizeText(rawSub2).trim();
+        bgLines.push({
+          id: `line_${i + 1}_sub`,
+          begin: beginMs,
+          end: endMs,
+          agent: 'v1',
+          role: 'x-bg',
+          text: subClean,
+          syllables: [{ begin: beginMs, end: endMs, text: subClean, role: 'x-bg' }],
+        });
+      }
       const rawBackground = item.backgrounds || item.Background;
       if (Array.isArray(rawBackground) && rawBackground.length > 0) {
         for (let b = 0; b < rawBackground.length; b++) {
@@ -360,23 +386,77 @@ export function parseJsonLyrics(
           });
         }
       } else {
-        const words = lineText.split(/\s+/).filter(Boolean);
-        if (words.length > 0) {
-          const dur = Math.max(100, Math.floor((endMs - beginMs) / words.length));
-          for (let w = 0; w < words.length; w++) {
-            const wb = beginMs + w * dur;
-            const we = w === words.length - 1 ? endMs : wb + dur;
-            syllables.push({
-              begin: wb,
-              end: we,
-              text: w < words.length - 1 ? `${words[w]} ` : words[w]!,
+        // Line-level sync: preserve as one line, do not synthesize fake word syncs
+        syllables.push({
+          begin: beginMs,
+          end: endMs,
+          text: lineText,
+        });
+      }
+
+      // Extract subtext / background vocals in Structure 3
+      const bgLines: TTMLLine[] = [];
+      const rawSub = item.subtext ?? item.subText ?? item.sub_text ?? item.translation;
+      if (rawSub && typeof rawSub === 'string' && rawSub.trim()) {
+        const subClean = sanitizeText(rawSub).trim();
+        bgLines.push({
+          id: `line_${i + 1}_sub`,
+          begin: beginMs,
+          end: endMs,
+          agent: 'v1',
+          role: 'x-bg',
+          text: subClean,
+          syllables: [
+            {
+              begin: beginMs,
+              end: endMs,
+              text: subClean,
+              role: 'x-bg',
+            },
+          ],
+        });
+      }
+
+      const rawBg = item.backgroundVocals || item.background || item.backgrounds;
+      if (Array.isArray(rawBg) && rawBg.length > 0) {
+        for (let b = 0; b < rawBg.length; b++) {
+          const bgItem = rawBg[b];
+          if (!bgItem) continue;
+          const bgBegin = toMs(bgItem.begin ?? bgItem.start ?? beginMs);
+          const bgEnd = toMs(bgItem.end ?? bgItem.endTimeMs ?? endMs);
+          const bgText = sanitizeText(bgItem.text ?? bgItem.words ?? '').trim();
+          const bgSyllables: TTMLSyllable[] = [];
+          const bgTokens = bgItem.syllables || bgItem.words || bgItem.tokens || [];
+          if (Array.isArray(bgTokens) && bgTokens.length > 0) {
+            for (let t = 0; t < bgTokens.length; t++) {
+              const tok = bgTokens[t];
+              const tBegin = toMs(tok.begin ?? tok.start ?? bgBegin);
+              const tEnd = toMs(tok.end ?? tok.endTimeMs ?? bgEnd);
+              let tText = sanitizeText(tok.text ?? tok.word ?? '');
+              if (t < bgTokens.length - 1 && !tText.endsWith(' ')) tText += ' ';
+              bgSyllables.push({
+                begin: tBegin,
+                end: Math.max(tBegin + 50, tEnd),
+                text: tText,
+                role: 'x-bg',
+              });
+            }
+          } else if (bgText) {
+            bgSyllables.push({
+              begin: bgBegin,
+              end: bgEnd,
+              text: bgText,
+              role: 'x-bg',
             });
           }
-        } else {
-          syllables.push({
-            begin: beginMs,
-            end: endMs,
-            text: lineText,
+          bgLines.push({
+            id: `line_${i + 1}_bg_${b + 1}`,
+            begin: bgBegin,
+            end: bgEnd,
+            agent: 'v1',
+            role: 'x-bg',
+            text: bgText,
+            syllables: bgSyllables,
           });
         }
       }
@@ -389,6 +469,7 @@ export function parseJsonLyrics(
         agent,
         text: lineText,
         syllables,
+        ...(bgLines.length > 0 ? { backgroundVocals: bgLines } : {}),
       });
     }
   }

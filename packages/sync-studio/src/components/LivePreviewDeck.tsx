@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { BrusLyricsRenderer } from '@brus-lyrics/ttml-engine';
+import { BrusLyricsRenderer, parseTTML } from '@brus-lyrics/ttml-engine';
 import type { TTMLLine, TTMLMetadata, SubmitLyricsResponse } from '@brus-lyrics/shared-types';
 import { serializeStudioToTTML, linesToTTMLDocument } from '../lib/ttml-serializer.js';
 import { getApiBaseUrl, DEFAULT_PRODUCTION_API } from '../lib/config.js';
@@ -13,6 +13,7 @@ interface LivePreviewDeckProps {
   apiBaseUrl?: string;
   user?: DiscordUser | null;
   onRequireAuth?: () => void;
+  rawTtml?: string | null;
 }
 
 export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
@@ -23,6 +24,7 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
   apiBaseUrl = getApiBaseUrl(),
   user = null,
   onRequireAuth,
+  rawTtml = null,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<BrusLyricsRenderer | null>(null);
@@ -60,16 +62,21 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
     };
   }, []);
 
-  // Update renderer document when lines or metadata change
+  // Update renderer document when lines, metadata, or raw TTML change
   useEffect(() => {
     if (!rendererRef.current) return;
-    const doc = linesToTTMLDocument(metadata, lines);
-    rendererRef.current.setDocument(doc);
-  }, [lines, metadata]);
+    if (rawTtml) {
+      const doc = parseTTML(rawTtml);
+      rendererRef.current.setDocument(doc);
+    } else {
+      const doc = linesToTTMLDocument(metadata, lines);
+      rendererRef.current.setDocument(doc);
+    }
+  }, [lines, metadata, rawTtml]);
 
   // Handle Download .TTML File
   const handleDownloadTTML = () => {
-    const xml = serializeStudioToTTML(metadata, lines);
+    const xml = rawTtml || serializeStudioToTTML(metadata, lines);
     const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -91,7 +98,7 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
   const handlePublish = async () => {
     setPublishStatus({ type: 'loading', message: 'Submitting lyrics to catalog...' });
 
-    const xml = serializeStudioToTTML(metadata, lines);
+    const xml = rawTtml || serializeStudioToTTML(metadata, lines);
     const duration = metadata.durationMs || (lines.length > 0 ? lines[lines.length - 1]!.end : 180000);
     const effectiveContributor = user?.username ? `@${user.username}` : (metadata.contributor || 'Community');
 

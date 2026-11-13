@@ -125,6 +125,57 @@ describe('LRC to TTML Conversion', () => {
   });
 });
 
+const testMockCatalog: CatalogEntry[] = [
+  {
+    id: 'song_4cOdK2wGLETKBW3PvgPWqT',
+    spotify_id: '4cOdK2wGLETKBW3PvgPWqT',
+    ytm_id: 'yKNxeF4KMsY',
+    isrc: null,
+    title: 'Yellow',
+    artist: 'Coldplay',
+    title_norm: 'yellow',
+    artist_norm: 'coldplay',
+    duration_ms: 266773,
+    file_path: 'database/ttml/4cOdK2wGLETKBW3PvgPWqT.ttml',
+    contributor: 'Bru',
+    updated_at: '2026-11-07T23:50:00.000Z',
+    is_verified: 1,
+  },
+  {
+    id: 'song_entre_golpes',
+    spotify_id: 'spotify_entre_golpes',
+    ytm_id: 'ytm_entre_golpes',
+    isrc: null,
+    title: 'Entre Golpes y Besos',
+    artist: 'Los Dareyes de la Sierra',
+    title_norm: 'entre golpes y besos',
+    artist_norm: 'los dareyes de la sierra',
+    duration_ms: 192000,
+    file_path: 'database/ttml/entre_golpes.ttml',
+    contributor: 'Bru',
+    updated_at: '2026-11-07T23:50:00.000Z',
+    is_verified: 1,
+  },
+];
+
+const testMockTTMLMap: Record<string, string> = {
+  'database/ttml/4cOdK2wGLETKBW3PvgPWqT.ttml': `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:title>Yellow</ttm:title><ttm:agent>Coldplay</ttm:agent></metadata></head><body><div><p begin="00:00:01.000" end="00:00:04.000"><span>Look at the stars</span></p></div></body></tt>`,
+  'database/ttml/entre_golpes.ttml': `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:title>Entre Golpes y Besos</ttm:title><ttm:agent>Los Dareyes de la Sierra</ttm:agent></metadata></head><body><div><p begin="00:00:01.000" end="00:00:04.000"><span>Entre Golpes</span></p></div></body></tt>`,
+};
+
+const sharedTestCatalog = [...testMockCatalog];
+const sharedTestTTMLMap = { ...testMockTTMLMap };
+
+const originalAppRequest = app.request.bind(app);
+(app as any).request = (path: string, init?: RequestInit, env?: Record<string, unknown>) => {
+  const testEnv = {
+    LOCAL_CATALOG: sharedTestCatalog,
+    LOCAL_TTML_MAP: sharedTestTTMLMap,
+    ...env,
+  };
+  return originalAppRequest(path, init, testEnv);
+};
+
 describe('Cloudflare Worker API Routes', () => {
   it('GET / returns service status and online confirmation', async () => {
     const res = await app.request('/');

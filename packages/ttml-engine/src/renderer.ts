@@ -283,25 +283,26 @@ export class BrusLyricsRenderer {
 
     const currentTime = this.options.getCurrentTimeMs();
 
-    // Find active line index
+    // Find active line index: a line is active ONLY when currentTime is between its begin and end
     let activeIdx = -1;
+    let nextUpcomingIdx = -1;
+    let lastSungIdx = -1;
+
     for (let i = 0; i < this.lineRefs.length; i++) {
       const line = this.lineRefs[i]!.line;
       if (currentTime >= line.begin && currentTime <= line.end) {
         activeIdx = i;
         break;
       }
-      if (currentTime < line.begin) {
-        activeIdx = Math.max(0, i - 1);
-        break;
+      if (currentTime > line.end) {
+        lastSungIdx = i;
+      } else if (currentTime < line.begin && nextUpcomingIdx === -1) {
+        nextUpcomingIdx = i;
       }
     }
 
-    if (activeIdx === -1 && currentTime >= this.lineRefs[this.lineRefs.length - 1]!.line.end) {
-      activeIdx = this.lineRefs.length - 1;
-    }
-
     this.activeLineIndex = activeIdx;
+    const referenceIdx = activeIdx >= 0 ? activeIdx : (nextUpcomingIdx >= 0 ? nextUpcomingIdx : lastSungIdx);
 
     // Update lines classes and word progress
     for (let i = 0; i < this.lineRefs.length; i++) {
@@ -312,7 +313,7 @@ export class BrusLyricsRenderer {
       const isCurrent = i === activeIdx;
       const isPast = currentTime > line.end;
       const isFuture = currentTime < line.begin;
-      const distance = Math.abs(i - activeIdx);
+      const distance = referenceIdx >= 0 ? Math.abs(i - referenceIdx) : 0;
 
       el.classList.toggle('is-active', isCurrent);
       el.classList.toggle('is-past', isPast);
@@ -334,26 +335,37 @@ export class BrusLyricsRenderer {
     }
 
     // Centering & Spring Scroll Physics
-    if (this.viewportEl && this.trackEl && activeIdx >= 0) {
-      const activeLineEl = this.lineRefs[activeIdx]?.element;
-      if (activeLineEl) {
-        const viewportHeight = this.viewportEl.clientHeight || 500;
-        const targetOffset = viewportHeight * this.options.targetHeightRatio;
-        const lineOffsetTop = activeLineEl.offsetTop;
+    if (this.viewportEl && this.trackEl) {
+      const scrollTargetIdx = activeIdx >= 0 ? activeIdx : nextUpcomingIdx;
+      if (scrollTargetIdx >= 0) {
+        const targetEl = this.lineRefs[scrollTargetIdx]?.element;
+        if (targetEl) {
+          const viewportHeight = this.viewportEl.clientHeight || 500;
+          const targetOffset = viewportHeight * this.options.targetHeightRatio;
+          const lineOffsetTop = targetEl.offsetTop;
 
-        this.targetScrollY = lineOffsetTop - targetOffset;
-        if (this.targetScrollY < 0) this.targetScrollY = 0;
-
-        if (this.options.enableSpringScroll) {
-          // Smooth spring interpolation
-          const delta = this.targetScrollY - this.currentScrollY;
-          this.currentScrollY += delta * 0.14;
-        } else {
-          this.currentScrollY = this.targetScrollY;
+          this.targetScrollY = lineOffsetTop - targetOffset;
+          if (this.targetScrollY < 0) this.targetScrollY = 0;
         }
-
-        this.trackEl.style.transform = `translate3d(0, ${-Math.round(this.currentScrollY)}px, 0)`;
+      } else if (lastSungIdx >= 0 && nextUpcomingIdx === -1) {
+        const targetEl = this.lineRefs[lastSungIdx]?.element;
+        if (targetEl) {
+          const viewportHeight = this.viewportEl.clientHeight || 500;
+          const targetOffset = viewportHeight * this.options.targetHeightRatio;
+          this.targetScrollY = Math.max(0, targetEl.offsetTop - targetOffset);
+        }
+      } else {
+        this.targetScrollY = 0;
       }
+
+      if (this.options.enableSpringScroll) {
+        const delta = this.targetScrollY - this.currentScrollY;
+        this.currentScrollY += delta * 0.14;
+      } else {
+        this.currentScrollY = this.targetScrollY;
+      }
+
+      this.trackEl.style.transform = `translate3d(0, ${-Math.round(this.currentScrollY)}px, 0)`;
     }
   }
 

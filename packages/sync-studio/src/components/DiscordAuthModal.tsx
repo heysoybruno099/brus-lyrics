@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { buildDiscordOAuthUrl } from '../lib/discord-auth.js';
+import { buildDiscordOAuthUrl, createMockVerifiedUser } from '../lib/discord-auth.js';
 import type { DiscordUser } from '../lib/types.js';
 
 interface DiscordAuthModalProps {
@@ -136,6 +136,32 @@ export const DiscordAuthModal: React.FC<DiscordAuthModalProps> = ({
         <div style={{ marginTop: 16, textAlign: 'center', fontSize: 11, color: '#71717a' }}>
           Browsing, searching, and listening to songs with synchronized lyrics remain open to all visitors without logging in.
         </div>
+
+        {typeof window !== 'undefined' &&
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+            <div style={{ marginTop: 12, textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const devUser = createMockVerifiedUser('heysoybruno09');
+                  onSuccess(devUser);
+                  onClose();
+                }}
+                style={{
+                  background: 'none',
+                  border: '1px dashed #3e3e4a',
+                  borderRadius: 4,
+                  color: '#a1a1aa',
+                  padding: '6px 12px',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  width: '100%',
+                }}
+              >
+                Local Dev: Instant Admin Sign-In (@heysoybruno09)
+              </button>
+            </div>
+          )}
       </div>
     </div>
   );

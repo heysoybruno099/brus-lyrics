@@ -39,8 +39,19 @@ export function clearUser(): void {
 }
 
 export function buildDiscordOAuthUrl(redirectUri?: string): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://brus-lyrics.pages.dev';
-  const redirect = redirectUri || `${origin}/auth/callback`;
+  const isLocal =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  // In Discord Developer Portal, only https://brus-lyrics.pages.dev/auth/callback is registered.
+  // When running on localhost, use the production redirect with relay state pointing back to localhost.
+  const redirect =
+    redirectUri ||
+    (isLocal
+      ? 'https://brus-lyrics.pages.dev/auth/callback'
+      : typeof window !== 'undefined'
+      ? `${window.location.origin.replace(/\/+$/, '')}/auth/callback`
+      : 'https://brus-lyrics.pages.dev/auth/callback');
 
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,
@@ -48,6 +59,10 @@ export function buildDiscordOAuthUrl(redirectUri?: string): string {
     scope: 'identify email',
     redirect_uri: redirect,
   });
+
+  if (isLocal && typeof window !== 'undefined') {
+    params.set('state', `relay=${encodeURIComponent(window.location.origin)}`);
+  }
 
   return `https://discord.com/api/oauth2/authorize?${params.toString()}`;
 }

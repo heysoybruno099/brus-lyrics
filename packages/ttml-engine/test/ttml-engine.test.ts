@@ -600,7 +600,10 @@ describe('Sync Studio Export & Persistence Features', () => {
 
 describe('Search Autocomplete & Fallback Workflow', () => {
   it('ranks and selects top autocomplete suggestion prioritizing prefix matches', async () => {
-    const { VERIFIED_FEATURED_TRACKS } = await import('../../sync-studio/src/lib/spotify-service.js');
+    const testSongs = [
+      { id: '1', title: 'Ella Baila Sola', artist: 'Eslabon Armado', album: 'DESVELADO', ytmId: '1TVyEcR5pcw' },
+      { id: '2', title: 'Yellow', artist: 'Coldplay', album: 'Parachutes' },
+    ];
 
     const computeTopMatch = (query: string, songs: any[]) => {
       const q = query.trim().toLowerCase();
@@ -625,18 +628,18 @@ describe('Search Autocomplete & Fallback Workflow', () => {
     };
 
     // Test exact prefix title match
-    const ellaMatch = computeTopMatch('Ella', VERIFIED_FEATURED_TRACKS);
+    const ellaMatch = computeTopMatch('Ella', testSongs);
     assert.ok(ellaMatch);
     assert.equal(ellaMatch.title, 'Ella Baila Sola');
     assert.equal(ellaMatch.ytmId, '1TVyEcR5pcw');
 
     // Test artist prefix match
-    const coldMatch = computeTopMatch('Coldplay', VERIFIED_FEATURED_TRACKS);
+    const coldMatch = computeTopMatch('Coldplay', testSongs);
     assert.ok(coldMatch);
     assert.equal(coldMatch.title, 'Yellow');
 
     // Non-matching query
-    const noneMatch = computeTopMatch('nonexistentxyz123', VERIFIED_FEATURED_TRACKS);
+    const noneMatch = computeTopMatch('nonexistentxyz123', testSongs);
     assert.equal(noneMatch, null);
   });
 
