@@ -109,7 +109,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           Sign In Required
         </h2>
         <p style={{ fontSize: 13, color: '#a1a1aa', marginBottom: 20 }}>
-          Please sign in with Discord to view your contributor profile and manage your website username.
+          Sign in with Discord to view your contributor profile and sync lyrics.
         </p>
         <button
           type="button"

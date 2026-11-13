@@ -1441,6 +1441,7 @@ export const App: React.FC = () => {
         {currentView === 'admin' && (
           <AdminPanel
             user={user}
+            onUpdateUser={setUser}
             onSelectAndPlaySong={handlePlaySongCard}
             onOpenStudioWithTrack={(track) => {
               handleOpenStudioWithTrack({

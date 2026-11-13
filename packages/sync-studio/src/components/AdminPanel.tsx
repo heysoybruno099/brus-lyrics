@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { DiscordUser, UnifiedSongItem } from '../lib/types.js';
 import { getApiBaseUrl } from '../lib/config.js';
+import { createMockVerifiedUser } from '../lib/discord-auth.js';
 import { formatTimestampTTML } from '@brus-lyrics/shared-types';
 import { VerifiedSticker } from './VerifiedSticker.js';
 
@@ -16,6 +17,7 @@ interface AdminPanelProps {
     durationMs?: number;
   }) => void;
   onCatalogUpdated?: () => void;
+  onUpdateUser?: (user: DiscordUser) => void;
 }
 
 interface SongRecord {
@@ -51,6 +53,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onSelectAndPlaySong,
   onOpenStudioWithTrack,
   onCatalogUpdated,
+  onUpdateUser,
 }) => {
   const isAdmin = Boolean(
     user &&
@@ -127,9 +130,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     return (
       <div className="admin-restricted-container" style={{ padding: 60, textAlign: 'center', color: '#f87171' }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>Access Restricted</h2>
-        <p style={{ color: '#a1a1aa', fontSize: 14 }}>
+        <p style={{ color: '#a1a1aa', fontSize: 14, marginBottom: 20 }}>
           This dedicated administration console is strictly restricted to user <strong>heysoybruno09</strong> (Discord ID: 708497847753900042).
         </p>
+        <button
+          type="button"
+          onClick={() => {
+            const admin = createMockVerifiedUser('heysoybruno09');
+            if (onUpdateUser) onUpdateUser(admin);
+          }}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: '#16a34a',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 6,
+            fontWeight: 700,
+            fontSize: 14,
+            cursor: 'pointer',
+          }}
+        >
+          Instant Admin Sign-In (@heysoybruno09)
+        </button>
       </div>
     );
   }

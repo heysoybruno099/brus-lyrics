@@ -213,7 +213,7 @@ export function parseTTML(rawXml: string): TTMLDocument {
     const pAttrs = parseAttributes(pAttrsRaw);
 
     const lineBegin = parseTimestampTTML(pAttrs['begin'] || '0');
-    const lineEnd = parseTimestampTTML(pAttrs['end'] || String(lineBegin));
+    const lineEnd = pAttrs['end'] ? parseTimestampTTML(pAttrs['end']) : lineBegin;
 
     const agentAttr = (pAttrs['ttm:agent'] || pAttrs['agent'] || 'v1').toLowerCase();
     const agent: VocalAgent = agentAttr === 'v2' ? 'v2' : 'v1';
@@ -228,18 +228,25 @@ export function parseTTML(rawXml: string): TTMLDocument {
       const isBg = span.attrs['ttm:role'] === 'x-bg' || span.attrs['role'] === 'x-bg';
 
       if (isBg) {
-        const bgBegin = parseTimestampTTML(span.attrs['begin'] || String(lineBegin));
-        const bgEnd = parseTimestampTTML(span.attrs['end'] || String(lineEnd));
+        const childSpans = parseTopLevelSpans(span.innerContent);
         const bgSyllables: TTMLSyllable[] = [];
 
-        const childSpans = parseTopLevelSpans(span.innerContent);
         if (childSpans.length > 0) {
           for (const child of childSpans) {
             const parsedSyl = parseSyllableSpan(child.attrs, child.innerContent, child.trailing);
             if (!parsedSyl.role) parsedSyl.role = 'x-bg';
             bgSyllables.push(parsedSyl);
           }
-        } else {
+        }
+
+        const bgBegin = span.attrs['begin']
+          ? parseTimestampTTML(span.attrs['begin'])
+          : (bgSyllables.length > 0 ? bgSyllables[0]!.begin : lineBegin);
+        const bgEnd = span.attrs['end']
+          ? parseTimestampTTML(span.attrs['end'])
+          : (bgSyllables.length > 0 ? bgSyllables[bgSyllables.length - 1]!.end : lineEnd);
+
+        if (bgSyllables.length === 0) {
           bgSyllables.push({
             begin: bgBegin,
             end: bgEnd,

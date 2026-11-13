@@ -38,20 +38,63 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
+  const prevScrollLineRef = useRef<number>(-1);
 
-  // Auto-scroll to current active line
-  useEffect(() => {
-    if (activeLineRef.current && scrollContainerRef.current) {
-      activeLineRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
+  const lines = document?.lines || [];
+
+  // Determine exact active and target scroll line index
+  let activeLineIdx = -1;
+  let nextUpcomingIdx = -1;
+  let lastPassedIdx = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]!;
+    if (currentTimeMs >= l.begin && currentTimeMs <= l.end) {
+      activeLineIdx = i;
+      break;
     }
-  }, [currentTimeMs]);
+    if (currentTimeMs > l.end) {
+      lastPassedIdx = i;
+    } else if (currentTimeMs < l.begin && nextUpcomingIdx === -1) {
+      nextUpcomingIdx = i;
+    }
+  }
+
+  // Authoritative target line for centering: active line, or upcoming (line 0 before start), or last sung
+  const targetScrollLineIdx =
+    activeLineIdx >= 0
+      ? activeLineIdx
+      : currentTimeMs < (lines[0]?.begin || 0)
+      ? 0
+      : nextUpcomingIdx >= 0
+      ? nextUpcomingIdx
+      : lastPassedIdx;
+
+  // Auto-scroll strictly when target line index transitions, preventing frame-by-frame stutter
+  useEffect(() => {
+    if (isOpen && targetScrollLineIdx >= 0 && targetScrollLineIdx !== prevScrollLineRef.current) {
+      prevScrollLineRef.current = targetScrollLineIdx;
+      if (activeLineRef.current && scrollContainerRef.current) {
+        activeLineRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    }
+  }, [isOpen, targetScrollLineIdx]);
+
+  // Update webpage title to show song name and real-time active lyrics
+  useEffect(() => {
+    if (!isOpen || !song) return;
+    if (activeLineIdx >= 0 && lines[activeLineIdx]?.text) {
+      window.document.title = `${song.title} - "${lines[activeLineIdx].text.trim()}" | BruLyrics`;
+    } else {
+      window.document.title = `${song.title} - ${song.artist} | BruLyrics`;
+    }
+  }, [isOpen, song, activeLineIdx, lines]);
 
   if (!isOpen || !song) return null;
 
-  const lines = document?.lines || [];
   const contributor = document?.metadata?.contributor || song.contributor || 'Community';
   const cleanSpotifyId = song.spotifyId ? song.spotifyId.replace(/^spotify:track:/i, '').replace(/^spotify_/i, '') : null;
   const cleanYtmId = song.ytmId ? song.ytmId.replace(/^ytm_/i, '') : null;
@@ -268,9 +311,10 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
           ) : (
             <div className="lyrics-stream-wrapper">
               {lines.map((line, lineIndex) => {
-                const isLineActive = currentTimeMs >= line.begin && currentTimeMs <= line.end;
-                const isLinePassed = currentTimeMs > line.end;
-                const isLineFuture = currentTimeMs < line.begin;
+                const isLineActive = lineIndex === activeLineIdx;
+                const isLinePassed =
+                  activeLineIdx >= 0 ? lineIndex < activeLineIdx : currentTimeMs > line.end;
+                const isLineFuture = !isLineActive && !isLinePassed;
 
                 let lineClass = 'popup-lyric-line';
                 if (isLineActive) lineClass += ' is-active';
@@ -280,7 +324,7 @@ export const LyricsPopupModal: React.FC<LyricsPopupModalProps> = ({
                 return (
                   <div
                     key={line.id || `line_${lineIndex}`}
-                    ref={isLineActive ? activeLineRef : null}
+                    ref={lineIndex === targetScrollLineIdx ? activeLineRef : null}
                     className={lineClass}
                     data-agent={line.agent || 'v1'}
                     onClick={() => onSeek(line.begin)}

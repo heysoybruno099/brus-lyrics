@@ -43,10 +43,16 @@ export function buildDiscordOAuthUrl(redirectUri?: string): string {
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-  // In Discord Developer Portal, only https://brus-lyrics.pages.dev/auth/callback is registered.
-  // When running on localhost, use the production redirect with relay state pointing back to localhost.
+  const customStored =
+    typeof window !== 'undefined' &&
+    typeof window.localStorage !== 'undefined' &&
+    typeof window.localStorage.getItem === 'function'
+      ? window.localStorage.getItem('brus_discord_redirect_uri')
+      : null;
+
   const redirect =
     redirectUri ||
+    customStored ||
     (isLocal
       ? 'https://brus-lyrics.pages.dev/auth/callback'
       : typeof window !== 'undefined'
@@ -125,7 +131,9 @@ export function createMockVerifiedUser(username: string = 'heysoybruno09'): Disc
     id: isHey ? '708497847753900042' : DISCORD_CLIENT_ID,
     username,
     discriminator: '0001',
-    avatar: null,
+    avatar: isHey
+      ? 'https://cdn.discordapp.com/avatars/708497847753900042/cb459d924a3706f8ce8695793c2124f6.png?size=128'
+      : null,
     email: `${username.toLowerCase()}@bruslyrics.com`,
     isVerified: true,
     role: isHey ? 'admin' : 'verified_creator',
