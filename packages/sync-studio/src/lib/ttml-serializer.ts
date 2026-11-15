@@ -169,64 +169,155 @@ export function serializeLinesToLRC(metadata: TTMLMetadata, lines: TTMLLine[]): 
 }
 
 export function serializeLinesToJSON(metadata: TTMLMetadata, lines: TTMLLine[]): string {
-  return JSON.stringify(
-    {
-      metadata: {
-        title: metadata.title || '',
-        artist: metadata.artist || '',
-        album: metadata.album || null,
-        durationMs: metadata.durationMs || (lines.length > 0 ? lines[lines.length - 1]!.end : 0),
-        spotifyId: metadata.spotifyId || null,
-        ytmId: metadata.ytmId || null,
-        contributor: metadata.contributor || 'Community',
+  const trackId = metadata.spotifyId || 'local_track';
+  const trackUri = metadata.spotifyId ? `spotify:track:${metadata.spotifyId}` : `local:track:${trackId}`;
+  const now = Date.now();
+  const dur = metadata.durationMs || (lines.length > 0 ? lines[lines.length - 1]!.end : 0);
+  const isSyllable = lines.some((l) => l.syllables && l.syllables.length > 1);
+  const mode = isSyllable ? 'word' : 'line';
+  const lyricsType = isSyllable ? 'Syllable' : 'Line';
+
+  const startTime = lines.length > 0 ? lines[0]!.begin : 0;
+  const endTime = lines.length > 0 ? lines[lines.length - 1]!.end : dur;
+
+  // Build lyrics.Content array conforming to Syllable Studio format with Lead and Background
+  const content = lines.map((line) => {
+    const leadSyllables = (line.syllables && line.syllables.length > 0
+      ? line.syllables
+      : [{ begin: line.begin, end: line.end, text: line.text }]
+    ).map((s) => ({
+      Text: s.text.trim(),
+      IsPartOfWord: false,
+      StartTime: s.begin,
+      EndTime: s.end,
+    }));
+
+    const bgVocals =
+      line.backgroundVocals && line.backgroundVocals.length > 0
+        ? line.backgroundVocals.map((bg) => ({
+            StartTime: bg.begin,
+            EndTime: bg.end,
+            Syllables: (bg.syllables && bg.syllables.length > 0
+              ? bg.syllables
+              : [{ begin: bg.begin, end: bg.end, text: bg.text }]
+            ).map((s) => ({
+              Text: s.text.trim(),
+              IsPartOfWord: false,
+              StartTime: s.begin,
+              EndTime: s.end,
+            })),
+          }))
+        : undefined;
+
+    return {
+      Type: 'Vocal',
+      OppositeAligned: false,
+      IsRTL: false,
+      Lead: {
+        StartTime: line.begin,
+        EndTime: line.end,
+        Syllables: leadSyllables,
       },
-      lines: lines.map((line) => {
-        const bgVocals =
-          line.backgroundVocals && line.backgroundVocals.length > 0
-            ? line.backgroundVocals.map((bg) => ({
-                begin: bg.begin,
-                end: bg.end,
-                text: bg.text,
-                agent: bg.agent || 'v1',
-                role: 'x-bg',
-                syllables:
-                  bg.syllables && bg.syllables.length > 0
-                    ? bg.syllables.map((s) => ({
-                        begin: s.begin,
-                        end: s.end,
-                        text: s.text,
-                        role: 'x-bg',
-                      }))
-                    : [{ begin: bg.begin, end: bg.end, text: bg.text, role: 'x-bg' }],
-              }))
-            : undefined;
+      ...(bgVocals ? { Background: bgVocals } : {}),
+    };
+  });
 
-        const subtext =
-          line.backgroundVocals && line.backgroundVocals.length > 0
-            ? line.backgroundVocals.map((bg) => bg.text).join(' / ')
-            : undefined;
+  // Build draft.lines array with tokens and subtext backgrounds
+  const draftLines = lines.map((line) => {
+    const tokens = (line.syllables && line.syllables.length > 0
+      ? line.syllables
+      : [{ begin: line.begin, end: line.end, text: line.text }]
+    ).map((s) => ({
+      text: s.text.trim(),
+      start: s.begin,
+      ...(s.end > s.begin ? { end: s.end } : {}),
+    }));
 
-        return {
-          id: line.id,
-          begin: line.begin,
-          end: line.end,
-          text: line.text,
-          agent: line.agent || 'v1',
-          role: line.role || 'lead',
-          ...(subtext ? { subtext } : {}),
-          ...(bgVocals ? { backgroundVocals: bgVocals } : {}),
-          syllables:
-            line.syllables?.map((s) => ({
-              begin: s.begin,
-              end: s.end,
-              text: s.text,
-              role: s.role || 'lead',
-            })) || [],
-        };
-      }),
+    const bgText =
+      line.backgroundVocals && line.backgroundVocals.length > 0
+        ? line.backgroundVocals.map((bg) => bg.text.trim()).join(' ')
+        : '';
+
+    const fullText = bgText ? `${line.text.trim()} (${bgText})` : line.text.trim();
+
+    const backgrounds =
+      line.backgroundVocals && line.backgroundVocals.length > 0
+        ? line.backgroundVocals.map((bg) => ({
+            text: bg.text.trim(),
+            tokens: (bg.syllables && bg.syllables.length > 0
+              ? bg.syllables
+              : [{ begin: bg.begin, end: bg.end, text: bg.text }]
+            ).map((s) => ({
+              text: s.text.trim(),
+              start: s.begin,
+              ...(s.end > s.begin ? { end: s.end } : {}),
+            })),
+            start: bg.begin,
+            end: bg.end,
+          }))
+        : undefined;
+
+    return {
+      kind: 'lyric',
+      text: fullText,
+      tokens,
+      ...(backgrounds ? { backgrounds } : {}),
+      start: line.begin,
+      end: line.end,
+    };
+  });
+
+  const payload: Record<string, any> = {
+    version: 1,
+    trackId,
+    trackUri,
+    title: metadata.title || '',
+    artist: metadata.artist || '',
+    durationMs: dur,
+    mode,
+    updatedAt: now,
+    lyrics: {
+      Id: trackId,
+      Type: lyricsType,
+      SongWriters: [],
+      Content: content,
+      StartTime: startTime,
+      EndTime: endTime,
+      Provider: 'local',
     },
-    null,
-    2
-  );
+    draft: {
+      trackId,
+      trackUri,
+      title: metadata.title || '',
+      artist: metadata.artist || '',
+      durationMs: dur,
+      mode,
+      lines: draftLines,
+      endMs: endTime,
+      updatedAt: now,
+    },
+    // Top-level metadata and lines retained for backward compatibility
+    metadata: {
+      title: metadata.title || '',
+      artist: metadata.artist || '',
+      album: metadata.album || null,
+      durationMs: dur,
+      spotifyId: metadata.spotifyId || null,
+      ytmId: metadata.ytmId || null,
+      contributor: metadata.contributor || 'Community',
+    },
+    lines: lines.map((l) => ({
+      id: l.id,
+      begin: l.begin,
+      end: l.end,
+      text: l.text,
+      agent: l.agent || 'v1',
+      role: l.role || 'lead',
+      ...(l.backgroundVocals ? { backgroundVocals: l.backgroundVocals } : {}),
+      syllables: l.syllables || [],
+    })),
+  };
+
+  return JSON.stringify(payload, null, 2);
 }
 

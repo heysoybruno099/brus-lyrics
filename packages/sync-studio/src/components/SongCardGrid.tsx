@@ -1,5 +1,5 @@
 import React from 'react';
-import type { UnifiedSongItem } from '../lib/types.js';
+import type { UnifiedSongItem, SpotifyUserProfile } from '../lib/types.js';
 import { VerifiedSticker } from './VerifiedSticker.js';
 
 interface SongCardGridProps {
@@ -11,6 +11,7 @@ interface SongCardGridProps {
   onOpenArtistPage?: (artist: string) => void;
   onOpenStudio?: (song: UnifiedSongItem) => void;
   isLoading: boolean;
+  spotifyUser?: SpotifyUserProfile | null;
 }
 
 function formatDuration(ms: number): string {
@@ -30,6 +31,7 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
   onOpenArtistPage,
   onOpenStudio,
   isLoading,
+  spotifyUser,
 }) => {
   if (isLoading) {
     return (
@@ -53,7 +55,45 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
     <div className="song-cards-container">
       <div className="section-header-row">
         <h2 className="section-title">Available Songs</h2>
-        <span className="section-subtitle">Click card to play • Double-click for dedicated song page</span>
+        {spotifyUser ? (
+          <div
+            className="spotify-account-indicator"
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: '#a1a1aa',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              backgroundColor: '#18181b',
+              border: '1px solid #27272a',
+              borderRadius: 6,
+            }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#22c55e' }} />
+            <span>Spotify Account: <strong>{spotifyUser.displayName}</strong> ({spotifyUser.product})</span>
+          </div>
+        ) : (
+          <div
+            className="spotify-account-indicator"
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: '#71717a',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              backgroundColor: '#141418',
+              border: '1px solid #22222a',
+              borderRadius: 6,
+            }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#71717a' }} />
+            <span>Spotify Account: Guest</span>
+          </div>
+        )}
       </div>
 
       <div className="song-cards-grid">
@@ -233,8 +273,10 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
                 <div className="card-footer-row">
                   <span className="card-duration">{formatDuration(song.durationMs)}</span>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    {song.isSyllableSynced && (
-                      <span className="card-badge-syllable">TTML SYLLABLE</span>
+                    {song.isSyllableSynced ? (
+                      <span className="card-badge-syllable">SYLLABLE</span>
+                    ) : (
+                      <span className="card-badge-syllable" style={{ backgroundColor: 'rgba(96, 165, 250, 0.12)', color: '#60a5fa', borderColor: 'rgba(96, 165, 250, 0.25)' }}>LINE</span>
                     )}
                     {song.source === 'verified' ? (
                       <VerifiedSticker

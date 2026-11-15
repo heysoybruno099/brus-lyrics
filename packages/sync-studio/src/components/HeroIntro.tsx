@@ -84,7 +84,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
         {/* Intro Badge with Logo */}
         <div className="hero-pill-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <LogoIcon size={16} color="#4ade80" />
-          <span>Apple Music Grade TTML Engine</span>
+          <span>Syllable TTML Engine</span>
         </div>
 
         {/* Main Title */}
@@ -94,7 +94,7 @@ export const HeroIntro: React.FC<HeroIntroProps> = ({
 
         {/* Description */}
         <p className="hero-subtitle">
-          Precision syllable-level animated lyrics with sub-millisecond spring scroll. Search any track across Spotify, the verified catalog, and community archives. Click any song card to play in-browser with live pop-up lyrics.
+          Precision syllable-level animated lyrics with sub-millisecond spring scroll. Search any track across Spotify, the verified catalog, and community archives. Click any song card to play in-browser with live pop-up lyrics. the BEST lyrics there is avialbe. 
         </p>
 
         {/* Search Bar with Dynamic Autocomplete */}

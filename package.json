@@ -2,7 +2,7 @@
   "name": "brus-lyrics-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Production monorepo for Brus Lyrics sync engine, API worker, database, extensions, and studio",
+  "description": "Production monorepo for Brus Lyrics sync engine, API worker, database, extensions, and studio - the BEST lyrics there is avialbe. ",
   "workspaces": [
     "packages/*"
   ],

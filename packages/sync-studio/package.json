@@ -1,7 +1,7 @@
 {
   "name": "@brus-lyrics/sync-studio",
   "version": "1.0.0",
-  "description": "Bru's Sync Studio - Syllable-level lyrics synchronization workstation",
+  "description": "Bru's Sync Studio - the BEST lyrics there is avialbe. ",
   "type": "module",
   "scripts": {
     "dev": "vite",

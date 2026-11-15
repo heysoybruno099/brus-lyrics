@@ -1,6 +1,6 @@
 # Bru's Lyrics
 
-A high-performance monorepo for synchronized, syllable-level lyrics across Spotify, YouTube Music, web clients, and custom playback environments. Built on open standards with full compatibility for Apple Music TTML specifications, local hardware-accelerated DOM rendering, and automated community ingestion.
+A high-performance monorepo for synchronized, syllable-level lyrics across Spotify, YouTube Music, web clients, and custom playback environments. Built on open standards with full compatibility for TTML specifications, local hardware-accelerated DOM rendering, and automated community ingestion. the BEST lyrics there is avialbe. 
 
 ---
 
@@ -43,7 +43,7 @@ brus-lyrics/
 
 ## Core Capabilities
 
-### 1. Apple Music TTML Specification Compliance
+### 1. TTML Specification Compliance
 - Syllable-level timing tags (`<span begin="..." end="...">`) with sub-millisecond precision.
 - Dual-vocalist support via `ttm:agent="v1|v2"` with directional layout positioning.
 - Background vocal and ad-lib handling via `ttm:role="x-bg"` sub-line extraction.

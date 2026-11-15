@@ -211,23 +211,21 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
                 border: '1px solid #22c55e40',
               }}
             >
-              APPLE MUSIC GRADE TTML
+              TTML
             </span>
-            {song.isSyllableSynced && (
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  backgroundColor: '#0c4a6e',
-                  color: '#38bdf8',
-                  border: '1px solid #0284c740',
-                }}
-              >
-                SYLLABLE SYNCED
-              </span>
-            )}
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: 4,
+                backgroundColor: '#0c4a6e',
+                color: '#38bdf8',
+                border: '1px solid #0284c740',
+              }}
+            >
+              {song.isSyllableSynced ? 'SYLLABLE' : 'LINE'}
+            </span>
           </div>
 
           <h1 style={{ fontSize: 28, fontWeight: 800, color: '#f4f4f6', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
@@ -499,8 +497,13 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
                         <span
                           key={`syl_${sIdx}`}
                           style={{
+                            display: 'inline-block',
                             color: sylSung || sylSinging ? '#ffffff' : 'inherit',
-                            textShadow: sylSinging ? '0 0 12px rgba(255, 255, 255, 0.5)' : 'none',
+                            opacity: sylSung || sylSinging ? 1 : 0.65,
+                            textShadow: sylSinging ? '0 0 16px rgba(255, 255, 255, 0.6)' : 'none',
+                            transform: sylSinging ? 'translateY(-2px) scale(1.04)' : 'none',
+                            transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                            cursor: 'pointer',
                           }}
                         >
                           {syl.text}
@@ -509,6 +512,57 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
                     })
                   ) : (
                     <span>{line.text}</span>
+                  )}
+
+                  {line.backgroundVocals && line.backgroundVocals.length > 0 && (
+                    <div
+                      className="dedicated-bg-vocals"
+                      style={{
+                        fontSize: isActive ? 16 : 13,
+                        fontStyle: 'italic',
+                        color: isActive ? '#d8b4fe' : isPast ? '#a1a1aa' : '#52525b',
+                        opacity: isActive ? 0.95 : 0.7,
+                        marginTop: 4,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 3,
+                      }}
+                    >
+                      {line.backgroundVocals.map((bgLine, bgIdx) => (
+                        <div key={`bg_${idx}_${bgIdx}`} style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+                          <span style={{ color: '#a1a1aa' }}>(</span>
+                          {bgLine.syllables && bgLine.syllables.length > 0 ? (
+                            bgLine.syllables.map((bgSyl, sIdx) => {
+                              const bgSylSung = currentTimeMs >= bgSyl.end;
+                              const bgSylSinging = currentTimeMs >= bgSyl.begin && currentTimeMs < bgSyl.end;
+                              return (
+                                <span
+                                  key={`bg_syl_${sIdx}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSeek(bgSyl.begin);
+                                  }}
+                                  style={{
+                                    display: 'inline-block',
+                                    color: bgSylSung || bgSylSinging ? '#f472b6' : 'inherit',
+                                    opacity: bgSylSung || bgSylSinging ? 1 : 0.7,
+                                    textShadow: bgSylSinging ? '0 0 14px rgba(244, 114, 182, 0.6)' : 'none',
+                                    transform: bgSylSinging ? 'translateY(-1.5px) scale(1.03)' : 'none',
+                                    transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {bgSyl.text}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span>{bgLine.text}</span>
+                          )}
+                          <span style={{ color: '#a1a1aa' }}>)</span>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               );

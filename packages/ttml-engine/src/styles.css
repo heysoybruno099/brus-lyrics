@@ -129,7 +129,8 @@
   position: relative;
   display: inline-block;
   white-space: pre-wrap;
-  transition: transform 0.15s ease-out;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  will-change: transform, filter;
   cursor: pointer;
 }
 
@@ -151,20 +152,34 @@
 }
 
 /* Finished active word */
+.brus-word.is-sung {
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: none;
+  opacity: 1;
+}
+
 .brus-word.is-sung .brus-word-fill {
   --word-progress: 1;
 }
 
-/* In-progress syllable lift */
+/* In-progress syllable lift with fluid animate-text curve and glow */
 .brus-word.is-singing {
-  transform: translate3d(0, -2px, 0);
+  transform: translate3d(0, -2.5px, 0) scale(1.04);
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.6));
+  opacity: 1;
 }
 
 .brus-word.is-singing .brus-word-fill {
-  text-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
 }
 
-/* Unsung future word */
+/* Unsung future word with gentle soft blur and muted focus */
+.brus-word.is-unsung {
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0.25px);
+  opacity: 0.65;
+}
+
 .brus-word.is-unsung .brus-word-fill {
   --word-progress: 0;
 }

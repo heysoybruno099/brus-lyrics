@@ -48,7 +48,7 @@ function toMs(val: any): number {
 
 /**
  * Parses real-world lyrics JSON formats, including:
- * 1. lyrics.Content array with Lead.Syllables and Background vocals (Apple Music / Musixmatch / Syllable Studio format)
+ * 1. lyrics.Content array with Lead.Syllables and Background vocals (Syllable Studio format)
  * 2. draft.lines array with tokens and backgrounds
  * 3. Standard lines array with word/syllable/token objects
  *
@@ -490,7 +490,7 @@ export function parseJsonLyrics(
 }
 
 /**
- * Converts a parsed JSON payload or JSON string to standard Apple Music TTML XML
+ * Converts a parsed JSON payload or JSON string to standard TTML XML
  */
 export function jsonToTTML(
   content: string | Record<string, any>,

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bru's Lyrics for YouTube Music",
   "version": "1.0.0",
-  "description": "High-precision synchronized TTML syllable lyrics for YouTube Music",
+  "description": "High-precision synchronized TTML syllable lyrics for YouTube Music - the BEST lyrics there is avialbe. ",
   "permissions": [
     "storage"
   ],

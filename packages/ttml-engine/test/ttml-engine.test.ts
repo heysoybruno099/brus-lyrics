@@ -339,7 +339,7 @@ describe('Multi-Format Lyrics Parser (TTML, LRC, JSON)', () => {
     assert.equal(line1.syllables[2]!.text, 'volar ');
     assert.ok(!line1.syllables[2]!.text.includes('\u200b'));
 
-    // Verify conversion to Apple Music TTML
+    // Verify conversion to standard TTML
     const ttmlXml = jsonToTTML(realWorldPayload, { contributor: 'Bru' });
     assert.ok(ttmlXml.includes('<ttm:title>En la Ciudad de la Furia</ttm:title>'));
     assert.ok(ttmlXml.includes('<itunes:spotifyId>5wjiZSbxaLyLpGimpwqh1H</itunes:spotifyId>'));
@@ -827,6 +827,106 @@ describe('Sync Workstation & Real Artwork Resolution', () => {
     assert.equal(parsed.lines.length, 3);
     assert.equal(parsed.lines[0]?.begin, 5000);
     assert.equal(parsed.lines[2]?.begin, 15500);
+  });
+
+  it('serializes studio lines to JSON specification matching Lead and Background subtext', async () => {
+    const { serializeLinesToJSON } = await import('../../sync-studio/src/lib/ttml-serializer.js');
+
+    const metadata = {
+      title: 'PANTI Y COLALE 2.0',
+      artist: 'El Alfa, De La Ghetto, Zion',
+      durationMs: 279685,
+      spotifyId: '2ZSBqVV3T89BohjsYHmWtJ',
+    };
+
+    const lines = [
+      {
+        id: 'line_1',
+        begin: 8142,
+        end: 13354,
+        agent: 'v1',
+        text: 'Se pone su panty y colalé',
+        syllables: [
+          { begin: 8142, end: 8431, text: 'Se ' },
+          { begin: 8431, end: 8914, text: 'pone ' },
+          { begin: 8914, end: 9106, text: 'su ' },
+          { begin: 9106, end: 9847, text: 'panty ' },
+          { begin: 9847, end: 13354, text: 'colalé' },
+        ],
+        backgroundVocals: [
+          {
+            id: 'line_1_bg',
+            begin: 10436,
+            end: 13354,
+            agent: 'v2',
+            role: 'x-bg',
+            text: 'Otra más que se dejó del novio',
+            syllables: [
+              { begin: 10436, end: 11135, text: 'Otra ' },
+              { begin: 11135, end: 11570, text: 'más ' },
+              { begin: 11570, end: 11730, text: 'que ' },
+              { begin: 11730, end: 11930, text: 'se ' },
+              { begin: 11930, end: 12435, text: 'dejó ' },
+              { begin: 12435, end: 12749, text: 'del ' },
+              { begin: 12749, end: 13354, text: 'novio' },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const jsonStr = serializeLinesToJSON(metadata, lines);
+    const parsed = JSON.parse(jsonStr);
+
+    assert.equal(parsed.version, 1);
+    assert.equal(parsed.trackId, '2ZSBqVV3T89BohjsYHmWtJ');
+    assert.equal(parsed.mode, 'word');
+    assert.equal(parsed.lyrics.Type, 'Syllable');
+    assert.equal(parsed.lyrics.Content.length, 1);
+    assert.equal(parsed.lyrics.Content[0].Lead.Syllables.length, 5);
+    assert.equal(parsed.lyrics.Content[0].Lead.StartTime, 8142);
+    assert.equal(parsed.lyrics.Content[0].Background.length, 1);
+    assert.equal(parsed.lyrics.Content[0].Background[0].Syllables.length, 7);
+    assert.equal(parsed.lyrics.Content[0].Background[0].StartTime, 10436);
+
+    assert.equal(parsed.draft.lines.length, 1);
+    assert.equal(parsed.draft.lines[0].tokens.length, 5);
+    assert.equal(parsed.draft.lines[0].backgrounds.length, 1);
+    assert.equal(parsed.draft.lines[0].backgrounds[0].tokens.length, 7);
+    assert.equal(parsed.draft.lines[0].text, 'Se pone su panty y colalé (Otra más que se dejó del novio)');
+  });
+
+  it('parses single block of lyrics into line by line', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+
+    const block = 'Se pone su panty colalé. Otra más que se dejó del novio. E una bellaca de lejos se le ve.';
+    const res = parseMultiFormatLyrics(block);
+
+    assert.equal(res.format, 'text');
+    assert.equal(res.mode, 'line');
+    assert.equal(res.lines.length, 3);
+    assert.equal(res.lines[0]?.text, 'Se pone su panty colalé.');
+    assert.equal(res.lines[1]?.text, 'Otra más que se dejó del novio.');
+    assert.equal(res.lines[2]?.text, 'E una bellaca de lejos se le ve.');
+  });
+
+  it('parses unpunctuated single block into lines and extracts simultaneous subtext', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+
+    // Single block without periods, containing a parenthesized simultaneous vocal
+    const block = 'Se pone su panty colalé (otra más que se dejó del novio) una malcriada después que se operó me lo va a estrujar en la cara';
+    const res = parseMultiFormatLyrics(block);
+
+    assert.equal(res.format, 'text');
+    assert.equal(res.mode, 'line');
+    assert.ok(res.lines.length >= 2, 'Should split into multiple lines');
+
+    // First line should have extracted lead vocal and simultaneous background vocal
+    const line1 = res.lines[0]!;
+    assert.equal(line1.text, 'Se pone su panty colalé');
+    assert.ok(line1.backgroundVocals && line1.backgroundVocals.length === 1);
+    assert.equal(line1.backgroundVocals[0]?.text, 'otra más que se dejó del novio');
+    assert.equal(line1.backgroundVocals[0]?.role, 'x-bg');
   });
 });
 

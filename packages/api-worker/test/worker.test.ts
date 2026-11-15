@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import app from '../src/index.js';
 import { validateTTML } from '../src/lib/ttml-validator.js';
 import { convertLrcToTTML, parseLrcTimestamps } from '../src/lib/lrc-to-ttml.js';
-import { normalizeString, formatTimestampTTML, parseTimestampTTML } from '@brus-lyrics/shared-types';
+import { normalizeString, formatTimestampTTML, parseTimestampTTML, type CatalogEntry } from '@brus-lyrics/shared-types';
 
 describe('Shared Utilities', () => {
   it('normalizes song titles and artist names removing diacritics and noise', () => {

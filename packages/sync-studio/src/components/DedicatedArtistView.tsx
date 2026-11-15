@@ -150,7 +150,7 @@ export const DedicatedArtistView: React.FC<DedicatedArtistViewProps> = ({
         </h1>
 
         <p style={{ fontSize: 14, color: '#a1a1aa', margin: 0 }}>
-          {artistSongs.length} {artistSongs.length === 1 ? 'song' : 'songs'} currently registered with synchronized Apple Music TTML lyrics in the active catalog.
+          {artistSongs.length} {artistSongs.length === 1 ? 'song' : 'songs'} currently registered with synchronized TTML lyrics in the active catalog. the BEST lyrics there is avialbe. 
         </p>
       </div>
 
@@ -198,7 +198,7 @@ export const DedicatedArtistView: React.FC<DedicatedArtistViewProps> = ({
                     alt={song.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                  {song.isSyllableSynced && (
+                  {song.isSyllableSynced ? (
                     <span
                       style={{
                         position: 'absolute',
@@ -212,7 +212,24 @@ export const DedicatedArtistView: React.FC<DedicatedArtistViewProps> = ({
                         color: '#4ade80',
                       }}
                     >
-                      SYNCED
+                      SYLLABLE
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        fontSize: 9,
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: 3,
+                        backgroundColor: 'rgba(96, 165, 250, 0.15)',
+                        color: '#60a5fa',
+                        border: '1px solid rgba(96, 165, 250, 0.25)',
+                      }}
+                    >
+                      LINE
                     </span>
                   )}
                 </div>

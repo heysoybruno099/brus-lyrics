@@ -167,7 +167,7 @@ export function parseJsonLyrics(content: string, totalDurationMs?: number): {
 }
 
 /**
- * Parses Apple Music / W3C TTML XML string
+ * Parses TTML XML string
  */
 export function parseTtmlXml(content: string): {
   metadata: Partial<TTMLMetadata>;
@@ -226,23 +226,87 @@ export function parseMultiFormatLyrics(
     }
     case 'text':
     default: {
-      const rawLines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      let rawLines = content.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+      const isSingleBlock = rawLines.length === 1;
+      if (isSingleBlock && rawLines[0]!.length > 40) {
+        // 1. Break by sentence punctuation (. ! ?)
+        let split = rawLines[0]!
+          .split(/(?<=[.!?])\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+
+        // 2. Fallback to clause boundaries (commas, semicolons, dashes, closing parens)
+        if (split.length <= 1) {
+          split = rawLines[0]!
+            .split(/(?<=[,;])\s+(?=[A-Z\u00C0-\u017F0-9])|(?<=\))\s+/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+        }
+
+        // 3. Fallback for unpunctuated single-block stream: chunk into lines of 6-8 words
+        if (split.length <= 1) {
+          const allWords = rawLines[0]!.split(/\s+/);
+          if (allWords.length > 8) {
+            split = [];
+            const chunkSize = 7;
+            for (let i = 0; i < allWords.length; i += chunkSize) {
+              split.push(allWords.slice(i, i + chunkSize).join(' '));
+            }
+          }
+        }
+
+        if (split.length > 1) {
+          rawLines = split;
+        }
+      }
+
       const lines: TTMLLine[] = rawLines.map((lineStr, lineIdx) => {
-        const words = lineStr.trim().split(/\s+/);
+        // Check for simultaneous second version in parentheses: e.g. Lead (Background)
+        let leadText = lineStr.trim();
+        let bgVocals: TTMLLine[] | undefined;
+
+        const parenMatch = leadText.match(/\(([^)]+)\)$/);
+        if (parenMatch && parenMatch[1]) {
+          const bgText = parenMatch[1].trim();
+          leadText = leadText.replace(/\s*\([^)]+\)$/, '').trim();
+          const bgWords = bgText.split(/\s+/).filter(Boolean);
+          const bgSyllables: TTMLSyllable[] = bgWords.map((w, wIdx) => ({
+            begin: 0,
+            end: 0,
+            text: wIdx < bgWords.length - 1 ? `${w} ` : w,
+            role: 'x-bg',
+          }));
+          bgVocals = [
+            {
+              id: `line_${lineIdx + 1}_bg`,
+              begin: 0,
+              end: 0,
+              agent: 'v2',
+              role: 'x-bg',
+              text: bgText,
+              syllables: bgSyllables,
+            },
+          ];
+        }
+
+        const words = leadText.split(/\s+/).filter(Boolean);
         const syllables: TTMLSyllable[] = words.map((w, wIdx) => ({
           begin: 0,
           end: 0,
           text: wIdx < words.length - 1 ? `${w} ` : w,
         }));
+
         return {
           id: `line_${lineIdx + 1}`,
           begin: 0,
           end: 0,
           agent: 'v1',
-          text: lineStr.trim(),
+          text: leadText,
+          ...(bgVocals ? { backgroundVocals: bgVocals } : {}),
           syllables,
         };
       });
+
       return {
         format: 'text',
         mode: 'line',

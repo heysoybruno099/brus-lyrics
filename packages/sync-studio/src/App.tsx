@@ -50,6 +50,31 @@ import type { AppViewMode, DiscordUser, SpotifyUserProfile, UnifiedSongItem } fr
 
 const STUDIO_DRAFT_KEY = 'brus_lyrics_studio_draft';
 
+function getTrackStorageKey(trackId: string): string {
+  const clean = trackId.replace(/^spotify:track:/, '').replace(/^song_/, '').trim();
+  return `brus_lyrics_draft_${clean}`;
+}
+
+function getStoredDraftForTrack(trackId: string): { metadata: TTMLMetadata; lines: TTMLLine[]; savedAt: number } | null {
+  if (typeof window === 'undefined' || !trackId) return null;
+  try {
+    const raw = localStorage.getItem(getTrackStorageKey(trackId));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveDraftForTrack(trackId: string, draft: { metadata: TTMLMetadata; lines: TTMLLine[]; savedAt: number }): void {
+  if (typeof window === 'undefined' || !trackId) return;
+  try {
+    localStorage.setItem(getTrackStorageKey(trackId), JSON.stringify(draft));
+  } catch {
+    // Local storage quota fallback
+  }
+}
+
 function getStoredStudioDraft(): { metadata: TTMLMetadata; lines: TTMLLine[]; savedAt: number } | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -697,15 +722,27 @@ export const App: React.FC = () => {
       });
     }
 
-    // Auto-fetch synchronized lyrics for workstation
+    // Auto-fetch synchronized lyrics for workstation or load saved track draft
+    setStudioRawTtml(null);
     try {
-      const doc = await fetchLyricsForTrack(song);
-      if (doc && doc.lines && doc.lines.length > 0) {
-        setStudioLines(doc.lines);
-        setActiveDocument(doc);
+      const trackKey = song.spotifyId || song.id;
+      const savedDraft = getStoredDraftForTrack(trackKey);
+      if (savedDraft && savedDraft.lines && savedDraft.lines.length > 0) {
+        setStudioLines(savedDraft.lines);
+        if (savedDraft.metadata) {
+          setStudioMetadata((prev) => ({ ...prev, ...savedDraft.metadata }));
+        }
+      } else {
+        const doc = await fetchLyricsForTrack(song);
+        if (doc && doc.lines && doc.lines.length > 0) {
+          setStudioLines(doc.lines);
+          setActiveDocument(doc);
+        } else {
+          setStudioLines([]);
+        }
       }
     } catch {
-      // Retain existing lines
+      setStudioLines([]);
     }
 
     setCurrentView('studio');
@@ -726,18 +763,26 @@ export const App: React.FC = () => {
             : durationMs || 180000);
         merged.durationMs = dur;
 
-        const songTitle = merged.title || activeSong?.title || 'Imported Track';
-        const songArtist = merged.artist || activeSong?.artist || 'Unknown Artist';
-        const cleanYtmId = merged.ytmId?.trim() || null;
-        const cleanSpotifyId = merged.spotifyId?.trim() || null;
+        const isSameSong = Boolean(
+          activeSong &&
+          merged.title &&
+          activeSong.title &&
+          activeSong.title.trim().toLowerCase() === merged.title.trim().toLowerCase()
+        );
+
+        const songTitle = merged.title || (isSameSong ? activeSong?.title : undefined) || 'Imported Track';
+        const songArtist = merged.artist || (isSameSong ? activeSong?.artist : undefined) || 'Unknown Artist';
+        const cleanYtmId = merged.ytmId?.trim() || (isSameSong ? activeSong?.ytmId : null);
+        const cleanSpotifyId = merged.spotifyId?.trim() || (isSameSong ? activeSong?.spotifyId : null);
+        const songId = cleanSpotifyId || cleanYtmId || (isSameSong ? activeSong?.id : null) || `track_${Date.now()}`;
 
         const updatedSong: UnifiedSongItem = {
-          id: cleanSpotifyId || cleanYtmId || `track_${Date.now()}`,
+          id: songId,
           title: songTitle,
           artist: songArtist,
-          album: merged.album || activeSong?.album || 'Single',
+          album: merged.album || (isSameSong ? activeSong?.album : undefined) || 'Single',
           artworkUrl: resolveTrackArtwork({
-            artworkUrl: activeSong?.artworkUrl,
+            artworkUrl: isSameSong ? activeSong?.artworkUrl : undefined,
             ytmId: cleanYtmId,
             spotifyId: cleanSpotifyId,
           }),
@@ -749,6 +794,15 @@ export const App: React.FC = () => {
           isSyllableSynced: newLines ? newLines.some((l) => l.syllables && l.syllables.length > 1) : true,
           contributor: user?.username || merged.contributor || 'Community',
         };
+
+        const currentKey = cleanSpotifyId || cleanYtmId || songId;
+        if (currentKey && newLines && newLines.length > 0) {
+          saveDraftForTrack(currentKey, {
+            metadata: merged,
+            lines: newLines,
+            savedAt: Date.now(),
+          });
+        }
 
         setActiveSong(updatedSong);
         setDurationMs(dur);
@@ -776,6 +830,23 @@ export const App: React.FC = () => {
       }
     },
     [activeSong, durationMs, user, isSpotifyPremium]
+  );
+
+  // Line change handler that invalidates stale raw TTML and auto-persists drafts
+  const handleStudioLinesChange = useCallback(
+    (newLines: TTMLLine[]) => {
+      setStudioLines(newLines);
+      setStudioRawTtml(null);
+      const key = activeSong?.spotifyId || activeSong?.ytmId || activeSong?.id;
+      if (key && newLines.length > 0) {
+        saveDraftForTrack(key, {
+          metadata: studioMetadata,
+          lines: newLines,
+          savedAt: Date.now(),
+        });
+      }
+    },
+    [activeSong, studioMetadata]
   );
 
   // Play Song Card Handler: Selects best available audio source and starts playback
@@ -960,16 +1031,29 @@ export const App: React.FC = () => {
   };
 
   const handleSaveStudioWork = async () => {
-    // 1. Immediately cache locally so no work is ever lost
+    const effectiveSpotifyId =
+      (studioMetadata.platformTarget === 'ytm' ? null : studioMetadata.spotifyId) ||
+      activeSong?.spotifyId ||
+      null;
+    const effectiveYtmId =
+      (studioMetadata.platformTarget === 'spotify' ? null : studioMetadata.ytmId) ||
+      activeSong?.ytmId ||
+      null;
+    const trackKey = effectiveSpotifyId || effectiveYtmId || activeSong?.id || 'current';
+
+    // 1. Immediately cache locally both per-track and in general draft so no work is ever lost
     try {
-      localStorage.setItem(
-        STUDIO_DRAFT_KEY,
-        JSON.stringify({
-          metadata: studioMetadata,
-          lines: studioLines,
-          savedAt: Date.now(),
-        })
-      );
+      const draftObj = {
+        metadata: {
+          ...studioMetadata,
+          spotifyId: effectiveSpotifyId || undefined,
+          ytmId: effectiveYtmId || undefined,
+        },
+        lines: studioLines,
+        savedAt: Date.now(),
+      };
+      saveDraftForTrack(trackKey, draftObj);
+      localStorage.setItem(STUDIO_DRAFT_KEY, JSON.stringify(draftObj));
       const timeStr = new Date().toLocaleTimeString();
       setLastSavedAt(timeStr);
     } catch {
@@ -1131,6 +1215,7 @@ export const App: React.FC = () => {
               onOpenArtistPage={navigateToArtistPage}
               onOpenStudio={handleOpenStudioWithTrack}
               isLoading={isSearching}
+              spotifyUser={spotifyUser}
             />
           </div>
         )}
@@ -1207,7 +1292,7 @@ export const App: React.FC = () => {
                         borderRight: '1px solid #2e2e38',
                         cursor: 'pointer',
                       }}
-                      title="Download Apple Music TTML XML file"
+                      title="Download TTML XML file"
                     >
                       Export TTML
                     </button>
@@ -1366,7 +1451,7 @@ export const App: React.FC = () => {
               {/* Pane 2: Multi-format Syllable Tap-Sync Matrix */}
               <TapSyncMatrix
                 lines={studioLines}
-                onChangeLines={setStudioLines}
+                onChangeLines={handleStudioLinesChange}
                 currentTimeMs={currentTimeMs}
                 durationMs={durationMs}
                 onSeek={handleSeek}
@@ -1544,6 +1629,7 @@ export const App: React.FC = () => {
         currentPlaybackSource={currentPlaybackSource}
         isSpotifyConnected={Boolean(spotifyToken)}
         isSpotifyPremium={isSpotifyPremium}
+        spotifyUser={spotifyUser}
         onConnectSpotify={handleConnectSpotify}
       />
 

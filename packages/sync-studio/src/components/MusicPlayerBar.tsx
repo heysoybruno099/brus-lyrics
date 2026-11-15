@@ -1,5 +1,5 @@
 import React from 'react';
-import type { UnifiedSongItem } from '../lib/types.js';
+import type { UnifiedSongItem, SpotifyUserProfile } from '../lib/types.js';
 import { LogoIcon } from './LogoIcon.js';
 
 interface MusicPlayerBarProps {
@@ -18,6 +18,7 @@ interface MusicPlayerBarProps {
   currentPlaybackSource?: 'spotify' | 'youtube' | 'preview';
   isSpotifyConnected?: boolean;
   isSpotifyPremium?: boolean;
+  spotifyUser?: SpotifyUserProfile | null;
   onConnectSpotify?: () => void;
 }
 
@@ -45,6 +46,7 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
   currentPlaybackSource = 'preview',
   isSpotifyConnected = false,
   isSpotifyPremium = false,
+  spotifyUser,
   onConnectSpotify,
 }) => {
   if (!song) return null;
@@ -198,7 +200,9 @@ export const MusicPlayerBar: React.FC<MusicPlayerBarProps> = ({
                 backgroundColor: currentPlaybackSource === 'spotify' ? '#22c55e' : '#38bdf8',
               }}
             />
-            {currentPlaybackSource === 'spotify' ? 'Spotify Connected' : 'YouTube Music Connected'}
+            {currentPlaybackSource === 'spotify'
+              ? (spotifyUser?.displayName ? `Spotify: ${spotifyUser.displayName}` : 'Spotify Connected')
+              : 'YouTube Music Connected'}
           </span>
 
           {/* Volume Control */}

@@ -69,10 +69,76 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
 
   // Tokenize plain lyrics into structured lines and syllables
   const handleTokenize = () => {
-    const rawLines = rawText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    let rawLines = rawText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+    const wasSingleBlock = rawLines.length === 1;
+
+    // When one block of lyrics is provided, make it line by line
+    if (wasSingleBlock && rawLines[0]!.length > 40) {
+      // 1. Break by sentence punctuation (. ! ?)
+      let split = rawLines[0]!
+        .split(/(?<=[.!?])\s+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      // 2. Fallback to clause boundaries (commas, semicolons, dashes, closing parens)
+      if (split.length <= 1) {
+        split = rawLines[0]!
+          .split(/(?<=[,;])\s+(?=[A-Z\u00C0-\u017F0-9])|(?<=\))\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+      }
+
+      // 3. Fallback for unpunctuated single-block stream: chunk into lines of 6-8 words
+      if (split.length <= 1) {
+        const allWords = rawLines[0]!.split(/\s+/);
+        if (allWords.length > 8) {
+          split = [];
+          const chunkSize = 7;
+          for (let i = 0; i < allWords.length; i += chunkSize) {
+            split.push(allWords.slice(i, i + chunkSize).join(' '));
+          }
+        }
+      }
+
+      if (split.length > 1) {
+        rawLines = split;
+      }
+    }
+
+    if (wasSingleBlock) {
+      setSyncFidelity('line');
+    }
+
     const newLines: TTMLLine[] = rawLines.map((lineStr, lineIdx) => {
-      // Split line into words preserving trailing spaces
-      const words = lineStr.trim().split(/\s+/);
+      let leadText = lineStr.trim();
+      let bgVocals: TTMLLine[] | undefined;
+
+      // Extract simultaneous second version from parentheses e.g. "Se pone su panty (otra más)"
+      const parenMatch = leadText.match(/\(([^)]+)\)$/);
+      if (parenMatch && parenMatch[1]) {
+        const bgText = parenMatch[1].trim();
+        leadText = leadText.replace(/\s*\([^)]+\)$/, '').trim();
+        const bgWords = bgText.split(/\s+/).filter(Boolean);
+        const bgSyllables: TTMLSyllable[] = bgWords.map((w, wIdx) => ({
+          begin: 0,
+          end: 0,
+          text: wIdx < bgWords.length - 1 ? `${w} ` : w,
+          role: 'x-bg',
+        }));
+        bgVocals = [
+          {
+            id: `line_${lineIdx + 1}_bg`,
+            begin: 0,
+            end: 0,
+            agent: 'v2',
+            role: 'x-bg',
+            text: bgText,
+            syllables: bgSyllables,
+          },
+        ];
+      }
+
+      const words = leadText.split(/\s+/).filter(Boolean);
       const syllables: TTMLSyllable[] = words.map((w, wIdx) => ({
         begin: 0,
         end: 0,
@@ -84,7 +150,8 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
         begin: 0,
         end: 0,
         agent: 'v1',
-        text: lineStr.trim(),
+        text: leadText,
+        ...(bgVocals ? { backgroundVocals: bgVocals } : {}),
         syllables,
       };
     });
@@ -93,6 +160,77 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
     setSelectedLineIdx(0);
     setSelectedSylIdx(0);
     setMode('sync');
+  };
+
+  // Update text of simultaneous second version (subtext / background vocal)
+  const updateBgLineText = (lineIdx: number, bgIdx: number, newText: string) => {
+    if (!lines[lineIdx] || !lines[lineIdx]!.backgroundVocals?.[bgIdx]) return;
+    const currentLine = lines[lineIdx]!;
+    const currentBg = currentLine.backgroundVocals![bgIdx]!;
+    const words = newText.trim().split(/\s+/).filter(Boolean);
+    const bgSyllables: TTMLSyllable[] = words.map((w, wIdx) => ({
+      begin: currentBg.begin,
+      end: currentBg.end,
+      text: wIdx < words.length - 1 ? `${w} ` : w,
+      role: 'x-bg',
+    }));
+
+    const updatedBg = [...currentLine.backgroundVocals!];
+    updatedBg[bgIdx] = {
+      ...currentBg,
+      text: newText,
+      syllables: bgSyllables.length > 0 ? bgSyllables : [{ begin: currentBg.begin, end: currentBg.end, text: newText, role: 'x-bg' }],
+    };
+
+    const updatedLines = [...lines];
+    updatedLines[lineIdx] = {
+      ...currentLine,
+      backgroundVocals: updatedBg,
+    };
+    onChangeLines(updatedLines);
+  };
+
+  // Add simultaneous second version (subtext / background vocal) to current line
+  const addSimultaneousSubtextToLine = (lineIdx: number) => {
+    if (!lines[lineIdx]) return;
+    const currentLine = lines[lineIdx]!;
+    const updatedLines = [...lines];
+    const existingBg = currentLine.backgroundVocals || [];
+    const newBgLine: TTMLLine = {
+      id: `${currentLine.id || `line_${lineIdx + 1}`}_bg_${Date.now()}`,
+      begin: currentLine.begin,
+      end: currentLine.end,
+      agent: 'v2',
+      role: 'x-bg',
+      text: 'Simultaneous Vocal',
+      syllables: [
+        {
+          begin: currentLine.begin,
+          end: currentLine.end,
+          text: 'Simultaneous Vocal',
+          role: 'x-bg',
+        },
+      ],
+    };
+    updatedLines[lineIdx] = {
+      ...currentLine,
+      backgroundVocals: [...existingBg, newBgLine],
+    };
+    onChangeLines(updatedLines);
+  };
+
+  // Remove simultaneous second version from line
+  const removeSimultaneousSubtext = (lineIdx: number, bgIdx: number) => {
+    if (!lines[lineIdx]) return;
+    const currentLine = lines[lineIdx]!;
+    if (!currentLine.backgroundVocals) return;
+    const updatedBg = currentLine.backgroundVocals.filter((_, idx) => idx !== bgIdx);
+    const updatedLines = [...lines];
+    updatedLines[lineIdx] = {
+      ...currentLine,
+      backgroundVocals: updatedBg.length > 0 ? updatedBg : undefined,
+    };
+    onChangeLines(updatedLines);
   };
 
   // Nudge timestamps by +/- offset in milliseconds
@@ -436,9 +574,9 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
                 color: syncFidelity === 'syllable' ? '#4ade80' : '#8e8e98',
               }}
               onClick={() => setSyncFidelity('syllable')}
-              title="Word-by-word / Syllable animated sync"
+              title="Syllable animated sync"
             >
-              Word-by-Word
+              Syllable
             </button>
             <button
               type="button"
@@ -451,9 +589,9 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
                 color: syncFidelity === 'line' ? '#60a5fa' : '#8e8e98',
               }}
               onClick={() => setSyncFidelity('line')}
-              title="One-line / Line-by-line animated sync"
+              title="Line-by-line sync"
             >
-              One Line
+              Line
             </button>
           </div>
 
@@ -513,7 +651,7 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
               Drop TTML XML, LRC, or JSON Lyrics File Here
             </div>
             <div style={{ fontSize: 11, color: '#8e8e98' }}>
-              or click to browse from computer. Supports Apple Music TTML (.ttml/.xml), Line or Word-level LRC (.lrc), and JSON.
+              or click to browse from computer. Supports TTML (.ttml/.xml), Syllable or Line-level LRC (.lrc), and JSON.
             </div>
             {uploadedFileName && (
               <div style={{ marginTop: 10, fontSize: 11, color: '#4ade80', fontFamily: 'var(--font-mono)' }}>
@@ -558,7 +696,7 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
               onClick={handleParsePastedUpload}
               disabled={!uploadContent.trim()}
             >
-              Parse and Load into Matrix ({syncFidelity === 'syllable' ? 'Word-by-Word' : 'One Line'})
+              Parse and Load into Matrix ({syncFidelity === 'syllable' ? 'Syllable' : 'Line'})
             </button>
             <button
               className="btn btn-secondary"
@@ -669,6 +807,21 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
                         >
                           {line.agent === 'v2' ? 'Agent V2' : 'Agent V1'}
                         </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{
+                            padding: '2px 6px',
+                            fontSize: 9,
+                            backgroundColor: '#1b1b24',
+                            borderColor: '#373748',
+                            color: '#c084fc',
+                          }}
+                          onClick={() => addSimultaneousSubtextToLine(lineIdx)}
+                          title="Add simultaneous second version of lyrics at the same time"
+                        >
+                          + Dual Version (Subtext)
+                        </button>
                       </div>
 
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#7e7e88' }}>
@@ -676,72 +829,169 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
                       </span>
                     </div>
 
-                    {/* Syllable Chips Matrix */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {line.syllables.map((syl, sylIdx) => {
-                        const isSelectedSyl = isSelectedLine && sylIdx === selectedSylIdx;
-                        const isTimed = syl.end > 0;
-                        const isCurrentPlaying = currentTimeMs >= syl.begin && currentTimeMs <= syl.end && isTimed;
-                        const isAdLib = syl.role === 'x-bg';
+                    {/* Version 1: Lead Vocal */}
+                    <div>
+                      {line.backgroundVocals && line.backgroundVocals.length > 0 && (
+                        <div style={{ marginBottom: 4, fontSize: 9, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Version 1 (Lead Vocal)
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {line.syllables.map((syl, sylIdx) => {
+                          const isSelectedSyl = isSelectedLine && sylIdx === selectedSylIdx;
+                          const isTimed = syl.end > 0;
+                          const isCurrentPlaying = currentTimeMs >= syl.begin && currentTimeMs <= syl.end && isTimed;
+                          const isAdLib = syl.role === 'x-bg';
 
-                        return (
-                          <div
-                            key={sylIdx}
-                            onClick={() => {
-                              setSelectedLineIdx(lineIdx);
-                              setSelectedSylIdx(sylIdx);
-                              if (syl.begin > 0) onSeek(syl.begin);
-                            }}
-                            style={{
-                              padding: '5px 8px',
-                              borderRadius: 3,
-                              border: isSelectedSyl
-                                ? '1px solid #ffffff'
-                                : isCurrentPlaying
-                                ? '1px solid #9e9ea8'
-                                : '1px solid #26262e',
-                              backgroundColor: isSelectedSyl
-                                ? '#22222a'
-                                : isAdLib
-                                ? '#1a1824'
-                                : '#0a0a0c',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: 2,
-                              transition: 'all 0.1s ease',
-                            }}
-                          >
-                            <span
+                          return (
+                            <div
+                              key={sylIdx}
+                              onClick={() => {
+                                setSelectedLineIdx(lineIdx);
+                                setSelectedSylIdx(sylIdx);
+                                if (syl.begin > 0) onSeek(syl.begin);
+                              }}
                               style={{
-                                fontSize: 13,
-                                fontWeight: 600,
-                                color: isSelectedSyl ? '#ffffff' : '#f4f4f6',
-                                fontStyle: isAdLib ? 'italic' : 'normal',
+                                padding: '5px 8px',
+                                borderRadius: 3,
+                                border: isSelectedSyl
+                                  ? '1px solid #ffffff'
+                                  : isCurrentPlaying
+                                  ? '1px solid #9e9ea8'
+                                  : '1px solid #26262e',
+                                backgroundColor: isSelectedSyl
+                                  ? '#22222a'
+                                  : isAdLib
+                                  ? '#1a1824'
+                                  : '#0a0a0c',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 2,
+                                transition: 'all 0.1s ease',
                               }}
                             >
-                              {syl.text}
-                            </span>
-                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                              {isAdLib && (
-                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#c084fc' }}>
-                                  x-bg
-                                </span>
-                              )}
                               <span
                                 style={{
-                                  fontFamily: 'var(--font-mono)',
-                                  fontSize: 9,
-                                  color: isTimed ? '#98c379' : '#5e5e68',
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  color: isSelectedSyl ? '#ffffff' : '#f4f4f6',
+                                  fontStyle: isAdLib ? 'italic' : 'normal',
                                 }}
                               >
-                                {isTimed ? formatTimestampTTML(syl.begin).slice(3) : '--:--'}
+                                {syl.text}
                               </span>
+                              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                {isAdLib && (
+                                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#c084fc' }}>
+                                    x-bg
+                                  </span>
+                                )}
+                                <span
+                                  style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: 9,
+                                    color: isTimed ? '#98c379' : '#5e5e68',
+                                  }}
+                                >
+                                  {isTimed ? formatTimestampTTML(syl.begin).slice(3) : '--:--'}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Version 2: Simultaneous Background Vocal / Subtext */}
+                    {line.backgroundVocals && line.backgroundVocals.length > 0 && (
+                      <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {line.backgroundVocals.map((bgLine, bgIdx) => (
+                          <div
+                            key={bgIdx}
+                            style={{
+                              padding: '8px 10px',
+                              backgroundColor: '#121218',
+                              border: '1px dashed #3a3a4c',
+                              borderRadius: 4,
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                              <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 3, backgroundColor: '#2e1b4d', color: '#d8b4fe', fontWeight: 600 }}>
+                                Version 2: Simultaneous Vocal (Subtext)
+                              </span>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#7e7e88' }}>
+                                  {formatTimestampTTML(bgLine.begin)} - {formatTimestampTTML(bgLine.end)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeSimultaneousSubtext(lineIdx, bgIdx)}
+                                  style={{
+                                    fontSize: 9,
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#f87171',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                            <input
+                              type="text"
+                              value={bgLine.text}
+                              onChange={(e) => updateBgLineText(lineIdx, bgIdx, e.target.value)}
+                              style={{
+                                width: '100%',
+                                backgroundColor: '#191522',
+                                border: '1px solid #362e45',
+                                borderRadius: 3,
+                                color: '#e9d5ff',
+                                fontSize: 11,
+                                padding: '4px 8px',
+                                marginBottom: 6,
+                                fontStyle: 'italic',
+                              }}
+                              placeholder="Type simultaneous vocal / subtext..."
+                            />
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              {bgLine.syllables.map((bgSyl, bgSylIdx) => {
+                                const isTimed = bgSyl.end > 0;
+                                const isCurrentPlaying = currentTimeMs >= bgSyl.begin && currentTimeMs <= bgSyl.end && isTimed;
+                                return (
+                                  <div
+                                    key={bgSylIdx}
+                                    onClick={() => {
+                                      if (bgSyl.begin > 0) onSeek(bgSyl.begin);
+                                    }}
+                                    style={{
+                                      padding: '4px 7px',
+                                      borderRadius: 3,
+                                      border: isCurrentPlaying ? '1px solid #d8b4fe' : '1px solid #2d2638',
+                                      backgroundColor: '#191522',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: 2,
+                                    }}
+                                  >
+                                    <span style={{ fontSize: 12, fontWeight: 500, color: '#e9d5ff', fontStyle: 'italic' }}>
+                                      {bgSyl.text}
+                                    </span>
+                                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: isTimed ? '#a78bfa' : '#5e5e68' }}>
+                                      {isTimed ? formatTimestampTTML(bgSyl.begin).slice(3) : '--:--'}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })
