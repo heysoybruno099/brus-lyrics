@@ -590,7 +590,26 @@ export const App: React.FC = () => {
           }));
 
           if (!activeSearchQueryRef.current) {
-            setSongs(remoteSongs);
+            // Merge remote songs with VERIFIED_FEATURED_TRACKS so catalog is never reduced or lost
+            const mergedMap = new Map<string, UnifiedSongItem>();
+            for (const t of VERIFIED_FEATURED_TRACKS) {
+              const k = (t.spotifyId || t.title).toLowerCase();
+              mergedMap.set(k, t);
+            }
+            for (const r of remoteSongs) {
+              const k = (r.spotifyId || r.title).toLowerCase();
+              const existing = mergedMap.get(k);
+              if (existing) {
+                mergedMap.set(k, {
+                  ...existing,
+                  ...r,
+                  artworkUrl: existing.artworkUrl || r.artworkUrl,
+                });
+              } else {
+                mergedMap.set(k, r);
+              }
+            }
+            setSongs(Array.from(mergedMap.values()));
           }
         }
       }

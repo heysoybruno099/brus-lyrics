@@ -196,6 +196,9 @@ export const DedicatedArtistView: React.FC<DedicatedArtistViewProps> = ({
                   <img
                     src={song.artworkUrl}
                     alt={song.title}
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36';
+                    }}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                   {song.isSyllableSynced ? (

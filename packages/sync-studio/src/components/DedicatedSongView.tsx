@@ -187,6 +187,9 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
         <img
           src={song.artworkUrl}
           alt={song.title}
+          onError={(e) => {
+            e.currentTarget.src = 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36';
+          }}
           style={{
             width: 180,
             height: 180,

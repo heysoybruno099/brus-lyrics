@@ -37,7 +37,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'PANTI Y COLALE 2.0',
     artist: 'El Alfa',
     album: 'PANTI Y COLALE 2.0',
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b06cf595709fa22a46c3b6ce',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273e642500777950f8f396f47b5',
     durationMs: 279685,
     source: 'verified',
     isSyllableSynced: true,
@@ -50,7 +50,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Forever and Ever, Amen',
     artist: 'Randy Travis',
     album: 'Always & Forever',
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b27303031070e75a74efafdf12eb',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273723376f081b369b02795a7fb',
     durationMs: 212640,
     source: 'verified',
     isSyllableSynced: true,
@@ -63,7 +63,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: '1865 (96º In The Shade)',
     artist: 'Third World',
     album: '96 Degrees In The Shade',
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273a0a382e389bf4430f78fbb4e',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b27385022daef38da8c9a7f81ac6',
     durationMs: 267826,
     source: 'verified',
     isSyllableSynced: true,
@@ -76,7 +76,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Rica y Apretadita',
     artist: 'El General, Anayka',
     album: 'Originales',
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b2735702cf1114b0b556f8f114c0',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273a908ed6eeeb286b8775a1724',
     durationMs: 261866,
     source: 'verified',
     isSyllableSynced: true,
@@ -89,7 +89,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Magalenha',
     artist: 'Sérgio Mendes',
     album: 'Brasileiro',
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273d6dc22ba1ef80a568c07e0c8',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b415fc6505fe00219d017df4',
     durationMs: 216933,
     source: 'verified',
     isSyllableSynced: true,
@@ -102,7 +102,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'BbY WOW',
     artist: 'KAROL G',
     album: 'NO ME ARREPIENTO DE SENTIR TANTO',
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273c683ee3ff7be4889c09c3dbe',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b27321deb742375f88edfb2e7368',
     durationMs: 225834,
     source: 'verified',
     isSyllableSynced: true,
@@ -128,7 +128,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'As It Was',
     artist: 'Harry Styles',
     album: "Harry's House",
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b2732e8f6fb74623f3775a97864f',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b27382ce362511fb3d9dda6578ee',
     durationMs: 167303,
     source: 'verified',
     isSyllableSynced: true,
@@ -141,7 +141,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'El Paso del Gigante',
     artist: 'Grupo Soñador',
     album: 'Antología De 20 Aniversario',
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b2735d496038aa4d6df1b353995d',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273103311b7c4c2c73922d393f1',
     durationMs: 216950,
     source: 'verified',
     isSyllableSynced: true,
@@ -154,7 +154,7 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
     title: 'Me Quedo',
     artist: 'Daddy Yankee',
     album: 'Los Homerun-es',
-    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b2734e5658e578278f309a48d88e',
+    artworkUrl: 'https://i.scdn.co/image/ab67616d0000b273b7b93e3343f9e4b2d91c2204',
     durationMs: 72013,
     source: 'verified',
     isSyllableSynced: true,
@@ -175,7 +175,28 @@ export const VERIFIED_FEATURED_TRACKS: UnifiedSongItem[] = [
   },
 ];
 
+const SPOTIFY_ARTWORK_MAP: Record<string, string> = {
+  '0VjIjW4GlUZAMYd2vXMi3b': 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36',
+  '11mDIi9MNeOXoeSqiYQnWI': 'https://i.scdn.co/image/ab67616d0000b273e642500777950f8f396f47b5',
+  '1ipcb9qXpSHWhSUvdxJhsx': 'https://i.scdn.co/image/ab67616d0000b273723376f081b369b02795a7fb',
+  '2Jko3yQgktaKnFcmyLv3g7': 'https://i.scdn.co/image/ab67616d0000b27385022daef38da8c9a7f81ac6',
+  '2XRqhe4lmCQVaUWawR5wRo': 'https://i.scdn.co/image/ab67616d0000b273a908ed6eeeb286b8775a1724',
+  '36SJ7ZFx8J1f1RsewmUwMX': 'https://i.scdn.co/image/ab67616d0000b273b415fc6505fe00219d017df4',
+  '3h5T5JypYU7huFiVYhv1dr': 'https://i.scdn.co/image/ab67616d0000b27321deb742375f88edfb2e7368',
+  '3KkXRkHbMCARz0aVfEt68P': 'https://i.scdn.co/image/ab67616d0000b273e2e352d89826aef6dbd5ff8f',
+  '4Dvkj6JhhA12EX05fT7y2e': 'https://i.scdn.co/image/ab67616d0000b27382ce362511fb3d9dda6578ee',
+  '5tRNzcUvgWGtuOozOR7skP': 'https://i.scdn.co/image/ab67616d0000b273103311b7c4c2c73922d393f1',
+  '7catwNsmz9tHX68C1SOfcj': 'https://i.scdn.co/image/ab67616d0000b273b7b93e3343f9e4b2d91c2204',
+  '7qiZfU4dY1lWllzX7mPBI3': 'https://i.scdn.co/image/ab67616d0000b273ba5db46f4b838ef6027e6f96',
+};
+
 export function resolveTrackArtwork(item: { artworkUrl?: string | null; ytmId?: string | null; spotifyId?: string | null }): string {
+  if (item.spotifyId) {
+    const cleanId = item.spotifyId.replace(/^spotify:track:/i, '').replace(/^spotify_/i, '');
+    if (SPOTIFY_ARTWORK_MAP[cleanId]) {
+      return SPOTIFY_ARTWORK_MAP[cleanId];
+    }
+  }
   if (item.artworkUrl && !item.artworkUrl.includes('unsplash.com') && !item.artworkUrl.includes('ytimg.com')) {
     return item.artworkUrl;
   }

@@ -127,6 +127,9 @@ export const SongCardGrid: React.FC<SongCardGridProps> = ({
                   alt={song.title}
                   className="card-artwork-img"
                   loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36';
+                  }}
                 />
                 <div className={`card-play-overlay ${isCurrentlyPlaying ? 'playing' : ''}`}>
                   <button
