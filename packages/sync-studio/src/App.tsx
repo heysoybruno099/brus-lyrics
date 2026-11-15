@@ -15,7 +15,7 @@ import { AudioMetadataDeck } from './components/AudioMetadataDeck.js';
 import { TapSyncMatrix } from './components/TapSyncMatrix.js';
 import { LivePreviewDeck } from './components/LivePreviewDeck.js';
 import { LogoIcon } from './components/LogoIcon.js';
-import { normalizeString } from '@brus-lyrics/shared-types';
+import { normalizeString, cleanYouTubeTitle } from '@brus-lyrics/shared-types';
 
 import { AudioPlayerEngine } from './lib/audio-player-engine.js';
 import { SpotifyWebPlayer } from './lib/spotify-web-player.js';
@@ -756,6 +756,32 @@ export const App: React.FC = () => {
       }
       setStudioMetadata((prev) => {
         const merged: TTMLMetadata = { ...prev, ...meta };
+        if (merged.title) {
+          const cleaned = cleanYouTubeTitle(merged.title, merged.artist);
+          merged.title = cleaned.title;
+          if (cleaned.artist && (!merged.artist || merged.artist === 'Unknown Artist')) {
+            merged.artist = cleaned.artist;
+          }
+        }
+
+        // Match against VERIFIED_FEATURED_TRACKS if spotifyId / ytmId / album is missing
+        const matched = VERIFIED_FEATURED_TRACKS.find((t) => {
+          if (merged.spotifyId && t.spotifyId === merged.spotifyId) return true;
+          if (merged.ytmId && t.ytmId === merged.ytmId) return true;
+          if (merged.title && t.title.toLowerCase() === merged.title.trim().toLowerCase()) {
+            if (!merged.artist || t.artist.toLowerCase().includes(merged.artist.trim().toLowerCase()) || merged.artist.toLowerCase().includes(t.artist.toLowerCase())) {
+              return true;
+            }
+          }
+          return false;
+        });
+
+        if (matched) {
+          if (!merged.spotifyId && matched.spotifyId) merged.spotifyId = matched.spotifyId;
+          if (!merged.ytmId && matched.ytmId) merged.ytmId = matched.ytmId;
+          if (!merged.album && matched.album) merged.album = matched.album;
+        }
+
         const dur =
           merged.durationMs ||
           (newLines && newLines.length > 0
@@ -770,24 +796,24 @@ export const App: React.FC = () => {
           activeSong.title.trim().toLowerCase() === merged.title.trim().toLowerCase()
         );
 
-        const songTitle = merged.title || (isSameSong ? activeSong?.title : undefined) || 'Imported Track';
-        const songArtist = merged.artist || (isSameSong ? activeSong?.artist : undefined) || 'Unknown Artist';
-        const cleanYtmId = merged.ytmId?.trim() || (isSameSong ? activeSong?.ytmId : null);
-        const cleanSpotifyId = merged.spotifyId?.trim() || (isSameSong ? activeSong?.spotifyId : null);
-        const songId = cleanSpotifyId || cleanYtmId || (isSameSong ? activeSong?.id : null) || `track_${Date.now()}`;
+        const songTitle = merged.title || matched?.title || (isSameSong ? activeSong?.title : undefined) || 'Imported Track';
+        const songArtist = merged.artist || matched?.artist || (isSameSong ? activeSong?.artist : undefined) || 'Unknown Artist';
+        const cleanYtmId = merged.ytmId?.trim() || matched?.ytmId || (isSameSong ? activeSong?.ytmId : null);
+        const cleanSpotifyId = merged.spotifyId?.trim() || matched?.spotifyId || (isSameSong ? activeSong?.spotifyId : null);
+        const songId = cleanSpotifyId || cleanYtmId || matched?.id || (isSameSong ? activeSong?.id : null) || `track_${Date.now()}`;
 
         const updatedSong: UnifiedSongItem = {
           id: songId,
           title: songTitle,
           artist: songArtist,
-          album: merged.album || (isSameSong ? activeSong?.album : undefined) || 'Single',
+          album: merged.album || matched?.album || (isSameSong ? activeSong?.album : undefined) || 'Single',
           artworkUrl: resolveTrackArtwork({
-            artworkUrl: isSameSong ? activeSong?.artworkUrl : undefined,
+            artworkUrl: matched?.artworkUrl || (isSameSong ? activeSong?.artworkUrl : undefined),
             ytmId: cleanYtmId,
             spotifyId: cleanSpotifyId,
           }),
           durationMs: dur,
-          previewUrl: null,
+          previewUrl: matched?.previewUrl || null,
           spotifyId: cleanSpotifyId || undefined,
           ytmId: cleanYtmId || undefined,
           source: cleanSpotifyId ? 'spotify' : 'verified',
@@ -827,9 +853,20 @@ export const App: React.FC = () => {
 
       if (newLines && newLines.length > 0) {
         setStudioLines(newLines);
+        // CRITICAL: Synchronize activeDocument so the lyrics view / popup immediately has these uncompressed syllable lyrics
+        setActiveDocument({
+          metadata: {
+            title: meta.title || studioMetadata.title,
+            artist: meta.artist || studioMetadata.artist,
+            durationMs: meta.durationMs || (newLines[newLines.length - 1]?.end ?? 0),
+            ...meta,
+          },
+          lines: newLines,
+          rawXml: rawXml || studioRawTtml || undefined,
+        });
       }
     },
-    [activeSong, durationMs, user, isSpotifyPremium]
+    [activeSong, durationMs, user, isSpotifyPremium, studioMetadata.title, studioMetadata.artist, studioRawTtml]
   );
 
   // Line change handler that invalidates stale raw TTML and auto-persists drafts
@@ -837,6 +874,20 @@ export const App: React.FC = () => {
     (newLines: TTMLLine[]) => {
       setStudioLines(newLines);
       setStudioRawTtml(null);
+      // Synchronize activeDocument with line changes
+      setActiveDocument((prev) => {
+        if (!prev) {
+          return {
+            metadata: studioMetadata,
+            lines: newLines,
+          };
+        }
+        return {
+          ...prev,
+          lines: newLines,
+          rawXml: undefined,
+        };
+      });
       const key = activeSong?.spotifyId || activeSong?.ytmId || activeSong?.id;
       if (key && newLines.length > 0) {
         saveDraftForTrack(key, {
@@ -1031,13 +1082,20 @@ export const App: React.FC = () => {
   };
 
   const handleSaveStudioWork = async () => {
+    const matchedTrack = VERIFIED_FEATURED_TRACKS.find(
+      (t) =>
+        (studioMetadata.title && t.title.toLowerCase() === studioMetadata.title.trim().toLowerCase()) ||
+        (activeSong?.title && t.title.toLowerCase() === activeSong.title.trim().toLowerCase())
+    );
     const effectiveSpotifyId =
       (studioMetadata.platformTarget === 'ytm' ? null : studioMetadata.spotifyId) ||
       activeSong?.spotifyId ||
+      matchedTrack?.spotifyId ||
       null;
     const effectiveYtmId =
       (studioMetadata.platformTarget === 'spotify' ? null : studioMetadata.ytmId) ||
       activeSong?.ytmId ||
+      matchedTrack?.ytmId ||
       null;
     const trackKey = effectiveSpotifyId || effectiveYtmId || activeSong?.id || 'current';
 
@@ -1079,8 +1137,8 @@ export const App: React.FC = () => {
         artist: studioMetadata.artist || activeSong?.artist || 'Unknown Artist',
         album: studioMetadata.album || activeSong?.album || null,
         durationMs: duration,
-        spotifyId: (studioMetadata.platformTarget === 'ytm' ? null : studioMetadata.spotifyId) || activeSong?.spotifyId || null,
-        ytmId: (studioMetadata.platformTarget === 'spotify' ? null : studioMetadata.ytmId) || activeSong?.ytmId || null,
+        spotifyId: effectiveSpotifyId,
+        ytmId: effectiveYtmId,
         isrc: studioMetadata.isrc || null,
         contributor: effectiveContributor,
         platformTarget: studioMetadata.platformTarget || 'both',
@@ -1089,6 +1147,16 @@ export const App: React.FC = () => {
       ttmlRaw: xml,
       contributor: effectiveContributor,
     };
+
+    setActiveDocument({
+      metadata: {
+        ...studioMetadata,
+        spotifyId: effectiveSpotifyId || undefined,
+        ytmId: effectiveYtmId || undefined,
+      },
+      lines: studioLines,
+      rawXml: xml,
+    });
 
     const adminQuery = user
       ? `?adminUser=${encodeURIComponent(user.username)}&adminId=${encodeURIComponent(user.id)}`

@@ -1,4 +1,4 @@
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_0VjIjW4GlUZAMYd2vXMi3b',
   '0VjIjW4GlUZAMYd2vXMi3b',
@@ -11,7 +11,8 @@ VALUES (
   200040,
   'database/ttml/0VjIjW4GlUZAMYd2vXMi3b.ttml',
   'Bru',
-  '2026-11-07T23:50:04.872Z'
+  1,
+  '2026-11-15T01:39:02.407Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -24,9 +25,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_11mDIi9MNeOXoeSqiYQnWI',
   '11mDIi9MNeOXoeSqiYQnWI',
@@ -39,7 +41,8 @@ VALUES (
   279685,
   'database/ttml/11mDIi9MNeOXoeSqiYQnWI.ttml',
   'Bru',
-  '2026-11-07T23:50:04.879Z'
+  1,
+  '2026-11-15T01:39:02.415Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -52,9 +55,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_1ipcb9qXpSHWhSUvdxJhsx',
   '1ipcb9qXpSHWhSUvdxJhsx',
@@ -67,7 +71,8 @@ VALUES (
   212640,
   'database/ttml/1ipcb9qXpSHWhSUvdxJhsx.ttml',
   'Bru',
-  '2026-11-07T23:50:04.883Z'
+  1,
+  '2026-11-15T01:39:02.419Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -80,9 +85,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_2Jko3yQgktaKnFcmyLv3g7',
   '2Jko3yQgktaKnFcmyLv3g7',
@@ -95,7 +101,8 @@ VALUES (
   267826,
   'database/ttml/2Jko3yQgktaKnFcmyLv3g7.ttml',
   'Bru',
-  '2026-11-07T23:50:04.885Z'
+  1,
+  '2026-11-15T01:39:02.423Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -108,9 +115,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_2XRqhe4lmCQVaUWawR5wRo',
   '2XRqhe4lmCQVaUWawR5wRo',
@@ -123,7 +131,8 @@ VALUES (
   261866,
   'database/ttml/2XRqhe4lmCQVaUWawR5wRo.ttml',
   'Bru',
-  '2026-11-07T23:50:04.888Z'
+  1,
+  '2026-11-15T01:39:02.426Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -136,9 +145,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_36SJ7ZFx8J1f1RsewmUwMX',
   '36SJ7ZFx8J1f1RsewmUwMX',
@@ -151,7 +161,8 @@ VALUES (
   216933,
   'database/ttml/36SJ7ZFx8J1f1RsewmUwMX.ttml',
   'Bru',
-  '2026-11-07T23:50:04.891Z'
+  1,
+  '2026-11-15T01:39:02.430Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -164,9 +175,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_3h5T5JypYU7huFiVYhv1dr',
   '3h5T5JypYU7huFiVYhv1dr',
@@ -179,7 +191,8 @@ VALUES (
   225834,
   'database/ttml/3h5T5JypYU7huFiVYhv1dr.ttml',
   'Bru',
-  '2026-11-07T23:50:04.894Z'
+  1,
+  '2026-11-15T01:39:02.433Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -192,9 +205,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_3KkXRkHbMCARz0aVfEt68P',
   '3KkXRkHbMCARz0aVfEt68P',
@@ -207,7 +221,8 @@ VALUES (
   158040,
   'database/ttml/3KkXRkHbMCARz0aVfEt68P.ttml',
   'Bru',
-  '2026-11-07T23:50:04.897Z'
+  1,
+  '2026-11-15T01:39:02.436Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -220,9 +235,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_4Dvkj6JhhA12EX05fT7y2e',
   '4Dvkj6JhhA12EX05fT7y2e',
@@ -235,7 +251,8 @@ VALUES (
   167303,
   'database/ttml/4Dvkj6JhhA12EX05fT7y2e.ttml',
   'Bru',
-  '2026-11-07T23:50:04.899Z'
+  1,
+  '2026-11-15T01:39:02.439Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -248,9 +265,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_5tRNzcUvgWGtuOozOR7skP',
   '5tRNzcUvgWGtuOozOR7skP',
@@ -263,7 +281,8 @@ VALUES (
   216950,
   'database/ttml/5tRNzcUvgWGtuOozOR7skP.ttml',
   'Bru',
-  '2026-11-07T23:50:04.901Z'
+  1,
+  '2026-11-15T01:39:02.441Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -276,9 +295,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_7catwNsmz9tHX68C1SOfcj',
   '7catwNsmz9tHX68C1SOfcj',
@@ -291,7 +311,8 @@ VALUES (
   72013,
   'database/ttml/7catwNsmz9tHX68C1SOfcj.ttml',
   'Bru',
-  '2026-11-07T23:50:04.904Z'
+  1,
+  '2026-11-15T01:39:02.443Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -304,9 +325,10 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
 
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   'song_7qiZfU4dY1lWllzX7mPBI3',
   '7qiZfU4dY1lWllzX7mPBI3',
@@ -319,7 +341,8 @@ VALUES (
   233712,
   'database/ttml/7qiZfU4dY1lWllzX7mPBI3.ttml',
   'Bru',
-  '2026-11-07T23:50:04.907Z'
+  1,
+  '2026-11-15T01:39:02.447Z'
 )
 ON CONFLICT(id) DO UPDATE SET
   spotify_id=excluded.spotify_id,
@@ -332,61 +355,5 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;
-
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
-VALUES (
-  'song_5wjiZSbxaLyLpGimpwqh1H',
-  '5wjiZSbxaLyLpGimpwqh1H',
-  'O1zfuBgCUqY',
-  'ARF048800040',
-  'En la Ciudad de la Furia',
-  'Soda Stereo',
-  'en la ciudad de la furia',
-  'soda stereo',
-  345533,
-  'database/ttml/5wjiZSbxaLyLpGimpwqh1H.ttml',
-  'Bru',
-  '2026-11-08T20:00:00.000Z'
-)
-ON CONFLICT(id) DO UPDATE SET
-  spotify_id=excluded.spotify_id,
-  ytm_id=excluded.ytm_id,
-  isrc=excluded.isrc,
-  title=excluded.title,
-  artist=excluded.artist,
-  title_norm=excluded.title_norm,
-  artist_norm=excluded.artist_norm,
-  duration_ms=excluded.duration_ms,
-  file_path=excluded.file_path,
-  contributor=excluded.contributor,
-  updated_at=excluded.updated_at;
-
-INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
-VALUES (
-  'song_3uMYq07Kj5m564OQwdSCrD',
-  '3uMYq07Kj5m564OQwdSCrD',
-  'oxkyfZAHVI4',
-  'ARF048500020',
-  'Cuando Pase El Temblor',
-  'Soda Stereo',
-  'cuando pase el temblor',
-  'soda stereo',
-  229160,
-  'database/ttml/3uMYq07Kj5m564OQwdSCrD.ttml',
-  'Bru',
-  '2026-11-08T20:10:00.000Z'
-)
-ON CONFLICT(id) DO UPDATE SET
-  spotify_id=excluded.spotify_id,
-  ytm_id=excluded.ytm_id,
-  isrc=excluded.isrc,
-  title=excluded.title,
-  artist=excluded.artist,
-  title_norm=excluded.title_norm,
-  artist_norm=excluded.artist_norm,
-  duration_ms=excluded.duration_ms,
-  file_path=excluded.file_path,
-  contributor=excluded.contributor,
-  updated_at=excluded.updated_at;
-

@@ -12,6 +12,7 @@ import {
   type LyricsFormat,
   type SyncMode,
 } from '../lib/multi-format-lyrics.js';
+import { jsonToTTML } from '@brus-lyrics/ttml-engine';
 
 interface TapSyncMatrixProps {
   lines: TTMLLine[];
@@ -69,6 +70,40 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
 
   // Tokenize plain lyrics into structured lines and syllables
   const handleTokenize = () => {
+    const trimmed = rawText.trim();
+    if (
+      trimmed.startsWith('<') ||
+      trimmed.includes('<tt') ||
+      trimmed.startsWith('{') ||
+      trimmed.startsWith('[') ||
+      /\[\d{2}:\d{2}/.test(trimmed)
+    ) {
+      const fmt = detectLyricsFormat(rawText);
+      if (fmt === 'ttml' || fmt === 'json' || fmt === 'lrc') {
+        const parsed = parseMultiFormatLyrics(rawText, undefined, durationMs);
+        if (parsed.lines.length > 0) {
+          const meta: Partial<TTMLMetadata> = { ...(parsed.metadata || {}) };
+          if (!meta.durationMs && parsed.lines.length > 0) {
+            meta.durationMs = parsed.lines[parsed.lines.length - 1]!.end;
+          }
+          const rawXml =
+            fmt === 'ttml' || rawText.includes('<tt')
+              ? rawText
+              : fmt === 'json'
+              ? jsonToTTML(rawText, meta)
+              : undefined;
+          setRawText(parsed.lines.map((l) => l.text).join('\n'));
+          onChangeLines(parsed.lines);
+          onChangeMetadata?.(meta, parsed.lines, rawXml);
+          setSyncFidelity(parsed.mode);
+          setSelectedLineIdx(0);
+          setSelectedSylIdx(0);
+          setMode('sync');
+          return;
+        }
+      }
+    }
+
     let rawLines = rawText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
     const wasSingleBlock = rawLines.length === 1;
 
@@ -251,8 +286,8 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
     };
 
     // Recompute line begin & end
-    const lineBegin = updatedSyllables[0]?.begin ?? 0;
-    const lineEnd = updatedSyllables[updatedSyllables.length - 1]?.end ?? 0;
+    const lineBegin = updatedSyllables.find((s) => s.begin > 0)?.begin ?? currentLine.begin ?? 0;
+    const lineEnd = Math.max(...updatedSyllables.map((s) => s.end), currentLine.end);
 
     const updatedLines = [...lines];
     updatedLines[selectedLineIdx] = {
@@ -402,10 +437,12 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
             };
 
             const updatedLines = [...lines];
+            const lineBegin = updatedSyllables.find((s) => s.begin > 0)?.begin ?? currentLine.begin ?? 0;
+            const lineEnd = Math.max(...updatedSyllables.map((s) => s.end), endTimestamp, currentLine.end);
             updatedLines[selectedLineIdx] = {
               ...currentLine,
-              begin: updatedSyllables[0]?.begin ?? 0,
-              end: updatedSyllables[updatedSyllables.length - 1]?.end ?? 0,
+              begin: lineBegin,
+              end: lineEnd,
               syllables: updatedSyllables,
             };
             onChangeLines(updatedLines);
@@ -453,7 +490,13 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
           meta.durationMs = parsed.lines[parsed.lines.length - 1]!.end;
         }
 
-        const rawXml = (fmt === 'ttml' || text.includes('<tt')) ? text : undefined;
+        const rawXml =
+          fmt === 'ttml' || text.includes('<tt')
+            ? text
+            : fmt === 'json'
+            ? jsonToTTML(text, meta)
+            : undefined;
+        setRawText(parsed.lines.map((l) => l.text).join('\n'));
         onChangeLines(parsed.lines);
         onChangeMetadata?.(meta, parsed.lines, rawXml);
         setSyncFidelity(parsed.mode);
@@ -477,32 +520,25 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
 
       const parsed = parseMultiFormatLyrics(uploadContent, uploadedFileName || undefined, durationMs);
       if (parsed.lines.length > 0) {
-        // If user explicitly selected line vs syllable mode
-        let finalLines = parsed.lines;
-        if (syncFidelity === 'line') {
-          finalLines = parsed.lines.map((l) => ({
-            ...l,
-            syllables: [
-              {
-                begin: l.begin,
-                end: l.end,
-                text: l.text,
-              },
-            ],
-          }));
-        }
+        setSyncFidelity(parsed.mode);
 
         const meta: Partial<TTMLMetadata> = { ...(parsed.metadata || {}) };
-        if (!meta.durationMs && finalLines.length > 0) {
-          meta.durationMs = finalLines[finalLines.length - 1]!.end;
+        if (!meta.durationMs && parsed.lines.length > 0) {
+          meta.durationMs = parsed.lines[parsed.lines.length - 1]!.end;
         }
 
-        const rawXml = (fmt === 'ttml' || uploadContent.includes('<tt')) ? uploadContent : undefined;
-        onChangeLines(finalLines);
-        onChangeMetadata?.(meta, finalLines, rawXml);
+        const rawXml =
+          fmt === 'ttml' || uploadContent.includes('<tt')
+            ? uploadContent
+            : fmt === 'json'
+            ? jsonToTTML(uploadContent, meta)
+            : undefined;
+        setRawText(parsed.lines.map((l) => l.text).join('\n'));
+        onChangeLines(parsed.lines);
+        onChangeMetadata?.(meta, parsed.lines, rawXml);
         setSelectedLineIdx(0);
         setSelectedSylIdx(0);
-        setUploadStatus(`Successfully imported ${finalLines.length} lines into matrix!`);
+        setUploadStatus(`Successfully imported ${parsed.lines.length} lines into matrix! (${parsed.mode === 'syllable' ? 'Syllable mode' : 'Line mode'})`);
         setMode('sync');
       } else {
         setUploadStatus('Could not find synchronized lines in the content.');

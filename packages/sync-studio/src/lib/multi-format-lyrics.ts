@@ -22,8 +22,14 @@ export function detectLyricsFormat(content: string, filename?: string): LyricsFo
     if (lower.endsWith('.json')) return 'json';
   }
 
-  const trimmed = content.trim();
-  if (trimmed.startsWith('<') || trimmed.includes('<tt') || trimmed.includes('xmlns="http://www.w3.org/ns/ttml"')) {
+  const trimmed = content.replace(/^\uFEFF/, '').trim();
+  if (
+    trimmed.startsWith('<') ||
+    trimmed.includes('<tt') ||
+    trimmed.includes(':tt') ||
+    trimmed.includes('xmlns="http://www.w3.org/ns/ttml"') ||
+    /<(?:[a-zA-Z0-9_-]+:)?p\b/i.test(trimmed)
+  ) {
     return 'ttml';
   }
 
@@ -32,7 +38,10 @@ export function detectLyricsFormat(content: string, filename?: string): LyricsFo
       JSON.parse(trimmed);
       return 'json';
     } catch {
-      // not valid JSON, check others
+      // If structured with brackets
+      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+        return 'json';
+      }
     }
   }
 
@@ -175,9 +184,14 @@ export function parseTtmlXml(content: string): {
   mode: SyncMode;
 } {
   const doc = parseTTML(content);
-  const hasSyllables = doc.lines.some(
-    (l) => (l.syllables && l.syllables.length > 0) || (l.backgroundVocals && l.backgroundVocals.length > 0)
-  );
+  const hasSpans = /<(?:[a-zA-Z0-9_-]+:)?span\b/i.test(content);
+  const hasSyllables =
+    hasSpans ||
+    doc.lines.some(
+      (l) =>
+        (l.syllables && l.syllables.length > 1) ||
+        (l.backgroundVocals && l.backgroundVocals.length > 0)
+    );
 
   return {
     metadata: doc.metadata,

@@ -32,16 +32,22 @@ function sanitizeText(raw: any): string {
 }
 
 function toMs(val: any): number {
+  if (val === null || val === undefined || val === '') return 0;
   if (typeof val === 'number') {
-    return val < 1000 && !Number.isInteger(val) ? Math.round(val * 1000) : Math.round(val);
+    if (!Number.isInteger(val)) {
+      return val < 1000 ? Math.round(val * 1000) : Math.round(val);
+    }
+    return val;
   }
   if (typeof val === 'string') {
     const trimmed = val.trim();
-    const parsed = parseFloat(trimmed);
-    if (!isNaN(parsed) && !trimmed.includes(':')) {
-      return parsed < 1000 && trimmed.includes('.') ? Math.round(parsed * 1000) : Math.round(parsed);
+    if (!trimmed) return 0;
+    const normalized = trimmed.includes(':') ? trimmed.replace(',', '.') : trimmed;
+    const parsed = parseFloat(normalized.replace(',', '.'));
+    if (!isNaN(parsed) && !normalized.includes(':')) {
+      return !Number.isInteger(parsed) && parsed < 1000 ? Math.round(parsed * 1000) : Math.round(parsed);
     }
-    return parseTimestampTTML(trimmed);
+    return parseTimestampTTML(normalized);
   }
   return 0;
 }
@@ -91,32 +97,58 @@ export function parseJsonLyrics(
   const lines: TTMLLine[] = [];
   let hasSyllables = false;
 
-  // Structure 1: data.lyrics.Content (Type: "Vocal", Lead: { StartTime, EndTime, Syllables }, Background?: [...])
-  if (
-    data.lyrics &&
-    Array.isArray(data.lyrics.Content) &&
-    data.lyrics.Content.length > 0
-  ) {
-    for (let i = 0; i < data.lyrics.Content.length; i++) {
-      const item = data.lyrics.Content[i];
-      if (!item || !item.Lead) continue;
+  // Resolve vocal content array across diverse tool exports
+  const vocalContent =
+    (data.lyrics && Array.isArray(data.lyrics.Content) && data.lyrics.Content) ||
+    (data.lyrics && Array.isArray(data.lyrics.content) && data.lyrics.content) ||
+    (Array.isArray(data.Content) && data.Content) ||
+    (Array.isArray(data.content) && data.content) ||
+    (Array.isArray(data.lyrics) && (data.lyrics[0]?.Lead || data.lyrics[0]?.lead) && data.lyrics);
 
-      const lead = item.Lead;
-      const beginMs = toMs(lead.StartTime);
-      const endMs = toMs(lead.EndTime);
+  // Structure 1: Content array (Type: "Vocal", Lead: { StartTime, EndTime, Syllables }, Background?: [...])
+  if (vocalContent && vocalContent.length > 0) {
+    for (let i = 0; i < vocalContent.length; i++) {
+      const item = vocalContent[i];
+      if (!item) continue;
+      const lead = item.Lead || item.lead;
+      if (!lead) continue;
+
+      const beginMs = toMs(lead.StartTime ?? lead.startTime ?? lead.start);
+      const endMs = toMs(lead.EndTime ?? lead.endTime ?? lead.end);
       const syllables: TTMLSyllable[] = [];
 
-      const rawSyllables = lead.Syllables || [];
+      const rawSyllables =
+        (Array.isArray(lead.Syllables) && lead.Syllables) ||
+        (Array.isArray(lead.syllables) && lead.syllables) ||
+        (Array.isArray(lead.tokens) && lead.tokens) ||
+        (Array.isArray(lead.Tokens) && lead.Tokens) ||
+        (Array.isArray(lead.words) && lead.words) ||
+        (Array.isArray(lead.Words) && lead.Words) ||
+        [];
       if (Array.isArray(rawSyllables) && rawSyllables.length > 0) {
         hasSyllables = true;
         for (let s = 0; s < rawSyllables.length; s++) {
           const syl = rawSyllables[s];
-          const sylBegin = toMs(syl.StartTime);
-          const sylEnd = toMs(syl.EndTime);
-          let sylText = sanitizeText(syl.Text);
+          const sylBegin = toMs(syl.StartTime ?? syl.startTime ?? syl.start ?? syl.time ?? beginMs);
+          const sylEnd = toMs(
+            syl.EndTime ??
+              syl.endTime ??
+              syl.end ??
+              (rawSyllables[s + 1]
+                ? toMs(rawSyllables[s + 1].StartTime ?? rawSyllables[s + 1].startTime ?? rawSyllables[s + 1].start)
+                : endMs)
+          );
+          let sylText = sanitizeText(syl.Text ?? syl.text ?? syl.word ?? syl.Word);
 
           // If syllable is the end of a word, ensure a trailing space so word boundaries are preserved
-          if (syl.IsPartOfWord === false) {
+          if (syl.IsPartOfWord === false || syl.isPartOfWord === false) {
+            sylText = sylText.trimEnd() + ' ';
+          } else if (
+            syl.IsPartOfWord !== true &&
+            syl.isPartOfWord !== true &&
+            s < rawSyllables.length - 1 &&
+            !sylText.endsWith(' ')
+          ) {
             sylText = sylText.trimEnd() + ' ';
           }
 
@@ -220,33 +252,47 @@ export function parseJsonLyrics(
   // Structure 2: data.draft.lines (Array of { text, start, end, tokens: [ { text, start } ], backgrounds?: [...] })
   else if (
     data.draft &&
-    Array.isArray(data.draft.lines) &&
-    data.draft.lines.length > 0
+    (Array.isArray(data.draft.lines) || Array.isArray(data.draft.Lines)) &&
+    ((data.draft.lines && data.draft.lines.length > 0) || (data.draft.Lines && data.draft.Lines.length > 0))
   ) {
-    for (let i = 0; i < data.draft.lines.length; i++) {
-      const item = data.draft.lines[i];
+    const draftLines = data.draft.lines || data.draft.Lines;
+    for (let i = 0; i < draftLines.length; i++) {
+      const item = draftLines[i];
       if (!item) continue;
 
-      const beginMs = toMs(item.start);
-      const endMs = toMs(item.end);
+      const beginMs = toMs(item.start ?? item.StartTime ?? item.startTime ?? item.begin ?? 0);
+      const endMs = toMs(item.end ?? item.EndTime ?? item.endTime ?? item.endMs ?? beginMs + 3500);
       const syllables: TTMLSyllable[] = [];
 
-      const tokens = item.tokens || [];
+      const tokens =
+        (Array.isArray(item.tokens) && item.tokens) ||
+        (Array.isArray(item.Tokens) && item.Tokens) ||
+        (Array.isArray(item.syllables) && item.syllables) ||
+        (Array.isArray(item.Syllables) && item.Syllables) ||
+        (Array.isArray(item.words) && item.words) ||
+        (Array.isArray(item.Words) && item.Words) ||
+        [];
       if (Array.isArray(tokens) && tokens.length > 0) {
         hasSyllables = true;
         for (let t = 0; t < tokens.length; t++) {
           const tok = tokens[t];
           const nextTok = tokens[t + 1];
-          const tokBegin = toMs(tok.start);
+          const tokBegin = toMs(tok.start ?? tok.StartTime ?? tok.startTime ?? tok.begin ?? beginMs);
           const tokEnd =
             tok.end !== undefined && tok.end !== null
               ? toMs(tok.end)
+              : tok.EndTime !== undefined && tok.EndTime !== null
+              ? toMs(tok.EndTime)
+              : tok.endTime !== undefined && tok.endTime !== null
+              ? toMs(tok.endTime)
               : nextTok
-              ? toMs(nextTok.start)
+              ? toMs(nextTok.start ?? nextTok.StartTime ?? nextTok.startTime ?? nextTok.begin)
               : endMs;
-          let tokText = sanitizeText(tok.text);
+          let tokText = sanitizeText(tok.text ?? tok.Text ?? tok.word ?? tok.Word);
 
-          if (t < tokens.length - 1) {
+          if (tok.isPartOfWord === false || tok.IsPartOfWord === false) {
+            tokText = tokText.trimEnd() + ' ';
+          } else if (t < tokens.length - 1 && !tokText.endsWith(' ')) {
             tokText = tokText.trimEnd() + ' ';
           }
 
@@ -273,25 +319,25 @@ export function parseJsonLyrics(
           syllables: [{ begin: beginMs, end: endMs, text: subClean, role: 'x-bg' }],
         });
       }
-      const rawBackground = item.backgrounds || item.Background;
+      const rawBackground = item.backgrounds || item.Background || item.Backgrounds;
       if (Array.isArray(rawBackground) && rawBackground.length > 0) {
         for (let b = 0; b < rawBackground.length; b++) {
           const bgItem = rawBackground[b];
           if (!bgItem) continue;
-          const bgBegin = toMs(bgItem.start ?? bgItem.StartTime ?? beginMs);
-          const bgEnd = toMs(bgItem.end ?? bgItem.EndTime ?? endMs);
+          const bgBegin = toMs(bgItem.start ?? bgItem.StartTime ?? bgItem.startTime ?? beginMs);
+          const bgEnd = toMs(bgItem.end ?? bgItem.EndTime ?? bgItem.endTime ?? endMs);
           const bgSyllables: TTMLSyllable[] = [];
-          const bgTokens = bgItem.tokens || bgItem.Syllables || [];
+          const bgTokens = bgItem.tokens || bgItem.Tokens || bgItem.Syllables || bgItem.syllables || [];
 
           for (let t = 0; t < bgTokens.length; t++) {
             const tok = bgTokens[t];
             const nextTok = bgTokens[t + 1];
-            const tokBegin = toMs(tok.start ?? tok.StartTime ?? bgBegin);
+            const tokBegin = toMs(tok.start ?? tok.StartTime ?? tok.startTime ?? bgBegin);
             const tokEnd =
               (tok.end !== undefined && tok.end !== null) || (tok.EndTime !== undefined && tok.EndTime !== null)
-                ? toMs(tok.end ?? tok.EndTime)
+                ? toMs(tok.end ?? tok.EndTime ?? tok.endTime)
                 : nextTok
-                ? toMs(nextTok.start ?? nextTok.StartTime)
+                ? toMs(nextTok.start ?? nextTok.StartTime ?? nextTok.startTime)
                 : bgEnd;
             let tokText = sanitizeText(tok.text ?? tok.Text);
             if (t < bgTokens.length - 1) tokText = tokText.trimEnd() + ' ';
@@ -349,33 +395,56 @@ export function parseJsonLyrics(
       ? data
       : Array.isArray(data.lines)
       ? data.lines
+      : Array.isArray(data.Lines)
+      ? data.Lines
+      : Array.isArray(data.lyrics?.lines)
+      ? data.lyrics.lines
+      : Array.isArray(data.lyrics?.Lines)
+      ? data.lyrics.Lines
+      : Array.isArray(data.lyrics)
+      ? data.lyrics
       : [];
 
     for (let i = 0; i < rawLines.length; i++) {
       const item = rawLines[i];
       if (!item) continue;
 
-      const beginMs = toMs(item.begin ?? item.startTimeMs ?? item.time ?? item.start ?? 0);
+      const beginMs = toMs(item.begin ?? item.startTimeMs ?? item.startTime ?? item.StartTime ?? item.time ?? item.start ?? 0);
       const nextItem = rawLines[i + 1];
       const nextBegin = nextItem
-        ? toMs(nextItem.begin ?? nextItem.startTimeMs ?? nextItem.time ?? nextItem.start ?? 0)
+        ? toMs(nextItem.begin ?? nextItem.startTimeMs ?? nextItem.startTime ?? nextItem.StartTime ?? nextItem.time ?? nextItem.start ?? 0)
         : 0;
-      const endMs = toMs(item.end ?? item.endTimeMs ?? (nextBegin > beginMs ? nextBegin : beginMs + 3500));
+      const endMs = toMs(item.end ?? item.endTimeMs ?? item.endTime ?? item.EndTime ?? (nextBegin > beginMs ? nextBegin : beginMs + 3500));
 
-      const lineText = sanitizeText(item.text ?? item.words ?? item.content ?? '').trim();
+      const lineText = sanitizeText(item.text ?? item.Text ?? item.words ?? item.content ?? '').trim();
       const syllables: TTMLSyllable[] = [];
 
-      const wordItems = item.words || item.syllables || item.tokens;
+      const wordItems =
+        (Array.isArray(item.syllables) && item.syllables) ||
+        (Array.isArray(item.Syllables) && item.Syllables) ||
+        (Array.isArray(item.tokens) && item.tokens) ||
+        (Array.isArray(item.Tokens) && item.Tokens) ||
+        (Array.isArray(item.words) && item.words) ||
+        (Array.isArray(item.Words) && item.Words) ||
+        [];
       if (Array.isArray(wordItems) && wordItems.length > 0) {
         hasSyllables = true;
         for (let w = 0; w < wordItems.length; w++) {
           const word = wordItems[w];
           const nextWord = wordItems[w + 1];
-          const wBegin = toMs(word.begin ?? word.start ?? word.startTimeMs ?? beginMs);
-          const wEnd = toMs(word.end ?? word.endTimeMs ?? (nextWord ? toMs(nextWord.begin ?? nextWord.start) : endMs));
-          let wText = sanitizeText(word.text ?? word.word ?? word.syllable ?? '');
+          const wBegin = toMs(word.begin ?? word.start ?? word.StartTime ?? word.startTime ?? word.startTimeMs ?? word.time ?? beginMs);
+          const wEnd = toMs(
+            word.end ??
+              word.endTimeMs ??
+              word.endTime ??
+              word.EndTime ??
+              (nextWord ? toMs(nextWord.begin ?? nextWord.start ?? nextWord.StartTime ?? nextWord.startTime ?? nextWord.startTimeMs ?? nextWord.time) : endMs)
+          );
+          let wText = sanitizeText(word.text ?? word.Text ?? word.word ?? word.Word ?? word.syllable ?? word.content ?? '');
 
-          if (w < wordItems.length - 1 && !wText.endsWith(' ')) {
+          if (word.isPartOfWord === false || word.IsPartOfWord === false) {
+            wText = wText.trimEnd() + ' ';
+          } else if (w < wordItems.length - 1 && !wText.endsWith(' ')) {
             wText += ' ';
           }
 
@@ -547,7 +616,7 @@ export function jsonToTTML(
                     return `          <span begin="${sbStr}" end="${seStr}">${escapeXml(s.text)}</span>`;
                   })
                   .join('\n')
-              : `          <span>${escapeXml(bg.text)}</span>`;
+              : `          <span begin="${bgBegin}" end="${bgEnd}">${escapeXml(bg.text)}</span>`;
           bgXml += `\n        <span begin="${bgBegin}" end="${bgEnd}" ttm:role="x-bg">\n${bgSpans}\n        </span>`;
         }
       }
@@ -556,11 +625,13 @@ export function jsonToTTML(
     })
     .join('\n');
 
+  const lang = escapeXml(meta.language || 'en');
+
   return `<?xml version="1.0" encoding="utf-8"?>
 <tt xmlns="http://www.w3.org/ns/ttml"
     xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
     xmlns:itunes="http://music.apple.com/lyric-ttml-extensions"
-    xml:lang="es">
+    xml:lang="${lang}">
   <head>
     <metadata>
       <ttm:title>${title}</ttm:title>

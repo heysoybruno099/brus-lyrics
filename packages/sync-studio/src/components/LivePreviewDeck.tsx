@@ -3,6 +3,7 @@ import { BrusLyricsRenderer, parseTTML } from '@brus-lyrics/ttml-engine';
 import type { TTMLLine, TTMLMetadata, SubmitLyricsResponse } from '@brus-lyrics/shared-types';
 import { serializeStudioToTTML, linesToTTMLDocument } from '../lib/ttml-serializer.js';
 import { getApiBaseUrl, DEFAULT_PRODUCTION_API } from '../lib/config.js';
+import { VERIFIED_FEATURED_TRACKS } from '../lib/spotify-service.js';
 import type { DiscordUser } from '../lib/types.js';
 
 interface LivePreviewDeckProps {
@@ -102,13 +103,28 @@ export const LivePreviewDeck: React.FC<LivePreviewDeckProps> = ({
     const duration = metadata.durationMs || (lines.length > 0 ? lines[lines.length - 1]!.end : 180000);
     const effectiveContributor = user?.username ? `@${user.username}` : (metadata.contributor || 'Community');
 
+    const matchedTrack = VERIFIED_FEATURED_TRACKS.find(
+      (t) =>
+        metadata.title &&
+        t.title.toLowerCase() === metadata.title.trim().toLowerCase() &&
+        (!metadata.artist || t.artist.toLowerCase().includes(metadata.artist.trim().toLowerCase()) || metadata.artist.toLowerCase().includes(t.artist.toLowerCase()))
+    );
+    const effectiveSpotifyId =
+      (metadata.platformTarget === 'ytm' ? null : metadata.spotifyId) ||
+      matchedTrack?.spotifyId ||
+      null;
+    const effectiveYtmId =
+      (metadata.platformTarget === 'spotify' ? null : metadata.ytmId) ||
+      matchedTrack?.ytmId ||
+      null;
+
     const payload = {
       metadata: {
         title: metadata.title || 'Untitled',
         artist: metadata.artist || 'Unknown Artist',
         durationMs: duration,
-        spotifyId: (metadata.platformTarget === 'ytm' ? null : metadata.spotifyId) || null,
-        ytmId: (metadata.platformTarget === 'spotify' ? null : metadata.ytmId) || null,
+        spotifyId: effectiveSpotifyId,
+        ytmId: effectiveYtmId,
         isrc: metadata.isrc || null,
         contributor: effectiveContributor,
         platformTarget: metadata.platformTarget || 'both',

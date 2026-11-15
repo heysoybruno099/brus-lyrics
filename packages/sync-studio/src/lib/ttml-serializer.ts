@@ -41,7 +41,7 @@ export function serializeStudioToTTML(
       const leadSyllables: TTMLSyllable[] = [];
       const bgSyllables: TTMLSyllable[] = [];
 
-      for (const syl of line.syllables) {
+      for (const syl of line.syllables || []) {
         if (syl.role === 'x-bg') {
           bgSyllables.push(syl);
         } else {
@@ -182,32 +182,74 @@ export function serializeLinesToJSON(metadata: TTMLMetadata, lines: TTMLLine[]):
 
   // Build lyrics.Content array conforming to Syllable Studio format with Lead and Background
   const content = lines.map((line) => {
-    const leadSyllables = (line.syllables && line.syllables.length > 0
-      ? line.syllables
-      : [{ begin: line.begin, end: line.end, text: line.text }]
-    ).map((s) => ({
+    const leadSyllablesList: TTMLSyllable[] = [];
+    const bgSyllablesList: TTMLSyllable[] = [];
+
+    for (const syl of line.syllables || []) {
+      if (syl.role === 'x-bg') {
+        bgSyllablesList.push(syl);
+      } else {
+        leadSyllablesList.push(syl);
+      }
+    }
+
+    if (leadSyllablesList.length === 0 && line.text) {
+      leadSyllablesList.push({ begin: line.begin, end: line.end, text: line.text });
+    }
+
+    const leadSyllables = leadSyllablesList.map((s, sIdx) => ({
       Text: s.text.trim(),
-      IsPartOfWord: false,
+      IsPartOfWord: sIdx < leadSyllablesList.length - 1 && !s.text.endsWith(' '),
       StartTime: s.begin,
       EndTime: s.end,
     }));
 
-    const bgVocals =
-      line.backgroundVocals && line.backgroundVocals.length > 0
-        ? line.backgroundVocals.map((bg) => ({
-            StartTime: bg.begin,
-            EndTime: bg.end,
-            Syllables: (bg.syllables && bg.syllables.length > 0
-              ? bg.syllables
-              : [{ begin: bg.begin, end: bg.end, text: bg.text }]
-            ).map((s) => ({
-              Text: s.text.trim(),
-              IsPartOfWord: false,
-              StartTime: s.begin,
-              EndTime: s.end,
-            })),
-          }))
-        : undefined;
+    let bgVocals:
+      | Array<{
+          StartTime: number;
+          EndTime: number;
+          Syllables: Array<{
+            Text: string;
+            IsPartOfWord: boolean;
+            StartTime: number;
+            EndTime: number;
+          }>;
+        }>
+      | undefined;
+
+    if (line.backgroundVocals && line.backgroundVocals.length > 0) {
+      bgVocals = line.backgroundVocals.map((bg) => {
+        const bgList =
+          bg.syllables && bg.syllables.length > 0
+            ? bg.syllables
+            : [{ begin: bg.begin, end: bg.end, text: bg.text }];
+        return {
+          StartTime: bg.begin,
+          EndTime: bg.end,
+          Syllables: bgList.map((s, sIdx) => ({
+            Text: s.text.trim(),
+            IsPartOfWord: sIdx < bgList.length - 1 && !s.text.endsWith(' '),
+            StartTime: s.begin,
+            EndTime: s.end,
+          })),
+        };
+      });
+    } else if (bgSyllablesList.length > 0) {
+      const bgBegin = bgSyllablesList[0]!.begin;
+      const bgEnd = bgSyllablesList[bgSyllablesList.length - 1]!.end;
+      bgVocals = [
+        {
+          StartTime: bgBegin,
+          EndTime: bgEnd,
+          Syllables: bgSyllablesList.map((s, sIdx) => ({
+            Text: s.text.trim(),
+            IsPartOfWord: sIdx < bgSyllablesList.length - 1 && !s.text.endsWith(' '),
+            StartTime: s.begin,
+            EndTime: s.end,
+          })),
+        },
+      ];
+    }
 
     return {
       Type: 'Vocal',
@@ -224,10 +266,22 @@ export function serializeLinesToJSON(metadata: TTMLMetadata, lines: TTMLLine[]):
 
   // Build draft.lines array with tokens and subtext backgrounds
   const draftLines = lines.map((line) => {
-    const tokens = (line.syllables && line.syllables.length > 0
-      ? line.syllables
-      : [{ begin: line.begin, end: line.end, text: line.text }]
-    ).map((s) => ({
+    const leadSyllablesList: TTMLSyllable[] = [];
+    const bgSyllablesList: TTMLSyllable[] = [];
+
+    for (const syl of line.syllables || []) {
+      if (syl.role === 'x-bg') {
+        bgSyllablesList.push(syl);
+      } else {
+        leadSyllablesList.push(syl);
+      }
+    }
+
+    if (leadSyllablesList.length === 0 && line.text) {
+      leadSyllablesList.push({ begin: line.begin, end: line.end, text: line.text });
+    }
+
+    const tokens = leadSyllablesList.map((s) => ({
       text: s.text.trim(),
       start: s.begin,
       ...(s.end > s.begin ? { end: s.end } : {}),
@@ -236,26 +290,51 @@ export function serializeLinesToJSON(metadata: TTMLMetadata, lines: TTMLLine[]):
     const bgText =
       line.backgroundVocals && line.backgroundVocals.length > 0
         ? line.backgroundVocals.map((bg) => bg.text.trim()).join(' ')
+        : bgSyllablesList.length > 0
+        ? bgSyllablesList.map((s) => s.text.trim()).join(' ')
         : '';
 
     const fullText = bgText ? `${line.text.trim()} (${bgText})` : line.text.trim();
 
-    const backgrounds =
-      line.backgroundVocals && line.backgroundVocals.length > 0
-        ? line.backgroundVocals.map((bg) => ({
-            text: bg.text.trim(),
-            tokens: (bg.syllables && bg.syllables.length > 0
-              ? bg.syllables
-              : [{ begin: bg.begin, end: bg.end, text: bg.text }]
-            ).map((s) => ({
-              text: s.text.trim(),
-              start: s.begin,
-              ...(s.end > s.begin ? { end: s.end } : {}),
-            })),
-            start: bg.begin,
-            end: bg.end,
-          }))
-        : undefined;
+    let backgrounds:
+      | Array<{
+          text: string;
+          tokens: Array<{ text: string; start: number; end?: number }>;
+          start: number;
+          end: number;
+        }>
+      | undefined;
+
+    if (line.backgroundVocals && line.backgroundVocals.length > 0) {
+      backgrounds = line.backgroundVocals.map((bg) => ({
+        text: bg.text.trim(),
+        tokens: (bg.syllables && bg.syllables.length > 0
+          ? bg.syllables
+          : [{ begin: bg.begin, end: bg.end, text: bg.text }]
+        ).map((s) => ({
+          text: s.text.trim(),
+          start: s.begin,
+          ...(s.end > s.begin ? { end: s.end } : {}),
+        })),
+        start: bg.begin,
+        end: bg.end,
+      }));
+    } else if (bgSyllablesList.length > 0) {
+      const bgBegin = bgSyllablesList[0]!.begin;
+      const bgEnd = bgSyllablesList[bgSyllablesList.length - 1]!.end;
+      backgrounds = [
+        {
+          text: bgText,
+          tokens: bgSyllablesList.map((s) => ({
+            text: s.text.trim(),
+            start: s.begin,
+            ...(s.end > s.begin ? { end: s.end } : {}),
+          })),
+          start: bgBegin,
+          end: bgEnd,
+        },
+      ];
+    }
 
     return {
       kind: 'lyric',

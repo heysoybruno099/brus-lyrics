@@ -97,6 +97,7 @@ export interface TTMLMetadata {
   isrc?: string;
   contributor?: string;
   platformTarget?: 'both' | 'spotify' | 'ytm';
+  language?: string;
 }
 
 export interface TTMLDocument {

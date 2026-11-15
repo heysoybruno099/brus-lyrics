@@ -202,6 +202,7 @@ export function ingestInbox(options: IngestOptions = {}): IngestResult {
       duration_ms: durationMs,
       file_path: relativeFilePath,
       contributor,
+      is_verified: 1,
       updated_at: updatedAt,
     };
 
@@ -225,7 +226,7 @@ export function ingestInbox(options: IngestOptions = {}): IngestResult {
     const ytmSql = ytmId ? `'${escapeSql(ytmId)}'` : 'NULL';
     const isrcSql = isrc ? `'${escapeSql(isrc)}'` : 'NULL';
 
-    const sql = `INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, updated_at)
+    const sql = `INSERT INTO songs (id, spotify_id, ytm_id, isrc, title, artist, title_norm, artist_norm, duration_ms, file_path, contributor, is_verified, updated_at)
 VALUES (
   '${escapeSql(songId)}',
   ${spotifySql},
@@ -238,6 +239,7 @@ VALUES (
   ${durationMs},
   '${escapeSql(relativeFilePath)}',
   '${escapeSql(contributor)}',
+  1,
   '${updatedAt}'
 )
 ON CONFLICT(id) DO UPDATE SET
@@ -251,6 +253,7 @@ ON CONFLICT(id) DO UPDATE SET
   duration_ms=excluded.duration_ms,
   file_path=excluded.file_path,
   contributor=excluded.contributor,
+  is_verified=excluded.is_verified,
   updated_at=excluded.updated_at;`;
 
     generatedSql.push(sql);

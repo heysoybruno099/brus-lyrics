@@ -1,6 +1,12 @@
 import { test, describe, it } from 'node:test';
 import * as assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseTTML } from '../src/parser.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { lrcToTTML, lrcToTTMLDocument, parseLrcIntervals } from '../src/lrc-converter.js';
 import { validateTTML } from '../src/validator.js';
 import { BrusLyricsRenderer } from '../src/renderer.js';
@@ -927,6 +933,99 @@ describe('Sync Workstation & Real Artwork Resolution', () => {
     assert.ok(line1.backgroundVocals && line1.backgroundVocals.length === 1);
     assert.equal(line1.backgroundVocals[0]?.text, 'otra más que se dejó del novio');
     assert.equal(line1.backgroundVocals[0]?.role, 'x-bg');
+  });
+});
+
+describe('Upload Fidelity & Syllable Verification Suite', () => {
+  it('parses namespaced TTML with <tt:p> and <tt:span> without collapsing', () => {
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<tt:tt xmlns:tt="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata">
+  <tt:body>
+    <tt:div>
+      <tt:p begin="00:00:01.000" end="00:00:03.000">
+        <tt:span begin="00:00:01.000" end="00:00:01.500">Hello </tt:span>
+        <tt:span begin="00:00:01.500" end="00:00:03.000">world</tt:span>
+      </tt:p>
+      <tt:p begin="00:00:03.500" end="00:00:06.000">
+        <tt:span begin="00:00:03.500" end="00:00:04.500">Line </tt:span>
+        <tt:span begin="00:00:04.500" end="00:00:06.000">two</tt:span>
+      </tt:p>
+    </tt:div>
+  </tt:body>
+</tt:tt>`;
+    const doc = parseTTML(xml);
+    assert.equal(doc.lines.length, 2);
+    assert.equal(doc.lines[0]?.syllables.length, 2);
+    assert.equal(doc.lines[1]?.syllables.length, 2);
+    assert.equal(doc.lines[0]?.text, 'Hello world');
+    assert.equal(doc.lines[1]?.text, 'Line two');
+  });
+
+  it('preserves word spacing when IsPartOfWord is not explicitly defined in JSON', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+    const jsonStr = JSON.stringify({
+      lyrics: {
+        Type: 'Syllable',
+        Content: [
+          {
+            Type: 'Line',
+            Lead: {
+              StartTime: 1000,
+              EndTime: 3000,
+              Syllables: [
+                { Text: 'Never', StartTime: 1000, EndTime: 1500 },
+                { Text: 'gonna', StartTime: 1500, EndTime: 2000 },
+                { Text: 'give', StartTime: 2000, EndTime: 2500 },
+                { Text: 'up', StartTime: 2500, EndTime: 3000 },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    const res = parseMultiFormatLyrics(jsonStr);
+    assert.equal(res.mode, 'syllable');
+    assert.equal(res.lines.length, 1);
+    assert.equal(res.lines[0]?.syllables.length, 4);
+    assert.equal(res.lines[0]?.text, 'Never gonna give up');
+  });
+
+  it('prioritizes syllables array over words string property in JSON formats', async () => {
+    const { parseMultiFormatLyrics } = await import('../../sync-studio/src/lib/multi-format-lyrics.js');
+    const jsonStr = JSON.stringify([
+      {
+        startTimeMs: '1000',
+        endTimeMs: '3000',
+        words: 'Full line text string',
+        syllables: [
+          { text: 'Full ', startTimeMs: '1000', endTimeMs: '1500' },
+          { text: 'line ', startTimeMs: '1500', endTimeMs: '2000' },
+          { text: 'text ', startTimeMs: '2000', endTimeMs: '2500' },
+          { text: 'string', startTimeMs: '2500', endTimeMs: '3000' },
+        ],
+      },
+    ]);
+
+    const res = parseMultiFormatLyrics(jsonStr);
+    assert.equal(res.mode, 'syllable');
+    assert.equal(res.lines.length, 1);
+    assert.equal(res.lines[0]?.syllables.length, 4);
+    assert.equal(res.lines[0]?.text, 'Full line text string');
+  });
+
+  it('verifies all 12 songs in catalog are marked is_verified: 1 and valid TTML exists', () => {
+    const catalogPath = path.resolve(__dirname, '../../../database/catalog.json');
+    const catalogData = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
+    assert.equal(catalogData.songs.length, 12);
+    for (const song of catalogData.songs) {
+      assert.equal(song.is_verified, 1, `Song ${song.title} should have is_verified: 1`);
+      const ttmlFilePath = path.resolve(__dirname, '../../../', song.file_path);
+      assert.ok(fs.existsSync(ttmlFilePath), `TTML file must exist at ${song.file_path}`);
+      const ttmlContent = fs.readFileSync(ttmlFilePath, 'utf8');
+      const doc = parseTTML(ttmlContent);
+      assert.ok(doc.lines.length > 0, `Song ${song.title} must have at least one line`);
+    }
   });
 });
 

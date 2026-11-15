@@ -1,4 +1,5 @@
 import {
+  cleanYouTubeTitle,
   parseTimestampTTML,
   type TTMLDocument,
   type TTMLLine,
@@ -75,16 +76,22 @@ interface SpanNode {
 function parseTopLevelSpans(content: string): SpanNode[] {
   const nodes: SpanNode[] = [];
   let cursor = 0;
+  const spanStartRegex = /<(?:[a-zA-Z0-9_-]+:)?span\b/gi;
+  const spanCloseRegex = /<\/(?:[a-zA-Z0-9_-]+:)?span>/gi;
 
   while (cursor < content.length) {
-    const spanStart = content.indexOf('<span', cursor);
-    if (spanStart === -1) break;
+    spanStartRegex.lastIndex = cursor;
+    const match = spanStartRegex.exec(content);
+    if (!match) break;
 
-    const tagClose = content.indexOf('>', spanStart);
+    const spanStart = match.index;
+    const matchLen = match[0].length;
+
+    const tagClose = content.indexOf('>', spanStart + matchLen);
     if (tagClose === -1) break;
 
     const isSelfClosing = content[tagClose - 1] === '/';
-    const attrStr = content.slice(spanStart + 5, isSelfClosing ? tagClose - 1 : tagClose);
+    const attrStr = content.slice(spanStart + matchLen, isSelfClosing ? tagClose - 1 : tagClose);
     const attrs = parseAttributes(attrStr);
 
     if (isSelfClosing) {
@@ -96,30 +103,36 @@ function parseTopLevelSpans(content: string): SpanNode[] {
     let depth = 1;
     let searchPos = tagClose + 1;
     let endPos = -1;
+    let closeTagLen = 7;
 
     while (searchPos < content.length) {
-      const nextOpen = content.indexOf('<span', searchPos);
-      const nextClose = content.indexOf('</span>', searchPos);
+      spanStartRegex.lastIndex = searchPos;
+      const nextOpenMatch = spanStartRegex.exec(content);
+      spanCloseRegex.lastIndex = searchPos;
+      const nextCloseMatch = spanCloseRegex.exec(content);
 
-      if (nextClose === -1) break;
+      if (!nextCloseMatch) break;
 
-      if (nextOpen !== -1 && nextOpen < nextClose) {
+      if (nextOpenMatch && nextOpenMatch.index < nextCloseMatch.index) {
         depth++;
-        searchPos = nextOpen + 5;
+        searchPos = nextOpenMatch.index + nextOpenMatch[0].length;
       } else {
         depth--;
         if (depth === 0) {
-          endPos = nextClose;
+          endPos = nextCloseMatch.index;
+          closeTagLen = nextCloseMatch[0].length;
           break;
         }
-        searchPos = nextClose + 7;
+        searchPos = nextCloseMatch.index + nextCloseMatch[0].length;
       }
     }
 
     if (endPos !== -1) {
       const innerContent = content.slice(tagClose + 1, endPos);
-      const afterSpan = endPos + 7;
-      const nextSpan = content.indexOf('<span', afterSpan);
+      const afterSpan = endPos + closeTagLen;
+      spanStartRegex.lastIndex = afterSpan;
+      const nextSpanMatch = spanStartRegex.exec(content);
+      const nextSpan = nextSpanMatch ? nextSpanMatch.index : -1;
       const interSpan = nextSpan !== -1 ? content.slice(afterSpan, nextSpan) : '';
       const cleanInterSpan = interSpan.replace(/<[^>]+>/g, '');
       const trailing = cleanInterSpan.replace(/\s+/g, ' ');
@@ -145,17 +158,28 @@ export function parseTTML(rawXml: string): TTMLDocument {
 
   const metadata: TTMLMetadata = {};
 
-  const title =
+  const rawTitle =
     extractTagValue(rawXml, 'ttm:title') ||
     extractTagValue(rawXml, 'itunes:title') ||
     extractTagValue(rawXml, 'title');
-  if (title) metadata.title = decodeXmlEntities(title);
-
-  const artist =
+  const rawArtist =
     extractTagValue(rawXml, 'ttm:agent') ||
     extractTagValue(rawXml, 'itunes:artist') ||
     extractTagValue(rawXml, 'artist');
-  if (artist) metadata.artist = decodeXmlEntities(artist);
+
+  if (rawTitle) {
+    const decodedTitle = decodeXmlEntities(rawTitle);
+    const decodedArtist = rawArtist ? decodeXmlEntities(rawArtist) : undefined;
+    const cleaned = cleanYouTubeTitle(decodedTitle, decodedArtist);
+    metadata.title = cleaned.title;
+    if (cleaned.artist) {
+      metadata.artist = cleaned.artist;
+    } else if (decodedArtist) {
+      metadata.artist = decodedArtist;
+    }
+  } else if (rawArtist) {
+    metadata.artist = decodeXmlEntities(rawArtist);
+  }
 
   const album =
     extractTagValue(rawXml, 'ttm:album') ||
@@ -203,8 +227,8 @@ export function parseTTML(rawXml: string): TTMLDocument {
 
   const lines: TTMLLine[] = [];
 
-  // Match all <p ...>...</p> tags
-  const pRegex = /<p\b([^>]*)>([\s\S]*?)<\/p>/gi;
+  // Match all <p ...>...</p> tags (with optional namespace prefix e.g. tt:p)
+  const pRegex = /<(?:[a-zA-Z0-9_-]+:)?p\b([^>]*)>([\s\S]*?)<\/(?:[a-zA-Z0-9_-]+:)?p>/gi;
   let pMatch: RegExpExecArray | null;
 
   while ((pMatch = pRegex.exec(rawXml)) !== null) {
