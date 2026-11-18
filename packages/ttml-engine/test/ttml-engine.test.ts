@@ -1014,10 +1014,10 @@ describe('Upload Fidelity & Syllable Verification Suite', () => {
     assert.equal(res.lines[0]?.text, 'Full line text string');
   });
 
-  it('verifies all 12 songs in catalog are marked is_verified: 1 and valid TTML exists', () => {
+  it('verifies all 39 songs in catalog are marked is_verified: 1 and valid TTML exists', () => {
     const catalogPath = path.resolve(__dirname, '../../../database/catalog.json');
     const catalogData = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-    assert.equal(catalogData.songs.length, 12);
+    assert.equal(catalogData.songs.length, 39);
     for (const song of catalogData.songs) {
       assert.equal(song.is_verified, 1, `Song ${song.title} should have is_verified: 1`);
       const ttmlFilePath = path.resolve(__dirname, '../../../', song.file_path);

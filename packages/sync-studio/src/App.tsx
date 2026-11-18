@@ -577,8 +577,9 @@ export const App: React.FC = () => {
             ytmId: s.ytm_id || undefined,
             title: s.title,
             artist: s.artist,
-            album: 'Catalog',
+            album: s.album || 'Catalog',
             artworkUrl: resolveTrackArtwork({
+              artworkUrl: s.artwork_url || null,
               spotifyId: s.spotify_id || undefined,
               ytmId: s.ytm_id || undefined,
             }),

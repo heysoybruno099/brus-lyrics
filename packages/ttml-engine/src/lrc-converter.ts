@@ -83,6 +83,16 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
+function parseWordTimestamp(tag: string): number {
+  const m = tag.match(/<(\d{2}):(\d{2})(?:\.(\d{2,3}))?>/);
+  if (!m) return 0;
+  const minutes = parseInt(m[1] || '0', 10);
+  const seconds = parseInt(m[2] || '0', 10);
+  const millisRaw = m[3] || '000';
+  const millis = parseInt(millisRaw.padEnd(3, '0').slice(0, 3), 10);
+  return minutes * 60000 + seconds * 1000 + millis;
+}
+
 export function lrcToTTML(lrc: string, metadata?: TTMLMetadata): string {
   const meta = metadata || {};
   const duration = meta.durationMs || 0;
@@ -100,13 +110,47 @@ export function lrcToTTML(lrc: string, metadata?: TTMLMetadata): string {
   const spotifyId = meta.spotifyId ? `<itunes:spotifyId>${escapeXml(meta.spotifyId)}</itunes:spotifyId>\n    ` : '';
   const ytmId = meta.ytmId ? `<itunes:youtubeId>${escapeXml(meta.ytmId)}</itunes:youtubeId>\n    ` : '';
   const isrc = meta.isrc ? `<itunes:isrc>${escapeXml(meta.isrc)}</itunes:isrc>\n    ` : '';
-  const contributor = escapeXml(meta.contributor || 'lrclib-fallback');
+  const contributor = escapeXml(meta.contributor || 'Community');
 
   const linesXml = intervals
     .map((interval) => {
       const bStr = formatTimestampTTML(interval.beginMs);
       const eStr = formatTimestampTTML(interval.endMs);
-      const text = escapeXml(interval.text);
+      const rawText = interval.text;
+
+      // Check if word-level syllable timestamps exist: <mm:ss.xx> word
+      if (/<(\d{2}):(\d{2})(?:\.(\d{2,3}))?>/.test(rawText)) {
+        const wordTagRegex = /<(\d{2}:\d{2}(?:\.\d{2,3})?)>\s*([^<]+)/g;
+        const wordMatches: { begin: number; text: string }[] = [];
+        let wordMatch: RegExpExecArray | null;
+
+        while ((wordMatch = wordTagRegex.exec(rawText)) !== null) {
+          if (wordMatch[1] && wordMatch[2]) {
+            const timeTag = `<${wordMatch[1]}>`;
+            wordMatches.push({
+              begin: parseWordTimestamp(timeTag),
+              text: wordMatch[2],
+            });
+          }
+        }
+
+        if (wordMatches.length > 0) {
+          const spans = wordMatches.map((wm, wIdx) => {
+            const nextWm = wordMatches[wIdx + 1];
+            const wEnd = nextWm ? nextWm.begin : interval.endMs;
+            const wbStr = formatTimestampTTML(wm.begin);
+            const weStr = formatTimestampTTML(Math.max(wm.begin + 50, wEnd));
+            let wText = wm.text;
+            if (wIdx < wordMatches.length - 1 && !wText.endsWith(' ')) {
+              wText += ' ';
+            }
+            return `        <span begin="${wbStr}" end="${weStr}">${escapeXml(wText)}</span>`;
+          }).join('\n');
+          return `      <p begin="${bStr}" end="${eStr}" ttm:agent="v1">\n${spans}\n      </p>`;
+        }
+      }
+
+      const text = escapeXml(rawText.replace(/<[^>]+>/g, '').trim());
       return `      <p begin="${bStr}" end="${eStr}" ttm:agent="v1">\n        <span begin="${bStr}" end="${eStr}">${text}</span>\n      </p>`;
     })
     .join('\n');

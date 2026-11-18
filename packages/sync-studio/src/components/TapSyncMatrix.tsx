@@ -12,7 +12,7 @@ import {
   type LyricsFormat,
   type SyncMode,
 } from '../lib/multi-format-lyrics.js';
-import { jsonToTTML } from '@brus-lyrics/ttml-engine';
+import { jsonToTTML, lrcToTTML } from '@brus-lyrics/ttml-engine';
 
 interface TapSyncMatrixProps {
   lines: TTMLLine[];
@@ -91,6 +91,8 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
               ? rawText
               : fmt === 'json'
               ? jsonToTTML(rawText, meta)
+              : fmt === 'lrc'
+              ? lrcToTTML(rawText, meta)
               : undefined;
           setRawText(parsed.lines.map((l) => l.text).join('\n'));
           onChangeLines(parsed.lines);
@@ -495,6 +497,8 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
             ? text
             : fmt === 'json'
             ? jsonToTTML(text, meta)
+            : fmt === 'lrc'
+            ? lrcToTTML(text, meta)
             : undefined;
         setRawText(parsed.lines.map((l) => l.text).join('\n'));
         onChangeLines(parsed.lines);
@@ -532,6 +536,8 @@ export const TapSyncMatrix: React.FC<TapSyncMatrixProps> = ({
             ? uploadContent
             : fmt === 'json'
             ? jsonToTTML(uploadContent, meta)
+            : fmt === 'lrc'
+            ? lrcToTTML(uploadContent, meta)
             : undefined;
         setRawText(parsed.lines.map((l) => l.text).join('\n'));
         onChangeLines(parsed.lines);

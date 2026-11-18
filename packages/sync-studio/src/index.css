@@ -1023,12 +1023,12 @@ html, body, #root {
 }
 
 .popup-lyric-line.is-future {
-  opacity: 0.35;
+  opacity: 0.28;
   filter: blur(0.5px);
 }
 
 .popup-lyric-line.is-passed {
-  opacity: 0.55;
+  opacity: 0.38;
 }
 
 .popup-lyric-line.is-active {
@@ -1055,34 +1055,44 @@ html, body, #root {
 }
 
 .popup-syllable.syl-active {
-  transform: translateY(-2px) scale(1.04);
-  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.65));
+  color: #ffffff !important;
+  opacity: 1 !important;
+  transform: translateY(-2px) scale(1.08) !important;
+  filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 32px rgba(255, 255, 255, 0.45)) !important;
+  font-weight: 800 !important;
 }
 
 .popup-syllable.syl-passed {
+  color: #ffffff !important;
   transform: none;
   filter: none;
-  opacity: 1;
+  opacity: 0.95 !important;
 }
 
 .popup-syllable:not(.syl-active):not(.syl-passed) {
-  opacity: 0.65;
-  filter: blur(0.2px);
+  color: rgba(255, 255, 255, 0.32) !important;
+  opacity: 0.35 !important;
+  filter: none;
 }
 
 .popup-syllable-fill {
   background: linear-gradient(
     to right,
-    hsl(var(--foreground)) 0%,
-    hsl(var(--foreground)) calc(var(--syl-progress, 0) * 100%),
-    hsl(var(--muted-foreground)) calc(var(--syl-progress, 0) * 100%),
-    hsl(var(--muted-foreground)) 100%
+    #ffffff 0%,
+    #ffffff calc(var(--syl-progress, 0) * 100%),
+    rgba(255, 255, 255, 0.32) calc(var(--syl-progress, 0) * 100%),
+    rgba(255, 255, 255, 0.32) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
   white-space: pre-wrap;
+}
+
+.popup-fallback-text {
+  color: inherit;
+  opacity: 0.9;
 }
 
 .popup-attribution-footer {

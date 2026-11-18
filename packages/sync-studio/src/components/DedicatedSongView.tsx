@@ -482,7 +482,7 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
                     cursor: 'pointer',
                     fontSize: isActive ? 24 : 19,
                     fontWeight: isActive ? 700 : 500,
-                    color: isActive ? '#ffffff' : isPast ? '#71717a' : '#3f3f46',
+                    color: isActive ? 'rgba(255, 255, 255, 0.35)' : isPast ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.25)',
                     transform: isActive ? 'scale(1.02)' : 'scale(1)',
                     transformOrigin: 'left center',
                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -501,10 +501,11 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
                           key={`syl_${sIdx}`}
                           style={{
                             display: 'inline-block',
-                            color: sylSung || sylSinging ? '#ffffff' : 'inherit',
-                            opacity: sylSung || sylSinging ? 1 : 0.65,
-                            textShadow: sylSinging ? '0 0 16px rgba(255, 255, 255, 0.6)' : 'none',
-                            transform: sylSinging ? 'translateY(-2px) scale(1.04)' : 'none',
+                            color: sylSinging || sylSung ? '#ffffff' : 'rgba(255, 255, 255, 0.32)',
+                            opacity: sylSinging ? 1 : sylSung ? 0.95 : 0.35,
+                            fontWeight: sylSinging ? 800 : sylSung ? 700 : 'inherit',
+                            textShadow: sylSinging ? '0 0 16px rgba(255, 255, 255, 0.85), 0 0 32px rgba(255, 255, 255, 0.45)' : 'none',
+                            transform: sylSinging ? 'translateY(-2px) scale(1.08)' : 'none',
                             transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                             cursor: 'pointer',
                           }}
@@ -514,7 +515,7 @@ export const DedicatedSongView: React.FC<DedicatedSongViewProps> = ({
                       );
                     })
                   ) : (
-                    <span>{line.text}</span>
+                    <span style={{ color: isActive ? '#ffffff' : 'inherit' }}>{line.text}</span>
                   )}
 
                   {line.backgroundVocals && line.backgroundVocals.length > 0 && (

@@ -1,0 +1,594 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-extensions"
+    xml:lang="en">
+  <head>
+    <metadata>
+      <ttm:title>Perdóname</ttm:title>
+      <ttm:agent>La Factoria, Eddy Lover</ttm:agent>
+      <itunes:spotifyId>6yLqoieklk9gwabLaUDJ4s</itunes:spotifyId>
+      <itunes:duration>00:04:02.390</itunes:duration>
+      <itunes:contributor>Bru</itunes:contributor>
+    </metadata>
+  </head>
+  <body dur="00:04:02.390">
+    <div>
+      <p begin="00:00:01.587" end="00:00:02.481" ttm:agent="v1">
+        <span begin="00:00:01.587" end="00:00:01.960">Eddy </span>
+        <span begin="00:00:01.960" end="00:00:02.481">Lover </span>
+      </p>
+      <p begin="00:00:03.579" end="00:00:05.600" ttm:agent="v1">
+        <span begin="00:00:03.579" end="00:00:04.523">Oh, </span>
+        <span begin="00:00:04.523" end="00:00:05.600">ey </span>
+      </p>
+      <p begin="00:00:06.393" end="00:00:07.059" ttm:agent="v1">
+        <span begin="00:00:06.393" end="00:00:07.059">Factoría </span>
+      </p>
+      <p begin="00:00:09.319" end="00:00:10.025" ttm:agent="v1">
+        <span begin="00:00:09.319" end="00:00:10.025">Ready </span>
+      </p>
+      <p begin="00:00:10.035" end="00:00:12.415" ttm:agent="v1">
+        <span begin="00:00:10.035" end="00:00:10.826">Mami, </span>
+        <span begin="00:00:10.826" end="00:00:11.078">yo </span>
+        <span begin="00:00:11.078" end="00:00:11.279">sé </span>
+        <span begin="00:00:11.279" end="00:00:11.339">que </span>
+        <span begin="00:00:11.339" end="00:00:11.613">no </span>
+        <span begin="00:00:11.613" end="00:00:12.076">estás </span>
+        <span begin="00:00:12.076" end="00:00:12.415">bien </span>
+      </p>
+      <p begin="00:00:12.465" end="00:00:17.195" ttm:agent="v1">
+        <span begin="00:00:12.465" end="00:00:12.868">Y </span>
+        <span begin="00:00:12.868" end="00:00:13.316">piensas </span>
+        <span begin="00:00:13.316" end="00:00:13.821">que </span>
+        <span begin="00:00:13.821" end="00:00:14.177">ya </span>
+        <span begin="00:00:14.177" end="00:00:14.280">te </span>
+        <span begin="00:00:14.280" end="00:00:14.629">dejé </span>
+        <span begin="00:00:14.629" end="00:00:14.796">de </span>
+        <span begin="00:00:14.796" end="00:00:17.195">querer </span>
+      </p>
+      <p begin="00:00:17.335" end="00:00:19.833" ttm:agent="v1">
+        <span begin="00:00:17.335" end="00:00:18.019">Estás </span>
+        <span begin="00:00:18.019" end="00:00:19.358">equivocada </span>
+        <span begin="00:00:19.358" end="00:00:19.489">y </span>
+        <span begin="00:00:19.489" end="00:00:19.833">yo </span>
+      </p>
+      <p begin="00:00:19.903" end="00:00:21.313" ttm:agent="v1">
+        <span begin="00:00:19.903" end="00:00:20.070">Lo </span>
+        <span begin="00:00:20.070" end="00:00:20.170">sé </span>
+        <span begin="00:00:20.170" end="00:00:20.494">que </span>
+        <span begin="00:00:20.494" end="00:00:21.313">fallé </span>
+      </p>
+      <p begin="00:00:21.403" end="00:00:23.803" ttm:agent="v1">
+        <span begin="00:00:21.403" end="00:00:21.785">Porque </span>
+        <span begin="00:00:21.785" end="00:00:22.029">fui </span>
+        <span begin="00:00:22.029" end="00:00:22.533">infiel </span>
+        <span begin="00:00:22.533" end="00:00:22.730">la </span>
+        <span begin="00:00:22.730" end="00:00:23.188">noche </span>
+        <span begin="00:00:23.188" end="00:00:23.248">de </span>
+        <span begin="00:00:23.248" end="00:00:23.803">ayer </span>
+      </p>
+      <p begin="00:00:23.853" end="00:00:26.466" ttm:agent="v1">
+        <span begin="00:00:23.853" end="00:00:23.990">Y </span>
+        <span begin="00:00:23.990" end="00:00:24.299">siempre </span>
+        <span begin="00:00:24.299" end="00:00:24.436">me </span>
+        <span begin="00:00:24.436" end="00:00:26.466">arrepentiré </span>
+      </p>
+      <p begin="00:00:27.299" end="00:00:29.348" ttm:agent="v1">
+        <span begin="00:00:27.299" end="00:00:27.472">Y </span>
+        <span begin="00:00:27.472" end="00:00:27.660">de </span>
+        <span begin="00:00:27.660" end="00:00:28.327">rodillas </span>
+        <span begin="00:00:28.327" end="00:00:28.435">te </span>
+        <span begin="00:00:28.435" end="00:00:28.809">pido, </span>
+        <span begin="00:00:28.809" end="00:00:29.348">mujer </span>
+      </p>
+      <p begin="00:00:29.605" end="00:00:32.236" ttm:agent="v1">
+        <span begin="00:00:29.605" end="00:00:29.998">Que </span>
+        <span begin="00:00:29.998" end="00:00:30.426">si </span>
+        <span begin="00:00:30.426" end="00:00:31.733">alguna </span>
+        <span begin="00:00:31.733" end="00:00:32.236">vez </span>
+      </p>
+      <p begin="00:00:32.473" end="00:00:34.841" ttm:agent="v1">
+        <span begin="00:00:32.473" end="00:00:33.300">Sentiste </span>
+        <span begin="00:00:33.300" end="00:00:33.679">algo </span>
+        <span begin="00:00:33.679" end="00:00:34.389">lindo </span>
+        <span begin="00:00:34.389" end="00:00:34.750">por </span>
+        <span begin="00:00:34.750" end="00:00:34.841">mí </span>
+      </p>
+      <p begin="00:00:34.845" end="00:00:39.347" ttm:agent="v1">
+        <span begin="00:00:34.845" end="00:00:37.638">Perdóname, </span>
+        <span begin="00:00:37.638" end="00:00:39.347">perdóname </span>
+      </p>
+      <p begin="00:00:39.747" end="00:00:42.354" ttm:agent="v1">
+        <span begin="00:00:39.747" end="00:00:40.192">Que </span>
+        <span begin="00:00:40.192" end="00:00:40.418">si </span>
+        <span begin="00:00:40.418" end="00:00:41.669">alguna </span>
+        <span begin="00:00:41.669" end="00:00:42.354">vez </span>
+      </p>
+      <p begin="00:00:42.571" end="00:00:44.994" ttm:agent="v1">
+        <span begin="00:00:42.571" end="00:00:43.255">Sentiste </span>
+        <span begin="00:00:43.255" end="00:00:43.831">algo </span>
+        <span begin="00:00:43.831" end="00:00:44.598">lindo </span>
+        <span begin="00:00:44.598" end="00:00:44.907">por </span>
+        <span begin="00:00:44.907" end="00:00:44.994">mí </span>
+      </p>
+      <p begin="00:00:44.961" end="00:00:49.690" ttm:agent="v1">
+        <span begin="00:00:44.961" end="00:00:47.838">Perdóname, </span>
+        <span begin="00:00:47.838" end="00:00:49.081">perdóname, </span>
+        <span begin="00:00:49.081" end="00:00:49.690">bebé </span>
+      </p>
+      <p begin="00:00:50.515" end="00:00:52.175" ttm:agent="v1">
+        <span begin="00:00:50.515" end="00:00:51.055">Cómo </span>
+        <span begin="00:00:51.055" end="00:00:51.513">quieres </span>
+        <span begin="00:00:51.513" end="00:00:51.573">que </span>
+        <span begin="00:00:51.573" end="00:00:51.673">te </span>
+        <span begin="00:00:51.673" end="00:00:52.175">perdone </span>
+      </p>
+      <p begin="00:00:52.177" end="00:00:55.453" ttm:agent="v1">
+        <span begin="00:00:52.177" end="00:00:52.351">Si </span>
+        <span begin="00:00:52.351" end="00:00:52.453">te </span>
+        <span begin="00:00:52.453" end="00:00:52.744">fuiste </span>
+        <span begin="00:00:52.744" end="00:00:52.963">de </span>
+        <span begin="00:00:52.963" end="00:00:53.129">mi </span>
+        <span begin="00:00:53.129" end="00:00:53.363">lado </span>
+        <span begin="00:00:53.363" end="00:00:53.583">sin </span>
+        <span begin="00:00:53.583" end="00:00:54.259">dejarme </span>
+        <span begin="00:00:54.259" end="00:00:54.684">ninguna </span>
+        <span begin="00:00:54.684" end="00:00:55.453">explicación </span>
+      </p>
+      <p begin="00:00:55.594" end="00:00:58.189" ttm:agent="v1">
+        <span begin="00:00:55.594" end="00:00:56.058">No </span>
+        <span begin="00:00:56.058" end="00:00:56.118">te </span>
+        <span begin="00:00:56.118" end="00:00:56.310">importo </span>
+        <span begin="00:00:56.310" end="00:00:56.480">si </span>
+        <span begin="00:00:56.480" end="00:00:56.540">yo </span>
+        <span begin="00:00:56.540" end="00:00:57.285">comía, </span>
+        <span begin="00:00:57.285" end="00:00:57.517">o </span>
+        <span begin="00:00:57.517" end="00:00:58.189">sufría </span>
+      </p>
+      <p begin="00:00:58.191" end="00:01:00.759" ttm:agent="v1">
+        <span begin="00:00:58.191" end="00:00:58.365">O </span>
+        <span begin="00:00:58.365" end="00:00:58.538">se </span>
+        <span begin="00:00:58.538" end="00:00:58.792">partía </span>
+        <span begin="00:00:58.792" end="00:00:59.347">en </span>
+        <span begin="00:00:59.347" end="00:00:59.656">dos </span>
+        <span begin="00:00:59.656" end="00:00:59.863">mi </span>
+        <span begin="00:00:59.863" end="00:01:00.759">corazón </span>
+      </p>
+      <p begin="00:01:00.769" end="00:01:03.174" ttm:agent="v1">
+        <span begin="00:01:00.769" end="00:01:01.138">Ahora </span>
+        <span begin="00:01:01.138" end="00:01:01.322">me </span>
+        <span begin="00:01:01.322" end="00:01:01.505">viene&apos; </span>
+        <span begin="00:01:01.505" end="00:01:01.660">a </span>
+        <span begin="00:01:01.660" end="00:01:02.141">confesar </span>
+        <span begin="00:01:02.141" end="00:01:02.308">que </span>
+        <span begin="00:01:02.308" end="00:01:02.429">estás </span>
+        <span begin="00:01:02.429" end="00:01:03.174">arepentido </span>
+      </p>
+      <p begin="00:01:03.254" end="00:01:05.644" ttm:agent="v1">
+        <span begin="00:01:03.254" end="00:01:03.416">Que </span>
+        <span begin="00:01:03.416" end="00:01:03.577">hay </span>
+        <span begin="00:01:03.577" end="00:01:03.825">mucha </span>
+        <span begin="00:01:03.825" end="00:01:04.259">herida </span>
+        <span begin="00:01:04.259" end="00:01:04.368">que </span>
+        <span begin="00:01:04.368" end="00:01:04.684">sanar </span>
+        <span begin="00:01:04.684" end="00:01:04.824">y </span>
+        <span begin="00:01:04.824" end="00:01:04.884">en </span>
+        <span begin="00:01:04.884" end="00:01:05.024">ti </span>
+        <span begin="00:01:05.024" end="00:01:05.084">yo </span>
+        <span begin="00:01:05.084" end="00:01:05.184">no </span>
+        <span begin="00:01:05.184" end="00:01:05.644">confío </span>
+      </p>
+      <p begin="00:01:05.734" end="00:01:08.195" ttm:agent="v1">
+        <span begin="00:01:05.734" end="00:01:06.110">Yo </span>
+        <span begin="00:01:06.110" end="00:01:06.438">pensé </span>
+        <span begin="00:01:06.438" end="00:01:06.539">que </span>
+        <span begin="00:01:06.539" end="00:01:07.394">solamente </span>
+        <span begin="00:01:07.394" end="00:01:07.668">tú </span>
+        <span begin="00:01:07.668" end="00:01:07.941">eras </span>
+        <span begin="00:01:07.941" end="00:01:08.195">mío </span>
+      </p>
+      <p begin="00:01:08.205" end="00:01:10.595" ttm:agent="v1">
+        <span begin="00:01:08.205" end="00:01:09.056">Ya </span>
+        <span begin="00:01:09.056" end="00:01:09.205">te </span>
+        <span begin="00:01:09.205" end="00:01:09.383">lo </span>
+        <span begin="00:01:09.383" end="00:01:09.483">di </span>
+        <span begin="00:01:09.483" end="00:01:09.831">todo, </span>
+        <span begin="00:01:09.831" end="00:01:10.595">malagrecido </span>
+      </p>
+      <p begin="00:01:10.933" end="00:01:12.875" ttm:agent="v1">
+        <span begin="00:01:10.933" end="00:01:11.504">Come </span>
+        <span begin="00:01:11.504" end="00:01:11.635">back </span>
+        <span begin="00:01:11.635" end="00:01:11.695">to </span>
+        <span begin="00:01:11.695" end="00:01:11.795">me, </span>
+        <span begin="00:01:11.795" end="00:01:12.315">please, </span>
+        <span begin="00:01:12.315" end="00:01:12.455">I&apos;m </span>
+        <span begin="00:01:12.455" end="00:01:12.875">sorry </span>
+      </p>
+      <p begin="00:01:13.015" end="00:01:15.345" ttm:agent="v1">
+        <span begin="00:01:13.015" end="00:01:13.223">Si </span>
+        <span begin="00:01:13.223" end="00:01:13.283">tú </span>
+        <span begin="00:01:13.283" end="00:01:13.423">no </span>
+        <span begin="00:01:13.423" end="00:01:13.735">estás </span>
+        <span begin="00:01:13.735" end="00:01:14.189">conmigo, </span>
+        <span begin="00:01:14.189" end="00:01:14.522">mami, </span>
+        <span begin="00:01:14.522" end="00:01:14.665">I </span>
+        <span begin="00:01:14.665" end="00:01:14.825">am </span>
+        <span begin="00:01:14.825" end="00:01:15.345">lonely </span>
+      </p>
+      <p begin="00:01:15.445" end="00:01:17.815" ttm:agent="v1">
+        <span begin="00:01:15.445" end="00:01:15.665">Cuando </span>
+        <span begin="00:01:15.665" end="00:01:16.122">estamos </span>
+        <span begin="00:01:16.122" end="00:01:16.222">en </span>
+        <span begin="00:01:16.222" end="00:01:16.322">la </span>
+        <span begin="00:01:16.322" end="00:01:16.730">camita, </span>
+        <span begin="00:01:16.730" end="00:01:17.099">baby, </span>
+        <span begin="00:01:17.099" end="00:01:17.294">we </span>
+        <span begin="00:01:17.294" end="00:01:17.448">are </span>
+        <span begin="00:01:17.448" end="00:01:17.815">burning </span>
+      </p>
+      <p begin="00:01:17.965" end="00:01:20.335" ttm:agent="v1">
+        <span begin="00:01:17.965" end="00:01:18.149">Te </span>
+        <span begin="00:01:18.149" end="00:01:18.310">lo </span>
+        <span begin="00:01:18.310" end="00:01:18.685">hago </span>
+        <span begin="00:01:18.685" end="00:01:19.012">to&apos;a </span>
+        <span begin="00:01:19.012" end="00:01:19.112">la </span>
+        <span begin="00:01:19.112" end="00:01:19.280">noche </span>
+        <span begin="00:01:19.280" end="00:01:19.420">y </span>
+        <span begin="00:01:19.420" end="00:01:19.702">también </span>
+        <span begin="00:01:19.702" end="00:01:19.849">in </span>
+        <span begin="00:01:19.849" end="00:01:20.006">the </span>
+        <span begin="00:01:20.006" end="00:01:20.335">morning </span>
+      </p>
+      <p begin="00:01:20.595" end="00:01:22.220" ttm:agent="v1">
+        <span begin="00:01:20.595" end="00:01:21.141">Okey, </span>
+        <span begin="00:01:21.141" end="00:01:21.249">tú </span>
+        <span begin="00:01:21.249" end="00:01:21.765">dices </span>
+        <span begin="00:01:21.765" end="00:01:21.825">que </span>
+        <span begin="00:01:21.825" end="00:01:21.925">no </span>
+        <span begin="00:01:21.925" end="00:01:22.065">siento </span>
+        <span begin="00:01:22.065" end="00:01:22.220">amor </span>
+      </p>
+      <p begin="00:01:22.383" end="00:01:25.148" ttm:agent="v1">
+        <span begin="00:01:22.383" end="00:01:22.847">Ven </span>
+        <span begin="00:01:22.847" end="00:01:23.008">y </span>
+        <span begin="00:01:23.008" end="00:01:23.708">tócame, </span>
+        <span begin="00:01:23.708" end="00:01:23.995">siente </span>
+        <span begin="00:01:23.995" end="00:01:24.351">como </span>
+        <span begin="00:01:24.351" end="00:01:24.495">late </span>
+        <span begin="00:01:24.495" end="00:01:24.678">el </span>
+        <span begin="00:01:24.678" end="00:01:25.148">corazón </span>
+      </p>
+      <p begin="00:01:25.178" end="00:01:25.748" ttm:agent="v1">
+        <span begin="00:01:25.178" end="00:01:25.676">(Oh- </span>
+        <span begin="00:01:25.676" end="00:01:25.748">oh) </span>
+      </p>
+      <p begin="00:01:25.786" end="00:01:28.228" ttm:agent="v1">
+        <span begin="00:01:25.786" end="00:01:25.898">Te </span>
+        <span begin="00:01:25.898" end="00:01:26.310">pido </span>
+        <span begin="00:01:26.310" end="00:01:26.906">perdón </span>
+        <span begin="00:01:26.906" end="00:01:27.149">por </span>
+        <span begin="00:01:27.149" end="00:01:27.422">lo </span>
+        <span begin="00:01:27.422" end="00:01:27.555">que </span>
+        <span begin="00:01:27.555" end="00:01:28.228">pasó </span>
+      </p>
+      <p begin="00:01:28.238" end="00:01:29.595" ttm:agent="v1">
+        <span begin="00:01:28.238" end="00:01:28.791">Baby, </span>
+        <span begin="00:01:28.791" end="00:01:28.982">tenme </span>
+        <span begin="00:01:28.982" end="00:01:29.595">compasión </span>
+      </p>
+      <p begin="00:01:30.327" end="00:01:32.450" ttm:agent="v1">
+        <span begin="00:01:30.327" end="00:01:30.517">Y </span>
+        <span begin="00:01:30.517" end="00:01:30.807">si </span>
+        <span begin="00:01:30.807" end="00:01:32.243">alguna </span>
+        <span begin="00:01:32.243" end="00:01:32.450">vez </span>
+      </p>
+      <p begin="00:01:32.805" end="00:01:35.221" ttm:agent="v1">
+        <span begin="00:01:32.805" end="00:01:34.078">Sentiste </span>
+        <span begin="00:01:34.078" end="00:01:34.417">algo </span>
+        <span begin="00:01:34.417" end="00:01:34.931">lindo </span>
+        <span begin="00:01:34.931" end="00:01:35.121">por </span>
+        <span begin="00:01:35.121" end="00:01:35.221">mí </span>
+      </p>
+      <p begin="00:01:35.456" end="00:01:39.744" ttm:agent="v1">
+        <span begin="00:01:35.456" end="00:01:38.211">Perdóname, </span>
+        <span begin="00:01:38.211" end="00:01:39.744">perdóname </span>
+      </p>
+      <p begin="00:01:40.272" end="00:01:42.842" ttm:agent="v1">
+        <span begin="00:01:40.272" end="00:01:41.105">Si </span>
+        <span begin="00:01:41.105" end="00:01:42.396">alguna </span>
+        <span begin="00:01:42.396" end="00:01:42.842">vez </span>
+      </p>
+      <p begin="00:01:43.279" end="00:01:45.331" ttm:agent="v1">
+        <span begin="00:01:43.279" end="00:01:44.191">Sentiste </span>
+        <span begin="00:01:44.191" end="00:01:44.530">algo </span>
+        <span begin="00:01:44.530" end="00:01:44.899">lindo </span>
+        <span begin="00:01:44.899" end="00:01:45.129">por </span>
+        <span begin="00:01:45.129" end="00:01:45.331">mí </span>
+      </p>
+      <p begin="00:01:45.615" end="00:01:50.248" ttm:agent="v1">
+        <span begin="00:01:45.615" end="00:01:48.495">Perdóname, </span>
+        <span begin="00:01:48.495" end="00:01:49.827">perdóname, </span>
+        <span begin="00:01:49.827" end="00:01:50.248">bebé </span>
+      </p>
+      <p begin="00:01:51.010" end="00:01:52.828" ttm:agent="v1">
+        <span begin="00:01:51.010" end="00:01:51.318">Voy </span>
+        <span begin="00:01:51.318" end="00:01:51.378">a </span>
+        <span begin="00:01:51.378" end="00:01:51.504">darte </span>
+        <span begin="00:01:51.504" end="00:01:51.700">una </span>
+        <span begin="00:01:51.700" end="00:01:52.323">segunda </span>
+        <span begin="00:01:52.323" end="00:01:52.828">oportunidad </span>
+      </p>
+      <p begin="00:01:52.948" end="00:01:55.418" ttm:agent="v1">
+        <span begin="00:01:52.948" end="00:01:53.370">Quiero </span>
+        <span begin="00:01:53.370" end="00:01:54.168">confesarte </span>
+        <span begin="00:01:54.168" end="00:01:54.282">que </span>
+        <span begin="00:01:54.282" end="00:01:54.437">yo </span>
+        <span begin="00:01:54.437" end="00:01:54.764">nunca </span>
+        <span begin="00:01:54.764" end="00:01:54.971">te </span>
+        <span begin="00:01:54.971" end="00:01:55.097">dejé </span>
+        <span begin="00:01:55.097" end="00:01:55.197">de </span>
+        <span begin="00:01:55.197" end="00:01:55.418">amar </span>
+      </p>
+      <p begin="00:01:55.438" end="00:01:57.501" ttm:agent="v1">
+        <span begin="00:01:55.438" end="00:01:55.741">De </span>
+        <span begin="00:01:55.741" end="00:01:55.948">mi </span>
+        <span begin="00:01:55.948" end="00:01:56.591">parte </span>
+        <span begin="00:01:56.591" end="00:01:56.727">de </span>
+        <span begin="00:01:56.727" end="00:01:56.925">seguro </span>
+        <span begin="00:01:56.925" end="00:01:57.065">no </span>
+        <span begin="00:01:57.065" end="00:01:57.165">te </span>
+        <span begin="00:01:57.165" end="00:01:57.265">voy </span>
+        <span begin="00:01:57.265" end="00:01:57.325">a </span>
+        <span begin="00:01:57.325" end="00:01:57.501">fallar </span>
+      </p>
+      <p begin="00:01:57.654" end="00:01:59.944" ttm:agent="v1">
+        <span begin="00:01:57.654" end="00:01:58.308">No </span>
+        <span begin="00:01:58.308" end="00:01:58.487">te </span>
+        <span begin="00:01:58.487" end="00:01:58.808">pagaré </span>
+        <span begin="00:01:58.808" end="00:01:58.945">con </span>
+        <span begin="00:01:58.945" end="00:01:59.129">la </span>
+        <span begin="00:01:59.129" end="00:01:59.390">misma </span>
+        <span begin="00:01:59.390" end="00:01:59.504">moneda, </span>
+        <span begin="00:01:59.504" end="00:01:59.644">yo </span>
+        <span begin="00:01:59.644" end="00:01:59.744">sí </span>
+        <span begin="00:01:59.744" end="00:01:59.844">se </span>
+        <span begin="00:01:59.844" end="00:01:59.944">amar </span>
+      </p>
+      <p begin="00:02:00.458" end="00:02:03.516" ttm:agent="v1">
+        <span begin="00:02:00.458" end="00:02:01.123">Vamos </span>
+        <span begin="00:02:01.123" end="00:02:01.248">a </span>
+        <span begin="00:02:01.248" end="00:02:01.551">darnos </span>
+        <span begin="00:02:01.551" end="00:02:01.890">mucho </span>
+        <span begin="00:02:01.890" end="00:02:02.081">amor, </span>
+        <span begin="00:02:02.081" end="00:02:02.511">quiero </span>
+        <span begin="00:02:02.511" end="00:02:02.735">vivir </span>
+        <span begin="00:02:02.735" end="00:02:02.802">en </span>
+        <span begin="00:02:02.802" end="00:02:02.973">la </span>
+        <span begin="00:02:02.973" end="00:02:03.516">felicidad </span>
+      </p>
+      <p begin="00:02:03.656" end="00:02:06.068" ttm:agent="v1">
+        <span begin="00:02:03.656" end="00:02:04.120">Pero </span>
+        <span begin="00:02:04.120" end="00:02:04.310">sin </span>
+        <span begin="00:02:04.310" end="00:02:04.604">temor </span>
+        <span begin="00:02:04.604" end="00:02:04.763">que </span>
+        <span begin="00:02:04.763" end="00:02:04.823">tú </span>
+        <span begin="00:02:04.823" end="00:02:05.286">nunca </span>
+        <span begin="00:02:05.286" end="00:02:05.441">me </span>
+        <span begin="00:02:05.441" end="00:02:05.798">vayas </span>
+        <span begin="00:02:05.798" end="00:02:05.941">a </span>
+        <span begin="00:02:05.941" end="00:02:06.068">dejar </span>
+      </p>
+      <p begin="00:02:06.178" end="00:02:08.668" ttm:agent="v1">
+        <span begin="00:02:06.178" end="00:02:06.553">Yo </span>
+        <span begin="00:02:06.553" end="00:02:06.678">te </span>
+        <span begin="00:02:06.678" end="00:02:07.075">amo, </span>
+        <span begin="00:02:07.075" end="00:02:07.229">tú </span>
+        <span begin="00:02:07.229" end="00:02:07.378">me </span>
+        <span begin="00:02:07.378" end="00:02:07.683">amas </span>
+        <span begin="00:02:07.683" end="00:02:07.783">y </span>
+        <span begin="00:02:07.783" end="00:02:07.951">esa </span>
+        <span begin="00:02:07.951" end="00:02:08.091">es </span>
+        <span begin="00:02:08.091" end="00:02:08.241">toda </span>
+        <span begin="00:02:08.241" end="00:02:08.341">la </span>
+        <span begin="00:02:08.341" end="00:02:08.668">realidad </span>
+      </p>
+      <p begin="00:02:08.728" end="00:02:11.128" ttm:agent="v1">
+        <span begin="00:02:08.728" end="00:02:09.161">Vamos </span>
+        <span begin="00:02:09.161" end="00:02:09.246">a </span>
+        <span begin="00:02:09.246" end="00:02:09.559">prender </span>
+        <span begin="00:02:09.559" end="00:02:09.781">esta </span>
+        <span begin="00:02:09.781" end="00:02:10.049">llama, </span>
+        <span begin="00:02:10.049" end="00:02:10.351">vamos </span>
+        <span begin="00:02:10.351" end="00:02:10.411">a </span>
+        <span begin="00:02:10.411" end="00:02:10.715">amarnos </span>
+        <span begin="00:02:10.715" end="00:02:10.858">de </span>
+        <span begin="00:02:10.858" end="00:02:11.128">verdad </span>
+      </p>
+      <p begin="00:02:11.155" end="00:02:13.694" ttm:agent="v1">
+        <span begin="00:02:11.155" end="00:02:11.347">Y </span>
+        <span begin="00:02:11.347" end="00:02:11.554">si </span>
+        <span begin="00:02:11.554" end="00:02:12.696">alguna </span>
+        <span begin="00:02:12.696" end="00:02:13.152">vez </span>
+        <span begin="00:02:13.152" end="00:02:13.694">(Factoría) </span>
+      </p>
+      <p begin="00:02:13.806" end="00:02:15.683" ttm:agent="v1">
+        <span begin="00:02:13.806" end="00:02:14.506">Sentiste </span>
+        <span begin="00:02:14.506" end="00:02:15.061">algo </span>
+        <span begin="00:02:15.061" end="00:02:15.381">lindo </span>
+        <span begin="00:02:15.381" end="00:02:15.583">por </span>
+        <span begin="00:02:15.583" end="00:02:15.683">mí </span>
+      </p>
+      <p begin="00:02:15.848" end="00:02:20.023" ttm:agent="v1">
+        <span begin="00:02:15.848" end="00:02:18.964">Perdóname, </span>
+        <span begin="00:02:18.964" end="00:02:20.023">perdóname </span>
+      </p>
+      <p begin="00:02:21.069" end="00:02:23.294" ttm:agent="v1">
+        <span begin="00:02:21.069" end="00:02:21.581">Si </span>
+        <span begin="00:02:21.581" end="00:02:22.814">alguna </span>
+        <span begin="00:02:22.814" end="00:02:23.294">vez </span>
+      </p>
+      <p begin="00:02:23.741" end="00:02:25.702" ttm:agent="v1">
+        <span begin="00:02:23.741" end="00:02:24.449">Sentiste </span>
+        <span begin="00:02:24.449" end="00:02:25.028">algo </span>
+        <span begin="00:02:25.028" end="00:02:25.325">lindo </span>
+        <span begin="00:02:25.325" end="00:02:25.516">por </span>
+        <span begin="00:02:25.516" end="00:02:25.702">mí </span>
+      </p>
+      <p begin="00:02:26.016" end="00:02:30.822" ttm:agent="v1">
+        <span begin="00:02:26.016" end="00:02:28.622">Perdóname, </span>
+        <span begin="00:02:28.622" end="00:02:29.891">perdóname, </span>
+        <span begin="00:02:29.891" end="00:02:30.822">bebé </span>
+      </p>
+      <p begin="00:02:31.431" end="00:02:33.173" ttm:agent="v1">
+        <span begin="00:02:31.431" end="00:02:31.694">Y </span>
+        <span begin="00:02:31.694" end="00:02:32.234">una </span>
+        <span begin="00:02:32.234" end="00:02:32.871">vez </span>
+        <span begin="00:02:32.871" end="00:02:32.931">y </span>
+        <span begin="00:02:32.931" end="00:02:33.033">otra </span>
+        <span begin="00:02:33.033" end="00:02:33.173">vez </span>
+      </p>
+      <p begin="00:02:33.656" end="00:02:35.870" ttm:agent="v1">
+        <span begin="00:02:33.656" end="00:02:34.364">Quiero </span>
+        <span begin="00:02:34.364" end="00:02:34.888">tenerte </span>
+        <span begin="00:02:34.888" end="00:02:35.582">piel </span>
+        <span begin="00:02:35.582" end="00:02:35.682">a </span>
+        <span begin="00:02:35.682" end="00:02:35.870">piel </span>
+      </p>
+      <p begin="00:02:36.236" end="00:02:38.384" ttm:agent="v1">
+        <span begin="00:02:36.236" end="00:02:36.636">No </span>
+        <span begin="00:02:36.636" end="00:02:36.884">me </span>
+        <span begin="00:02:36.884" end="00:02:37.814">castiges, </span>
+        <span begin="00:02:37.814" end="00:02:38.284">no, </span>
+        <span begin="00:02:38.284" end="00:02:38.384">bebé </span>
+      </p>
+      <p begin="00:02:38.654" end="00:02:41.001" ttm:agent="v1">
+        <span begin="00:02:38.654" end="00:02:39.274">No </span>
+        <span begin="00:02:39.274" end="00:02:39.618">te </span>
+        <span begin="00:02:39.618" end="00:02:40.054">quiero </span>
+        <span begin="00:02:40.054" end="00:02:41.001">perder </span>
+      </p>
+      <p begin="00:02:41.489" end="00:02:43.469" ttm:agent="v1">
+        <span begin="00:02:41.489" end="00:02:42.120">Una </span>
+        <span begin="00:02:42.120" end="00:02:42.796">vez </span>
+        <span begin="00:02:42.796" end="00:02:42.856">y </span>
+        <span begin="00:02:42.856" end="00:02:43.183">otra </span>
+        <span begin="00:02:43.183" end="00:02:43.469">vez </span>
+      </p>
+      <p begin="00:02:43.784" end="00:02:46.020" ttm:agent="v1">
+        <span begin="00:02:43.784" end="00:02:44.506">Quiero </span>
+        <span begin="00:02:44.506" end="00:02:45.075">tenerte </span>
+        <span begin="00:02:45.075" end="00:02:45.684">piel </span>
+        <span begin="00:02:45.684" end="00:02:45.824">a </span>
+        <span begin="00:02:45.824" end="00:02:46.020">piel </span>
+      </p>
+      <p begin="00:02:46.385" end="00:02:48.529" ttm:agent="v1">
+        <span begin="00:02:46.385" end="00:02:46.843">No </span>
+        <span begin="00:02:46.843" end="00:02:47.010">me </span>
+        <span begin="00:02:47.010" end="00:02:47.945">castiges, </span>
+        <span begin="00:02:47.945" end="00:02:48.409">no, </span>
+        <span begin="00:02:48.409" end="00:02:48.529">bebé </span>
+      </p>
+      <p begin="00:02:48.783" end="00:02:50.885" ttm:agent="v1">
+        <span begin="00:02:48.783" end="00:02:49.245">No </span>
+        <span begin="00:02:49.245" end="00:02:49.485">te </span>
+        <span begin="00:02:49.485" end="00:02:50.009">quiero </span>
+        <span begin="00:02:50.009" end="00:02:50.885">perder </span>
+      </p>
+      <p begin="00:02:51.533" end="00:02:54.021" ttm:agent="v1">
+        <span begin="00:02:51.533" end="00:02:52.283">No </span>
+        <span begin="00:02:52.283" end="00:02:52.588">te </span>
+        <span begin="00:02:52.588" end="00:02:53.399">quiero </span>
+        <span begin="00:02:53.399" end="00:02:54.021">perder </span>
+      </p>
+      <p begin="00:02:52.845" end="00:02:55.094" ttm:agent="v1">
+        <span begin="00:02:52.845" end="00:02:53.095">No </span>
+        <span begin="00:02:53.095" end="00:02:53.400">te </span>
+        <span begin="00:02:53.400" end="00:02:54.406">quiero </span>
+        <span begin="00:02:54.406" end="00:02:55.094">perder </span>
+      </p>
+      <p begin="00:02:54.077" end="00:02:57.937" ttm:agent="v1">
+        <span begin="00:02:54.077" end="00:02:54.404">No </span>
+        <span begin="00:02:54.404" end="00:02:54.658">te </span>
+        <span begin="00:02:54.658" end="00:02:55.555">quiero </span>
+        <span begin="00:02:55.555" end="00:02:57.937">perder </span>
+      </p>
+      <p begin="00:02:56.918" end="00:02:59.149" ttm:agent="v1">
+        <span begin="00:02:56.918" end="00:02:57.614">No </span>
+        <span begin="00:02:57.614" end="00:02:58.382">te </span>
+        <span begin="00:02:58.382" end="00:02:58.744">quiero </span>
+        <span begin="00:02:58.744" end="00:02:59.149">perder </span>
+      </p>
+      <p begin="00:02:58.616" end="00:02:59.878" ttm:agent="v1">
+        <span begin="00:02:58.616" end="00:02:59.068">No </span>
+        <span begin="00:02:59.068" end="00:02:59.155">te </span>
+        <span begin="00:02:59.155" end="00:02:59.647">quiero </span>
+        <span begin="00:02:59.647" end="00:02:59.878">perder </span>
+      </p>
+      <p begin="00:02:59.418" end="00:03:01.232" ttm:agent="v1">
+        <span begin="00:02:59.418" end="00:02:59.739">No </span>
+        <span begin="00:02:59.739" end="00:02:59.870">te </span>
+        <span begin="00:02:59.870" end="00:03:00.493">quiero </span>
+        <span begin="00:03:00.493" end="00:03:01.232">perder </span>
+      </p>
+      <p begin="00:03:00.404" end="00:03:04.382" ttm:agent="v1">
+        <span begin="00:03:00.404" end="00:03:00.509">No </span>
+        <span begin="00:03:00.509" end="00:03:00.975">te </span>
+        <span begin="00:03:00.975" end="00:03:01.465">quiero </span>
+        <span begin="00:03:01.465" end="00:03:04.382">perder </span>
+      </p>
+      <p begin="00:03:04.134" end="00:03:07.194" ttm:agent="v1">
+        <span begin="00:03:04.134" end="00:03:04.539">No </span>
+        <span begin="00:03:04.539" end="00:03:04.852">te </span>
+        <span begin="00:03:04.852" end="00:03:05.471">quiero </span>
+        <span begin="00:03:05.471" end="00:03:07.194">perder </span>
+      </p>
+      <p begin="00:03:05.473" end="00:03:06.705" ttm:agent="v1">
+        <span begin="00:03:05.473" end="00:03:05.668">Te </span>
+        <span begin="00:03:05.668" end="00:03:06.149">pido </span>
+        <span begin="00:03:06.149" end="00:03:06.705">perdón </span>
+      </p>
+      <p begin="00:03:07.181" end="00:03:08.664" ttm:agent="v1">
+        <span begin="00:03:07.181" end="00:03:07.538">I&apos;m </span>
+        <span begin="00:03:07.538" end="00:03:08.057">sorry, </span>
+        <span begin="00:03:08.057" end="00:03:08.197">I&apos;m </span>
+        <span begin="00:03:08.197" end="00:03:08.664">sorry </span>
+      </p>
+      <p begin="00:03:09.264" end="00:03:11.346" ttm:agent="v1">
+        <span begin="00:03:09.264" end="00:03:10.672">Perdóname, </span>
+        <span begin="00:03:10.672" end="00:03:11.346">bebé </span>
+      </p>
+      <p begin="00:03:12.555" end="00:03:16.020" ttm:agent="v1">
+        <span begin="00:03:12.555" end="00:03:13.102">Al </span>
+        <span begin="00:03:13.102" end="00:03:13.657">igual </span>
+        <span begin="00:03:13.657" end="00:03:14.157">que </span>
+        <span begin="00:03:14.157" end="00:03:14.300">tú </span>
+        <span begin="00:03:14.300" end="00:03:14.401">me </span>
+        <span begin="00:03:14.401" end="00:03:15.179">siento </span>
+        <span begin="00:03:15.179" end="00:03:15.484">mal, </span>
+        <span begin="00:03:15.484" end="00:03:16.020">okey </span>
+      </p>
+      <p begin="00:03:17.584" end="00:03:21.393" ttm:agent="v1">
+        <span begin="00:03:17.584" end="00:03:18.102">Al </span>
+        <span begin="00:03:18.102" end="00:03:18.841">igual </span>
+        <span begin="00:03:18.841" end="00:03:19.387">que </span>
+        <span begin="00:03:19.387" end="00:03:19.529">tú </span>
+        <span begin="00:03:19.529" end="00:03:19.629">me </span>
+        <span begin="00:03:19.629" end="00:03:21.148">siento </span>
+        <span begin="00:03:21.148" end="00:03:21.393">mal </span>
+      </p>
+      <p begin="00:03:22.267" end="00:03:23.373" ttm:agent="v1">
+        <span begin="00:03:22.267" end="00:03:23.373">Factoría </span>
+      </p>
+      <p begin="00:03:26.323" end="00:03:27.113" ttm:agent="v1">
+        <span begin="00:03:26.323" end="00:03:27.113">Ready </span>
+      </p>
+      <p begin="00:03:27.997" end="00:03:30.232" ttm:agent="v1">
+        <span begin="00:03:27.997" end="00:03:28.192">This </span>
+        <span begin="00:03:28.192" end="00:03:28.252">is </span>
+        <span begin="00:03:28.252" end="00:03:28.543">Eddy </span>
+        <span begin="00:03:28.543" end="00:03:30.232">Lover </span>
+      </p>
+    </div>
+  </body>
+</tt>
